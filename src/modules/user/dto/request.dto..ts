@@ -7,6 +7,8 @@ import {
 	OptionalUsernameDto,
 	OptionalNameDto,
 	OptionalEmailDto,
+	FirstNameDto,
+	LastNameDto,
 } from './fields.dto';
 
 export class CreateUserDto extends IntersectionType(
@@ -14,6 +16,8 @@ export class CreateUserDto extends IntersectionType(
 	PasswordDto,
 	NameDto,
 	UsernameDto,
+	FirstNameDto,
+	LastNameDto,
 ) {}
 
 export class UpdateUserDto extends IntersectionType(

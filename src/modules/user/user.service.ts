@@ -38,6 +38,14 @@ export class UserService {
 				email: true,
 				username: true,
 				createdAt: true,
+				stats: {
+					select: {
+						postCount: true,
+						likeCount: true,
+						followerCount: true,
+						followingCount: true,
+					},
+				},
 			},
 		});
 	}
@@ -50,15 +58,37 @@ export class UserService {
 				email: true,
 				username: true,
 				createdAt: true,
+				stats: {
+					select: {
+						postCount: true,
+						likeCount: true,
+						followerCount: true,
+						followingCount: true,
+					},
+				},
 			},
 		});
 	}
 
 	async create(data: CreateUserDto) {
 		const { password, ...rest } = data;
+		if (!password) {
+			throw new Error('Password is required');
+		}
 
 		return this.prisma.user.create({
-			data: rest,
+			data: {
+				...rest,
+				stats: {
+					create: {
+						postCount: 0,
+						likeCount: 0,
+						followerCount: 0,
+						followingCount: 0,
+					},
+				},
+			},
+
 			select: {
 				id: true,
 				email: true,

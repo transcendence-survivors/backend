@@ -32,7 +32,7 @@ export class EmailDto {
 export class OptionalEmailDto extends PartialType(EmailDto) {}
 
 export class UsernameDto {
-	@IsNotEmpty()
+	@IsNotEmpty({ message: ERR.EMPTY })
 	@IsString({ message: ERR.IS_STRING })
 	@MinLength(3, { message: ERR.MIN_LENGTH })
 	@MaxLength(20, { message: ERR.MAX_LENGTH })
@@ -41,10 +41,28 @@ export class UsernameDto {
 export class OptionalUsernameDto extends PartialType(UsernameDto) {}
 
 export class NameDto {
-	@IsNotEmpty()
+	@IsNotEmpty({ message: ERR.EMPTY })
 	@IsString({ message: ERR.IS_STRING })
 	@MinLength(3, { message: ERR.MIN_LENGTH })
 	@MaxLength(50, { message: ERR.MAX_LENGTH })
-	name: string;
+	displayName: string;
 }
 export class OptionalNameDto extends PartialType(NameDto) {}
+
+export class FirstNameDto {
+	@IsNotEmpty({ message: ERR.EMPTY })
+	@IsString({ message: ERR.IS_STRING })
+	@MinLength(3, { message: ERR.MIN_LENGTH })
+	@MaxLength(50, { message: ERR.MAX_LENGTH })
+	firstName: string;
+}
+export class OptionalFirstNameDto extends PartialType(FirstNameDto) {}
+
+export class LastNameDto {
+	@IsNotEmpty({ message: ERR.EMPTY })
+	@IsString({ message: ERR.IS_STRING })
+	@MinLength(3, { message: ERR.MIN_LENGTH })
+	@MaxLength(50, { message: ERR.MAX_LENGTH })
+	lastName: string;
+}
+export class OptionalLastNameDto extends PartialType(LastNameDto) {}
