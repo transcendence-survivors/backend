@@ -1,9 +1,15 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './app.module';
+import { AppModule } from './modules/app/app.module';
+import { ResponseInterceptor } from './common/interceptors/response.interceptor';
+import { ExceptionsFilter } from './common/filters/http-exception.filter';
+import { CustomValidationPipe } from './common/custom-validation.pipe';
 
-const bootstrap = async () => {
+void (async () => {
 	const app = await NestFactory.create(AppModule);
-	await app.listen(process.env.PORT ?? 3000);
-};
 
-bootstrap();
+	app.useGlobalPipes(new CustomValidationPipe());
+	app.useGlobalInterceptors(new ResponseInterceptor());
+	app.useGlobalFilters(new ExceptionsFilter());
+
+	await app.listen(process.env.PORT!);
+})();

@@ -8,16 +8,12 @@ import {
 	Delete,
 	Req,
 } from '@nestjs/common';
-import { UsersService } from './user.service';
-import { PostsService } from './post.service';
-import { User as UserModel, Post as PostModel } from '@prisma-generated/client';
+import { PostsService } from '../post/post.service';
+import { Post as PostModel } from '@prisma-generated/client';
 import { NotFoundException } from '@nestjs/common';
 @Controller()
 export class AppController {
-	constructor(
-		private readonly userService: UsersService,
-		private readonly postService: PostsService,
-	) {}
+	constructor(private readonly postService: PostsService) {}
 
 	@Get('post/:id')
 	async getPostById(@Param('id') id: string): Promise<any> {
@@ -83,17 +79,6 @@ export class AppController {
 				},
 			},
 		});
-	}
-
-	@Post('user')
-	async signupUser(
-		@Body()
-		userData: {
-			name?: string;
-			email: string;
-		},
-	): Promise<UserModel> {
-		return this.userService.createUser(userData);
 	}
 
 	@Put('publish/:id')
