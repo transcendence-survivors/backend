@@ -1,24 +1,46 @@
-# Nestjs specific
-/dist
-/node_modules
-/build
-/tmp
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+tmp/
+.temp/
+.tmp/
+
+# NestJS
+*.js.map
+
+# Prisma
+prisma/generated/
+prisma/*.db
+prisma/*.db-journal
 
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 pnpm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-lerna-debug.log*
 
-# dotenv environment variable files
+# Environment variables
 .env
-.env.development
-.env.test
-.env.production
+.env.*
+!.env.example
 
-# temp directory
-.temp
-.tmp
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+pnpm-lock.yaml
+npm-lock.json
+yarn.lock
