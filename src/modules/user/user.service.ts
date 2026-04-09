@@ -41,7 +41,8 @@ export class UserService {
 				stats: {
 					select: {
 						postCount: true,
-						likeCount: true,
+						likesGiven: true,
+						likesReceived: true,
 						followerCount: true,
 						followingCount: true,
 					},
@@ -61,7 +62,8 @@ export class UserService {
 				stats: {
 					select: {
 						postCount: true,
-						likeCount: true,
+						likesGiven: true,
+						likesReceived: true,
 						followerCount: true,
 						followingCount: true,
 					},
@@ -82,7 +84,8 @@ export class UserService {
 				stats: {
 					create: {
 						postCount: 0,
-						likeCount: 0,
+						likesGiven: 0,
+						likesReceived: 0,
 						followerCount: 0,
 						followingCount: 0,
 					},

@@ -11,5 +11,5 @@ void (async () => {
 	app.useGlobalInterceptors(new ResponseInterceptor());
 	app.useGlobalFilters(new ExceptionsFilter());
 
-	await app.listen(process.env.PORT!);
+	await app.listen(process.env.NEST_PORT!);
 })();
