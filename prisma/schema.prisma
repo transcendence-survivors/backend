@@ -127,7 +127,8 @@ datasource db {
 // }
 
 model Player {
-  name      String @id
+  id        String @id
+  name      String @unique
   wins      Int @default(0)
   loses     Int @default(0)
   favWeapon String
