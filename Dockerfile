@@ -12,7 +12,7 @@ RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
 
 COPY . .
 
-RUN pnpm prisma generate
+RUN pnpm run migration:generate
 
 EXPOSE 3001
 

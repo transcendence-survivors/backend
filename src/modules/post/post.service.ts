@@ -6,7 +6,7 @@ import { Post, Prisma } from '@prisma-generated/client';
 export class PostsService {
 	constructor(private prisma: PrismaService) {}
 
-	async post(
+	post(
 		postWhereUniqueInput: Prisma.PostWhereUniqueInput,
 	): Promise<Post | null> {
 		return this.prisma.post.findUnique({
