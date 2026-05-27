@@ -127,10 +127,12 @@ datasource db {
 // }
 
 model Player {
-  id        String @id
+  id        String @id @default(uuid())
   name      String @unique
   wins      Int @default(0)
   loses     Int @default(0)
-  favWeapon String
+  favWeapon String @default("sword")
   kills     Int @default(0)
+  createdAt DateTime @default(now())
+  updateAt  DateTime @updatedAt
 }
