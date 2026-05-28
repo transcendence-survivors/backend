@@ -20,11 +20,13 @@ export class AuthService {
 	async signUp({ password, ...userData }: CreateUserDto) {
 		const user = await this.userService.create(userData);
 
-		const payload = { sub: user.id, username: user.username };
-		return this.jwtService.signAsync(payload);
+		const token = this.jwtService.signAsync({ sub: user.id });
+		const hashtoken = hashToken(token);
 	}
 
 	async hashPassword(password: string) {
-		return hashSync(password, this.salt);
+		return hash(password, this.salt);
 	}
+
+	async hashToken(token: string) {}
 }
