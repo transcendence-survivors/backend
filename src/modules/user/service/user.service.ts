@@ -8,6 +8,7 @@ import {
 	UserUsernameConflictException,
 } from '../exception/user.conflict.exception';
 import UserNotFoundException from '../exception/user.not-find.exception';
+import { hashSync } from 'bcrypt';
 
 interface FindSingleParams {
 	id?: string;
@@ -34,15 +35,13 @@ export class UserService {
 		await this.repository.delete(id);
 	}
 
-	async create(dto: CreateUserDto) {
+	async create(dto: Omit<CreateUserDto, 'password'>) {
 		if (await this.repository.isByEmail(dto.email)) {
 			throw new UserEmailConflictException();
 		}
 		if (await this.repository.isByUsername(dto.username)) {
 			throw new UserUsernameConflictException();
 		}
-
-		const { password: _, ...userData } = dto;
-		return this.repository.create({ ...userData });
+		return this.repository.create(dto);
 	}
 }
