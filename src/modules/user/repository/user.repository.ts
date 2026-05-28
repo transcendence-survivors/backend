@@ -1,0 +1,113 @@
+import { PrismaService } from '@/common/prisma.service';
+import { Injectable } from '@nestjs/common';
+import CreateUserDto from '../dto/create.dto';
+
+@Injectable()
+export class UserRepository {
+	constructor(private readonly prisma: PrismaService) {}
+
+	private userStatsSelect = {
+		postCount: true,
+		likesGiven: true,
+		likesReceived: true,
+		followerCount: true,
+		followingCount: true,
+	};
+
+	private userSelect = {
+		id: true,
+		email: true,
+		username: true,
+		displayName: true,
+		firstName: true,
+		lastName: true,
+	};
+
+	async findSingle({
+		id,
+		email,
+		username,
+	}: {
+		id?: string;
+		email?: string;
+		username?: string;
+	}) {
+		if (id) {
+			return this.findById(id);
+		}
+		if (email) {
+			return this.findByEmail(email);
+		}
+		if (username) {
+			return this.findByUsername(username);
+		}
+		return null;
+	}
+
+	async findById(id: string, selectStats = false) {
+		const statsSelect = selectStats
+			? { select: this.userStatsSelect }
+			: undefined;
+
+		return this.prisma.user.findUnique({
+			where: { id },
+			select: {
+				...this.userSelect,
+				stats: statsSelect,
+			},
+		});
+	}
+
+	async findByEmail(email: string, selectStats = false) {
+		const statsSelect = selectStats
+			? { select: this.userStatsSelect }
+			: undefined;
+
+		return this.prisma.user.findUnique({
+			where: { email },
+			select: {
+				...this.userSelect,
+				stats: statsSelect,
+			},
+		});
+	}
+	async findByUsername(username: string, selectStats = false) {
+		const statsSelect = selectStats
+			? { select: this.userStatsSelect }
+			: undefined;
+
+		return this.prisma.user.findUnique({
+			where: { username },
+			select: {
+				...this.userSelect,
+				stats: statsSelect,
+			},
+		});
+	}
+
+	async create(data: Omit<CreateUserDto, 'password'>) {
+		return this.prisma.user.create({
+			data: {
+				...data,
+				stats: {
+					create: {},
+				},
+			},
+			select: this.userSelect,
+		});
+	}
+
+	async delete(id: string): Promise<void> {
+		await this.prisma.user.delete({ where: { id } });
+	}
+
+	async isByEmail(email: string): Promise<boolean> {
+		const count = await this.prisma.user.count({ where: { email } });
+		return count > 0;
+	}
+
+	async isByUsername(username: string): Promise<boolean> {
+		const count = await this.prisma.user.count({ where: { username } });
+		return count > 0;
+	}
+}

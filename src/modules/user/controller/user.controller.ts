@@ -1,0 +1,40 @@
+import {
+	Controller,
+	Get,
+	Post,
+	Delete,
+	Param,
+	Body,
+	HttpCode,
+} from '@nestjs/common';
+import { UserService } from '../service/user.service';
+import { BaseController } from '@/common/base.controller';
+import CreateUserDto from '../dto/create.dto';
+import { type UserUsername } from '../user.fields';
+
+@Controller('users')
+export class UserController extends BaseController {
+	constructor(private readonly userService: UserService) {
+		super();
+	}
+
+	@HttpCode(200)
+	@Get(':username')
+	async findOne(@Param('username') username: UserUsername) {
+		const user = await this.userService.findSingle({ username });
+		return this.ok(user, 'User found');
+	}
+
+	@HttpCode(201)
+	@Post()
+	async create(@Body() dto: CreateUserDto) {
+		const user = await this.userService.create(dto);
+		return this.ok(user, 'User created');
+	}
+
+	@HttpCode(204)
+	@Delete(':id')
+	async delete(@Param('id') id: string) {
+		await this.userService.delete(id);
+	}
+}
