@@ -9,7 +9,7 @@ import {
 } from '../exception/user.conflict.exception';
 import UserNotFoundException from '../exception/user.not-find.exception';
 
-interface FindSingleParams {
+export interface UserFindSingleParams {
 	id?: string;
 	email?: UserEmail;
 	username?: UserUsername;
@@ -19,11 +19,11 @@ interface FindSingleParams {
 export class UserService {
 	constructor(private repository: UserRepository) {}
 
-	async findSingle({ id, email, username }: FindSingleParams) {
+	async getSingle({ id, email, username }: UserFindSingleParams) {
 		if (Object.keys({ id, email, username }).length === 0) {
 			throw new FindParamException();
 		}
-		const user = await this.repository.findSingle({ id, email, username });
+		const user = await this.findSingle({ id, email, username });
 		if (!user) {
 			throw new UserNotFoundException();
 		}
@@ -44,5 +44,18 @@ export class UserService {
 
 		const { password: _, ...userData } = dto;
 		return this.repository.create({ ...userData });
+	}
+
+	async findSingle({ id, email, username }: UserFindSingleParams) {
+		if (id) {
+			return this.repository.findById(id);
+		}
+		if (email) {
+			return this.repository.findByEmail(email);
+		}
+		if (username) {
+			return this.repository.findByUsername(username);
+		}
+		return null;
 	}
 }

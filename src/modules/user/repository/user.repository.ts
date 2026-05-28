@@ -23,27 +23,6 @@ export class UserRepository {
 		lastName: true,
 	};
 
-	async findSingle({
-		id,
-		email,
-		username,
-	}: {
-		id?: string;
-		email?: string;
-		username?: string;
-	}) {
-		if (id) {
-			return this.findById(id);
-		}
-		if (email) {
-			return this.findByEmail(email);
-		}
-		if (username) {
-			return this.findByUsername(username);
-		}
-		return null;
-	}
-
 	async findById(id: string, selectStats = false) {
 		const statsSelect = selectStats
 			? { select: this.userStatsSelect }

@@ -21,7 +21,7 @@ export class UserController extends BaseController {
 	@HttpCode(200)
 	@Get(':username')
 	async findOne(@Param('username') username: UserUsername) {
-		const user = await this.userService.findSingle({ username });
+		const user = await this.userService.getSingle({ username });
 		return this.ok(user, 'User found');
 	}
 
