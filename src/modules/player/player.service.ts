@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PlayerRepository } from './player.repository';
 import { Pagination } from './player.types';
-import { Player } from '@prisma-generated/client';
 import { EditPlayerDto } from './dto/player.dto';
 
 @Injectable()
