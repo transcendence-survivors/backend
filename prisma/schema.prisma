@@ -52,6 +52,23 @@ model User {
   stats UserStats? @relation
 }
 
+
+model AuthProvider {
+  id       String           @id @default(uuid())
+  provider AuthProviderType
+  
+  providerId String?
+  password   String?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, provider])
+  @@index([provider, providerId])
+}
+
 model UserStats {
   userId String @id
 
@@ -112,20 +129,6 @@ model Follow {
 }
 
 
-model AuthProvider {
-  id         String @id @default(uuid())
-
-  provider   AuthProviderType
-  providerId String?
-  password   String?
-
-  userId     String
-  user       User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@unique([provider, providerId])
-}
 
 model RefreshToken {
   id        Int @id @default(autoincrement())
