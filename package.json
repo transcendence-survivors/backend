@@ -26,7 +26,7 @@
 		"migration:deploy": "prisma migrate deploy",
 		"migration:reset": "prisma migrate reset",
 		"migration:status": "prisma migrate status",
-		"migration:studio": "prisma studio",
+		"migration:studio": "prisma studio --browser none",
 		"clean": "rm -rf dist node_modules ",
 		"fclean": "rm -rf dist node_modules package-lock.json yarn.lock pnpm-lock.yaml"
 	},
