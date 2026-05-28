@@ -10,31 +10,31 @@ export class CustomValidationPipe extends ValidationPipe {
 			exceptionFactory: (errors: ValidationError[]) => {
 				return new BadRequestException({
 					message: 'Validation failed',
-					errors: formatValidationErrors(errors),
+					errors: this.formatValidationErrors(errors),
 				});
 			},
 		});
 	}
-}
 
-const formatValidationErrors = (
-	errors: ValidationError[],
-): Record<string, string[]> => {
-	const result: Record<string, string[]> = {};
+	private formatValidationErrors(
+		errors: ValidationError[],
+	): Record<string, string[]> {
+		const result: Record<string, string[]> = {};
 
-	for (const error of errors) {
-		if (error.constraints) {
-			result[error.property] = Object.values(error.constraints);
-		}
+		for (const error of errors) {
+			if (error.constraints) {
+				result[error.property] = Object.values(error.constraints);
+			}
 
-		if (error.children?.length) {
-			const childErrors = formatValidationErrors(error.children);
+			if (error.children?.length) {
+				const childErrors = this.formatValidationErrors(error.children);
 
-			for (const key in childErrors) {
-				result[key] = childErrors[key];
+				for (const key in childErrors) {
+					result[key] = childErrors[key];
+				}
 			}
 		}
-	}
 
-	return result;
-};
+		return result;
+	}
+}

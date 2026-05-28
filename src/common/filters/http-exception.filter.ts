@@ -5,68 +5,80 @@ import {
 	HttpException,
 	HttpStatus,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { Response } from 'express';
 
-type ExceptionResponse =
-	| string
-	| {
-			message?: string | string[];
-			error?: string;
-			errors?: Record<string, unknown>;
-	  };
+type ExceptionString = string;
+type ExceptionObject = {
+	message?: string;
+	errors?: Record<string, unknown>;
+};
+
+type ExceptionResponse = ExceptionString | ExceptionObject;
 
 type ErrorResponseBody = {
 	status: 'error';
-	message: string | string[];
+	message: string;
 	code: number;
 	errors: Record<string, unknown> | null;
-	timestamp: string;
-	path: string;
-};
-
-const isExceptionResponseObject = (
-	value: unknown,
-): value is Exclude<ExceptionResponse, string> => {
-	return typeof value === 'object' && value !== null;
 };
 
 @Catch()
 export class ExceptionsFilter implements ExceptionFilter {
-	catch(exception: unknown, host: ArgumentsHost): void {
+	catch(
+		exception: unknown,
+		host: ArgumentsHost,
+	): Response<unknown, Record<string, unknown>> {
 		const ctx = host.switchToHttp();
 		const response = ctx.getResponse<Response>();
-		const request = ctx.getRequest<Request>();
 
-		let status: number = HttpStatus.INTERNAL_SERVER_ERROR;
-		let message: string | string[] = 'Internal server error';
-		let errors: Record<string, unknown> | null = null;
-
-		if (exception instanceof HttpException) {
-			status = exception.getStatus();
-
-			const res = exception.getResponse() as ExceptionResponse;
-
-			if (typeof res === 'string') {
-				message = res;
-			} else if (isExceptionResponseObject(res)) {
-				message = res.message ?? exception.message;
-				errors = res.errors ?? null;
-			} else {
-				message = exception.message;
-			}
-		} else {
-			console.error('Unexpected exception:', exception);
+		if (!this.isHttpException(exception)) {
+			console.error('Non-HTTP exception:', exception);
+			return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+				status: 'error',
+				message: 'Internal server error',
+				code: HttpStatus.INTERNAL_SERVER_ERROR,
+				errors: null,
+			} satisfies ErrorResponseBody);
 		}
 
-		const body: ErrorResponseBody = {
+		const res = exception.getResponse() as ExceptionResponse;
+		const code = exception.getStatus();
+		return response.status(code).json({
 			status: 'error',
-			message,
-			code: status,
-			errors,
-			timestamp: new Date().toISOString(),
-			path: request.url,
-		};
-
-		response.status(status).json(body);
+			message: this.extractMessage(res),
+			code,
+			errors: this.extractErrors(res),
+		} satisfies ErrorResponseBody);
 	}
+
+	private extractErrors = (
+		response: ExceptionResponse,
+	): Record<string, unknown> | null => {
+		if (this.isExceptionResponseObject(response)) {
+			return response.errors ?? null;
+		}
+		return null;
+	};
+
+	private extractMessage = (response: ExceptionResponse): string => {
+		if (typeof response === 'string') {
+			return response;
+		}
+		if (this.isExceptionResponseObject(response)) {
+			return response.message ?? 'An error occurred';
+		}
+		return 'An error occurred';
+	};
+
+	private isHttpException = (
+		exception: unknown,
+	): exception is HttpException => {
+		return exception instanceof HttpException;
+	};
+
+	private isExceptionResponseObject = (
+		value: unknown,
+	): value is Exclude<ExceptionResponse, string> => {
+		return typeof value === 'object' && value !== null;
+	};
 }
