@@ -13,6 +13,6 @@ export class AuthController {
 
 	@Post('register')
 	signUp(@Body() signUpDto: CreateUserDto) {
-		return this.authService.signUp(signUpDto);
+		return this.authService.signUpLocale(signUpDto);
 	}
 }
