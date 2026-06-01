@@ -47,6 +47,8 @@ export class AuthController extends BaseController {
 		res.cookie(this.ACCESS_TOKEN, accessToken, {
 			httpOnly: true,
 			maxAge: this.env.accessToken.s,
+			secure: this.env.nodeEnv === 'production',
+			sameSite: 'strict',
 		});
 	}
 
@@ -54,6 +56,8 @@ export class AuthController extends BaseController {
 		res.cookie(this.REFRESH_TOKEN, refreshToken, {
 			httpOnly: true,
 			maxAge: this.env.refreshToken.s,
+			secure: this.env.nodeEnv === 'production',
+			sameSite: 'strict',
 		});
 	}
 }

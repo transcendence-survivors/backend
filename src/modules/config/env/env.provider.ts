@@ -11,6 +11,7 @@ export interface Env {
 	accessToken: Token;
 	refreshToken: Token;
 	databaseUrl: string;
+	nodeEnv: 'development' | 'production';
 }
 
 export const ENV = Symbol('ENV');
@@ -29,5 +30,6 @@ export const EnvProvider: Provider<Env> = {
 			s: env.JWT_REFRESH_TOKEN_EXPIRATION,
 		},
 		databaseUrl: env.DATABASE_URL,
+		nodeEnv: env.NODE_ENV,
 	},
 };
