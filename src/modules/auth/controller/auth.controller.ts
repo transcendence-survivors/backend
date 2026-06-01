@@ -4,7 +4,8 @@ import CreateUserDto from '@/modules/user/dto/create.dto';
 import { type Response } from 'express';
 import { BaseController } from '@/common/base.controller';
 import { SignInDto } from '@/modules/user/dto/signin.dto';
-import { ConfigService } from '@nestjs/config';
+import { InjectEnv } from '@/modules/config/env/inject';
+import { type Env } from '@/modules/config/env/env';
 
 @Controller('auth')
 export class AuthController extends BaseController {
@@ -12,7 +13,7 @@ export class AuthController extends BaseController {
 	private readonly ACCESS_TOKEN = 'accessToken';
 	constructor(
 		private authService: AuthService,
-		private configService: ConfigService,
+		@InjectEnv() private env: Env,
 	) {
 		super();
 	}
@@ -51,7 +52,7 @@ export class AuthController extends BaseController {
 	private setAccessTokenCookie(res: Response, accessToken: string) {
 		res.cookie(this.ACCESS_TOKEN, accessToken, {
 			httpOnly: true,
-			maxAge: this.configService.get('JWT_ACCESS_TOKEN_EXPIRATION'),
+			maxAge: this.env.JWT_ACCESS_TOKEN_EXPIRATION,
 		});
 	}
 

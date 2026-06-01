@@ -6,4 +6,4 @@ import { EnvProvider } from './env/env.provider';
 	providers: [EnvProvider],
 	exports: [EnvProvider],
 })
-export class EnvModule {}
+export class ConfigModule {}

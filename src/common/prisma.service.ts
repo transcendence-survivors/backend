@@ -1,5 +1,6 @@
+import { type Env } from '@/modules/config/env/env';
+import { InjectEnv } from '@/modules/config/env/inject';
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 import { PrismaClient } from '@prisma-generated/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
@@ -8,8 +9,8 @@ export class PrismaService
 	extends PrismaClient
 	implements OnModuleInit, OnModuleDestroy
 {
-	constructor(private config: ConfigService) {
-		const url = config.getOrThrow<string>('DATABASE_URL');
+	constructor(@InjectEnv() env: Env) {
+		const url = env.DATABASE_URL;
 		const adapter = new PrismaPg({ connectionString: url });
 		super({ adapter });
 	}
