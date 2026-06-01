@@ -12,6 +12,8 @@ import SignInDto from '@/modules/user/dto/signin.dto';
 import { InjectEnv } from '@/modules/config/env/inject';
 import { type Env } from '@/modules/config/env/env.provider';
 import { JwtUserRefreshPayload } from '../strategies/refresh-token.strategy';
+import { UserRepository } from '@/modules/user/repository/user.repository';
+import UserNotFoundException from '@/modules/user/exception/user.not-find.exception';
 
 interface AccessJwtPayload {
 	userId: string;
@@ -30,6 +32,7 @@ export class AuthService {
 		private providerRepo: ProviderRepository,
 		private userService: UserService,
 		@InjectEnv() private env: Env,
+		private userRepo: UserRepository,
 	) {}
 
 	async signInLocale({ username, password }: SignInDto) {
@@ -63,14 +66,20 @@ export class AuthService {
 			hashToken,
 			user.userId,
 		);
+		console.log('dfae');
 		if (!token)
 			throw new HttpException('No token', HttpStatus.UNAUTHORIZED);
 		if (token.isRevoked === true)
-			throw new HttpException('No token', HttpStatus.UNAUTHORIZED);
-		if (Date.now() > token.expiredAt.getDate()) {
+			throw new HttpException('Token revoked', HttpStatus.UNAUTHORIZED);
+		if (new Date(Date.now()) > token.expiredAt) {
 			await this.tokenRepo.revokeToken(hashToken);
-			throw new HttpException('No token', HttpStatus.UNAUTHORIZED);
+			throw new HttpException('Token expired', HttpStatus.UNAUTHORIZED);
 		}
+		const userData = await this.userRepo.getTokenData(user.userId);
+		if (!userData) {
+			throw new UserNotFoundException();
+		}
+		return this.generateAccessToken({ userId: userData.id, ...userData });
 	}
 
 	private async buildTokens({

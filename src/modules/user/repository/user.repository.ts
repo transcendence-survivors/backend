@@ -65,6 +65,20 @@ export class UserRepository {
 		});
 	}
 
+	async getTokenData(id: string) {
+		return this.prisma.user.findUnique({
+			where: {
+				id,
+			},
+			select: {
+				id: true,
+				role: true,
+				email: true,
+				username: true,
+			},
+		});
+	}
+
 	async create(data: Omit<CreateUserDto, 'password'>) {
 		return this.prisma.user.create({
 			data: {

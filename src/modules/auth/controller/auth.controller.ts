@@ -53,13 +53,14 @@ export class AuthController extends BaseController {
 		return this.ok(user, 'User created successfully');
 	}
 
+	@HttpCode(204)
 	@UseGuards(RefreshTokenGuard)
 	@Post('refresh')
-	refresh(
+	async refresh(
 		@CurrentUserRefresh() user: JwtUserRefreshPayload,
-		@Res() res: Response,
+		@Res({ passthrough: true }) res: Response,
 	) {
-		this.authService.refresh(user);
+		const accessToken = await this.authService.refresh(user);
 		this.setAccessTokenCookie(res, accessToken);
 	}
 
