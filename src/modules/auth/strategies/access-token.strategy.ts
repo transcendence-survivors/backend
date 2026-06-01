@@ -2,9 +2,9 @@ import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { InjectEnv } from '@/modules/config/env/inject';
-import { type Env } from '@/modules/config/env/env';
+import { type Env } from '@/modules/config/env/env.provider';
 
-interface AccessTokenPayload {
+export interface JwtAccessPayload {
 	sub: string;
 	email: string;
 	role: string;
@@ -15,11 +15,11 @@ export class AccessTokenStrategy extends PassportStrategy(Strategy, 'jwt') {
 	constructor(@InjectEnv() readonly env: Env) {
 		super({
 			jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-			secretOrKey: env.JWT_ACCESS_TOKEN_SECRET,
+			secretOrKey: env.accessToken.secret,
 		});
 	}
 
-	validate({ sub, email, role }: AccessTokenPayload) {
+	validate({ sub, email, role }: JwtAccessPayload) {
 		return {
 			userId: sub,
 			email,

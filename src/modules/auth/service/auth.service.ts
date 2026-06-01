@@ -1,4 +1,4 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { TokenRepository } from '../repository/token.repository';
 import { JwtService } from '@nestjs/jwt';
 import { hash, compare } from 'bcrypt';
@@ -11,6 +11,7 @@ import { UserPassword, UserUsername } from '@/modules/user/user.fields';
 import SignInDto from '@/modules/user/dto/signin.dto';
 import { InjectEnv } from '@/modules/config/env/inject';
 import { type Env } from '@/modules/config/env/env.provider';
+import { JwtUserRefreshPayload } from '../strategies/refresh-token.strategy';
 
 interface AccessJwtPayload {
 	userId: string;
@@ -56,19 +57,38 @@ export class AuthService {
 		return { accessToken, refreshToken, user };
 	}
 
+	async refresh(user: JwtUserRefreshPayload) {
+		const hashToken = this.hashToken(user.refreshToken);
+		const token = await this.tokenRepo.hasRefreshToken(
+			hashToken,
+			user.userId,
+		);
+		if (!token)
+			throw new HttpException('No token', HttpStatus.UNAUTHORIZED);
+		if (token.isRevoked === true)
+			throw new HttpException('No token', HttpStatus.UNAUTHORIZED);
+		if (Date.now() > token.expiredAt.getDate()) {
+			await this.tokenRepo.revokeToken(hashToken);
+			throw new HttpException('No token', HttpStatus.UNAUTHORIZED);
+		}
+	}
+
 	private async buildTokens({
 		userId,
 		role,
 		email,
 		username,
 	}: AccessJwtPayload) {
-		const refreshToken = await this.createRefreshToken(userId);
-		const accessToken = await this.generateAccessToken({
-			userId,
-			role,
-			email,
-			username,
-		});
+		const [refreshToken, accessToken] = await Promise.all([
+			this.createRefreshToken(userId),
+			this.generateAccessToken({
+				userId,
+				role,
+				email,
+				username,
+			}),
+		]);
+
 		return { refreshToken, accessToken };
 	}
 

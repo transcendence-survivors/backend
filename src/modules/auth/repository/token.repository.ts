@@ -29,4 +29,28 @@ export class TokenRepository {
 			},
 		});
 	}
+
+	hasRefreshToken(hashToken: string, userId: string) {
+		return this.prisma.refreshToken.findUnique({
+			where: {
+				hashToken,
+				userId,
+			},
+			select: {
+				expiredAt: true,
+				isRevoked: true,
+			},
+		});
+	}
+
+	revokeToken(hashToken: string) {
+		return this.prisma.refreshToken.update({
+			where: {
+				hashToken,
+			},
+			data: {
+				isRevoked: true,
+			},
+		});
+	}
 }

@@ -1,4 +1,11 @@
-import { Body, Controller, HttpCode, Post, Res } from '@nestjs/common';
+import {
+	Body,
+	Controller,
+	HttpCode,
+	Post,
+	Res,
+	UseGuards,
+} from '@nestjs/common';
 import { AuthService } from '../service/auth.service';
 import CreateUserDto from '@/modules/user/dto/create.dto';
 import { type Response } from 'express';
@@ -6,6 +13,9 @@ import { BaseController } from '@/common/base.controller';
 import { SignInDto } from '@/modules/user/dto/signin.dto';
 import { InjectEnv } from '@/modules/config/env/inject';
 import { type Env } from '@/modules/config/env/env.provider';
+import { RefreshTokenGuard } from '../guards/refresh-token.guard';
+import { CurrentUserRefresh } from '@/common/decorators/current-user.decorator';
+import { type JwtUserRefreshPayload } from '../strategies/refresh-token.strategy';
 
 @Controller('auth')
 export class AuthController extends BaseController {
@@ -25,8 +35,8 @@ export class AuthController extends BaseController {
 	) {
 		const { refreshToken, accessToken, user } =
 			await this.authService.signInLocale(signInDto);
-		res.cookie(this.REFRESH_TOKEN, refreshToken);
-		res.cookie(this.ACCESS_TOKEN, accessToken);
+		this.setAccessTokenCookie(res, accessToken);
+		this.setRefreshTokenCookie(res, refreshToken);
 		return this.ok(user, 'User logged in successfully');
 	}
 
@@ -41,6 +51,16 @@ export class AuthController extends BaseController {
 		this.setAccessTokenCookie(res, accessToken);
 		this.setRefreshTokenCookie(res, refreshToken);
 		return this.ok(user, 'User created successfully');
+	}
+
+	@UseGuards(RefreshTokenGuard)
+	@Post('refresh')
+	refresh(
+		@CurrentUserRefresh() user: JwtUserRefreshPayload,
+		@Res() res: Response,
+	) {
+		this.authService.refresh(user);
+		this.setAccessTokenCookie(res, accessToken);
 	}
 
 	private setAccessTokenCookie(res: Response, accessToken: string) {
