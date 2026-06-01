@@ -5,7 +5,7 @@ import { type Response } from 'express';
 import { BaseController } from '@/common/base.controller';
 import { SignInDto } from '@/modules/user/dto/signin.dto';
 import { InjectEnv } from '@/modules/config/env/inject';
-import { type Env } from '@/modules/config/env/env';
+import { type Env } from '@/modules/config/env/env.provider';
 
 @Controller('auth')
 export class AuthController extends BaseController {
@@ -38,12 +38,6 @@ export class AuthController extends BaseController {
 	) {
 		const { refreshToken, accessToken, user } =
 			await this.authService.signUpLocale(signUpDto);
-		// res.cookie(this.REFRESH_TOKEN, refreshToken, {
-		// 	httpOnly: true,
-		// });
-		// res.cookie(this.ACCESS_TOKEN, accessToken, {
-		// 	httpOnly: true,
-		// });
 		this.setAccessTokenCookie(res, accessToken);
 		this.setRefreshTokenCookie(res, refreshToken);
 		return this.ok(user, 'User created successfully');
@@ -52,13 +46,14 @@ export class AuthController extends BaseController {
 	private setAccessTokenCookie(res: Response, accessToken: string) {
 		res.cookie(this.ACCESS_TOKEN, accessToken, {
 			httpOnly: true,
-			maxAge: this.env.JWT_ACCESS_TOKEN_EXPIRATION,
+			maxAge: this.env.accessToken.s,
 		});
 	}
 
 	private setRefreshTokenCookie(res: Response, refreshToken: string) {
 		res.cookie(this.REFRESH_TOKEN, refreshToken, {
 			httpOnly: true,
+			maxAge: this.env.refreshToken.s,
 		});
 	}
 }

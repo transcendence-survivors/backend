@@ -10,7 +10,7 @@ import { createHash } from 'node:crypto';
 import { UserPassword, UserUsername } from '@/modules/user/user.fields';
 import SignInDto from '@/modules/user/dto/signin.dto';
 import { InjectEnv } from '@/modules/config/env/inject';
-import { type Env } from '@/modules/config/env/env';
+import { type Env } from '@/modules/config/env/env.provider';
 
 interface AccessJwtPayload {
 	userId: string;
@@ -92,11 +92,11 @@ export class AuthService {
 		return provider;
 	}
 
-	async generateRefreshToken(userId: string, expireInMs: number) {
+	async generateRefreshToken(userId: string) {
 		const payload = { sub: userId };
 		return await this.jwtService.signAsync(payload, {
-			expiresIn: `${expireInMs}ms`,
-			secret: this.env.JWT_REFRESH_TOKEN_SECRET,
+			expiresIn: `${this.env.refreshToken.ms}ms`,
+			secret: this.env.refreshToken.secret,
 		});
 	}
 
@@ -108,20 +108,16 @@ export class AuthService {
 	}: AccessJwtPayload) {
 		const payload = { sub: userId, role, email, username };
 		return await this.jwtService.signAsync(payload, {
-			expiresIn: `${this.env.JWT_ACCESS_TOKEN_EXPIRATION}ms`,
-			secret: this.env.JWT_ACCESS_TOKEN_SECRET,
+			expiresIn: `${this.env.accessToken.ms}ms`,
+			secret: this.env.accessToken.secret,
 		});
 	}
 
 	async createRefreshToken(userId: string, familyId?: string) {
-		const expireInMs = this.env.JWT_REFRESH_TOKEN_EXPIRATION;
-		const refreshToken = await this.generateRefreshToken(
-			userId,
-			expireInMs,
-		);
+		const refreshToken = await this.generateRefreshToken(userId);
 		await this.tokenRepo.save({
 			hashedToken: this.hashToken(refreshToken),
-			expireInMs: expireInMs,
+			expireInMs: this.env.refreshToken.ms,
 			userId,
 			familyId,
 		});

@@ -1,9 +1,33 @@
-import { Provider } from '@nestjs/common';
-import { env, Env } from './env';
+import { type Provider } from '@nestjs/common';
+import env from './env';
+
+interface Token {
+	secret: string;
+	ms: number;
+	s: number;
+}
+
+export interface Env {
+	accessToken: Token;
+	refreshToken: Token;
+	databaseUrl: string;
+}
 
 export const ENV = Symbol('ENV');
 
 export const EnvProvider: Provider<Env> = {
 	provide: ENV,
-	useValue: env,
+	useValue: {
+		accessToken: {
+			secret: env.JWT_ACCESS_TOKEN_SECRET,
+			ms: env.JWT_ACCESS_TOKEN_EXPIRATION,
+			s: env.JWT_ACCESS_TOKEN_EXPIRATION,
+		},
+		refreshToken: {
+			secret: env.JWT_REFRESH_TOKEN_SECRET,
+			ms: env.JWT_REFRESH_TOKEN_EXPIRATION,
+			s: env.JWT_REFRESH_TOKEN_EXPIRATION,
+		},
+		databaseUrl: env.DATABASE_URL,
+	},
 };
