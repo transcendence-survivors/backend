@@ -17,7 +17,7 @@ interface TokenSave {
 export class TokenRepository {
 	constructor(private prisma: PrismaService) {}
 
-	async save({ hashedToken, expireInMs, userId, familyId, meta }: TokenSave) {
+	save({ hashedToken, expireInMs, userId, familyId, meta }: TokenSave) {
 		const expirationDate = new Date(Date.now() + expireInMs);
 		return this.prisma.refreshToken.create({
 			data: {
@@ -30,7 +30,7 @@ export class TokenRepository {
 		});
 	}
 
-	hasRefreshToken(hashToken: string, userId: string) {
+	get(hashToken: string, userId: string) {
 		return this.prisma.refreshToken.findUnique({
 			where: {
 				hashToken,
@@ -43,7 +43,7 @@ export class TokenRepository {
 		});
 	}
 
-	revokeToken(hashToken: string) {
+	revoke(hashToken: string) {
 		return this.prisma.refreshToken.update({
 			where: {
 				hashToken,

@@ -5,10 +5,11 @@ import { PrismaService } from '@/common/prisma.service';
 import { ProviderRepository } from './repository/provider.repository';
 import { UserModule } from '../user/user.module';
 import { TokenModule } from '../token/token.module';
+import { RoleService } from '../token/service/roles.service';
 
 @Module({
 	imports: [UserModule, TokenModule],
 	controllers: [AuthController],
-	providers: [AuthService, PrismaService, ProviderRepository],
+	providers: [AuthService, PrismaService, ProviderRepository, RoleService],
 })
 export class AuthModule {}

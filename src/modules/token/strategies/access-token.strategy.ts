@@ -3,18 +3,19 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { InjectEnv } from '@/modules/config/env/inject';
 import { type Env } from '@/modules/config/env/env.provider';
+import { UserRole } from '@prisma-generated/enums';
 
 export interface JwtAccessPayload {
 	sub: string;
 	email: string;
-	role: string;
+	role: UserRole;
 	username: string;
 }
 
 export interface JwtAccessPayloadParams {
 	userId: string;
 	email: string;
-	role: string;
+	role: UserRole;
 	username: string;
 }
 

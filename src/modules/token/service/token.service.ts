@@ -1,5 +1,5 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { TokenRepository } from '../../auth/repository/token.repository';
+import { TokenRepository } from '../repository/token.repository';
 import { JwtService } from '@nestjs/jwt';
 import { type Env } from '@/modules/config/env/env.provider';
 import { InjectEnv } from '@/modules/config/env/inject';
@@ -52,7 +52,7 @@ export class TokenService {
 	async createRefreshToken(userId: string) {
 		const refreshToken = await this.generateRefreshToken(userId);
 		await this.tokenRepo.save({
-			hashedToken: this.hashToken(refreshToken),
+			hashedToken: this.hash(refreshToken),
 			expireInMs: this.env.refreshToken.ms,
 			userId,
 		});
@@ -60,18 +60,19 @@ export class TokenService {
 	}
 
 	async validateRefresh(user: JwtRefreshPayloadParams) {
-		const hashToken = this.hashToken(user.refreshToken);
-		const token = await this.tokenRepo.hasRefreshToken(
-			hashToken,
-			user.userId,
-		);
+		const hashToken = this.hash(user.refreshToken);
+		const token = await this.tokenRepo.get(hashToken, user.userId);
 		if (!token)
 			throw new HttpException('No token', HttpStatus.UNAUTHORIZED);
 		if (token.isRevoked === true)
 			throw new HttpException('Token revoked', HttpStatus.UNAUTHORIZED);
 		if (new Date(Date.now()) <= token.expiredAt) return;
-		await this.tokenRepo.revokeToken(hashToken);
+		await this.tokenRepo.revoke(hashToken);
 		throw new HttpException('Token expired', HttpStatus.UNAUTHORIZED);
+	}
+
+	logout(user: JwtRefreshPayloadParams) {
+		return this.tokenRepo.revoke(this.hash(user.refreshToken));
 	}
 
 	private async generateRefreshToken(userId: string) {
@@ -82,7 +83,7 @@ export class TokenService {
 		});
 	}
 
-	private hashToken(refreshToken: string) {
+	private hash(refreshToken: string) {
 		return createHash(this.HASH_PROTOCOL)
 			.update(refreshToken)
 			.digest(this.HEX_DIGEST);

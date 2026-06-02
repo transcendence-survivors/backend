@@ -4,7 +4,7 @@ import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { TokenService } from './service/token.service';
-import { TokenRepository } from '../auth/repository/token.repository';
+import { TokenRepository } from './repository/token.repository';
 
 @Module({
 	imports: [JwtModule],
