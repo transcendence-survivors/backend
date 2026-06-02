@@ -8,6 +8,14 @@ export interface JwtAccessPayload {
 	sub: string;
 	email: string;
 	role: string;
+	username: string;
+}
+
+export interface JwtAccessPayloadParams {
+	userId: string;
+	email: string;
+	role: string;
+	username: string;
 }
 
 @Injectable()

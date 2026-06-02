@@ -1,49 +1,36 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { TokenRepository } from '../repository/token.repository';
-import { JwtService } from '@nestjs/jwt';
+import { HttpException, Injectable } from '@nestjs/common';
 import { hash, compare } from 'bcrypt';
 import CreateUserDto from '@/modules/user/dto/create.dto';
 import { UserService } from '@/modules/user/service/user.service';
 import { ProviderRepository } from '../repository/provider.repository';
-import { UserRole } from '@prisma-generated/enums';
-import { createHash } from 'node:crypto';
 import { UserPassword, UserUsername } from '@/modules/user/user.fields';
 import SignInDto from '@/modules/user/dto/signin.dto';
-import { InjectEnv } from '@/modules/config/env/inject';
-import { type Env } from '@/modules/config/env/env.provider';
-import { JwtUserRefreshPayload } from '../strategies/refresh-token.strategy';
+import { JwtRefreshPayloadParams } from '../../token/strategies/refresh-token.strategy';
 import { UserRepository } from '@/modules/user/repository/user.repository';
 import UserNotFoundException from '@/modules/user/exception/user.not-find.exception';
-
-interface AccessJwtPayload {
-	userId: string;
-	role: UserRole;
-	email: string;
-	username: string;
-}
+import { TokenService } from '../../token/service/token.service';
 
 @Injectable()
 export class AuthService {
 	private static readonly SALT = 10;
 
 	constructor(
-		private tokenRepo: TokenRepository,
-		private jwtService: JwtService,
 		private providerRepo: ProviderRepository,
 		private userService: UserService,
-		@InjectEnv() private env: Env,
 		private userRepo: UserRepository,
+		private tokenService: TokenService,
 	) {}
 
 	async signInLocale({ username, password }: SignInDto) {
 		const { user } = await this.validateLocaleProvider(username, password);
 
-		const { accessToken, refreshToken } = await this.buildTokens({
-			userId: user.id,
-			username: user.username,
-			email: user.email,
-			role: user.role,
-		});
+		const { accessToken, refreshToken } =
+			await this.tokenService.buildTokens({
+				userId: user.id,
+				username: user.username,
+				email: user.email,
+				role: user.role,
+			});
 		return { accessToken, refreshToken, user };
 	}
 
@@ -51,54 +38,26 @@ export class AuthService {
 		const user = await this.userService.create(userData);
 		await this.createLocaleProvider(user.id, password);
 
-		const { accessToken, refreshToken } = await this.buildTokens({
-			userId: user.id,
-			username: user.username,
-			email: user.email,
-			role: user.role,
-		});
+		const { accessToken, refreshToken } =
+			await this.tokenService.buildTokens({
+				userId: user.id,
+				username: user.username,
+				email: user.email,
+				role: user.role,
+			});
 		return { accessToken, refreshToken, user };
 	}
 
-	async refresh(user: JwtUserRefreshPayload) {
-		const hashToken = this.hashToken(user.refreshToken);
-		const token = await this.tokenRepo.hasRefreshToken(
-			hashToken,
-			user.userId,
-		);
-		console.log('dfae');
-		if (!token)
-			throw new HttpException('No token', HttpStatus.UNAUTHORIZED);
-		if (token.isRevoked === true)
-			throw new HttpException('Token revoked', HttpStatus.UNAUTHORIZED);
-		if (new Date(Date.now()) > token.expiredAt) {
-			await this.tokenRepo.revokeToken(hashToken);
-			throw new HttpException('Token expired', HttpStatus.UNAUTHORIZED);
-		}
+	async refresh(user: JwtRefreshPayloadParams) {
+		await this.tokenService.validateRefresh(user);
 		const userData = await this.userRepo.getTokenData(user.userId);
 		if (!userData) {
 			throw new UserNotFoundException();
 		}
-		return this.generateAccessToken({ userId: userData.id, ...userData });
-	}
-
-	private async buildTokens({
-		userId,
-		role,
-		email,
-		username,
-	}: AccessJwtPayload) {
-		const [refreshToken, accessToken] = await Promise.all([
-			this.createRefreshToken(userId),
-			this.generateAccessToken({
-				userId,
-				role,
-				email,
-				username,
-			}),
-		]);
-
-		return { refreshToken, accessToken };
+		return this.tokenService.generateAccessToken({
+			userId: userData.id,
+			...userData,
+		});
 	}
 
 	async createLocaleProvider(userId: string, password: string) {
@@ -119,42 +78,6 @@ export class AuthService {
 			throw new HttpException('Invalid credentials', 401);
 		}
 		return provider;
-	}
-
-	async generateRefreshToken(userId: string) {
-		const payload = { sub: userId };
-		return await this.jwtService.signAsync(payload, {
-			expiresIn: `${this.env.refreshToken.ms}ms`,
-			secret: this.env.refreshToken.secret,
-		});
-	}
-
-	async generateAccessToken({
-		userId,
-		role,
-		email,
-		username,
-	}: AccessJwtPayload) {
-		const payload = { sub: userId, role, email, username };
-		return await this.jwtService.signAsync(payload, {
-			expiresIn: `${this.env.accessToken.ms}ms`,
-			secret: this.env.accessToken.secret,
-		});
-	}
-
-	async createRefreshToken(userId: string, familyId?: string) {
-		const refreshToken = await this.generateRefreshToken(userId);
-		await this.tokenRepo.save({
-			hashedToken: this.hashToken(refreshToken),
-			expireInMs: this.env.refreshToken.ms,
-			userId,
-			familyId,
-		});
-		return refreshToken;
-	}
-
-	private hashToken(refreshToken: string) {
-		return createHash('sha256').update(refreshToken).digest('hex');
 	}
 
 	async hashPassword(password: string): Promise<string> {

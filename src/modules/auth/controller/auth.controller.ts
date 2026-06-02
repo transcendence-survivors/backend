@@ -13,9 +13,9 @@ import { BaseController } from '@/common/base.controller';
 import { SignInDto } from '@/modules/user/dto/signin.dto';
 import { InjectEnv } from '@/modules/config/env/inject';
 import { type Env } from '@/modules/config/env/env.provider';
-import { RefreshTokenGuard } from '../guards/refresh-token.guard';
+import { RefreshTokenGuard } from '../../token/guards/refresh-token.guard';
 import { CurrentUserRefresh } from '@/common/decorators/current-user.decorator';
-import { type JwtUserRefreshPayload } from '../strategies/refresh-token.strategy';
+import { type JwtRefreshPayloadParams } from '../../token/strategies/refresh-token.strategy';
 
 @Controller('auth')
 export class AuthController extends BaseController {
@@ -57,7 +57,7 @@ export class AuthController extends BaseController {
 	@UseGuards(RefreshTokenGuard)
 	@Post('refresh')
 	async refresh(
-		@CurrentUserRefresh() user: JwtUserRefreshPayload,
+		@CurrentUserRefresh() user: JwtRefreshPayloadParams,
 		@Res({ passthrough: true }) res: Response,
 	) {
 		const accessToken = await this.authService.refresh(user);

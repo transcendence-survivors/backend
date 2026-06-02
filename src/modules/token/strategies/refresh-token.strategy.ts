@@ -5,7 +5,7 @@ import { Request } from 'express';
 import { type Env } from '@/modules/config/env/env.provider';
 import { InjectEnv } from '@/modules/config/env/inject';
 
-export interface JwtUserRefreshPayload {
+export interface JwtRefreshPayloadParams {
 	userId: string;
 	refreshToken: string;
 }
@@ -28,7 +28,10 @@ export class RefreshTokenStrategy extends PassportStrategy(
 		});
 	}
 
-	validate(req: Request, { sub }: JwtRefreshPayload): JwtUserRefreshPayload {
+	validate(
+		req: Request,
+		{ sub }: JwtRefreshPayload,
+	): JwtRefreshPayloadParams {
 		const rawToken = req.get('Authorization')?.replace('Bearer', '').trim();
 		return {
 			userId: sub,
