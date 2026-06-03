@@ -25,7 +25,7 @@ import { UserRole } from '@prisma-generated/enums';
 import { AccessTokenGuard } from '@/modules/token/guards/access-token.guard';
 
 const Test = (...roles: UserRole[]) =>
-	applyDecorators(Roles(...roles), UseGuards(RolesGuard, AccessTokenGuard));
+	applyDecorators(Roles(...roles), UseGuards(AccessTokenGuard, RolesGuard));
 
 @Controller('auth')
 export class AuthController extends BaseController {
