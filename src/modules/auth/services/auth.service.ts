@@ -1,14 +1,18 @@
-import { HttpException, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { hash, compare } from 'bcrypt';
-import CreateUserDto from '@/modules/user/dto/create.dto';
-import { UserService } from '@/modules/user/service/user.service';
-import { ProviderRepository } from '../repository/provider.repository';
+import CreateUserDto from '@/modules/user/dto/signup.dto';
+import { UserService } from '@/modules/user/services/user.service';
+import { ProviderRepository } from '../repositories/provider.repository';
 import { UserPassword, UserUsername } from '@/modules/user/user.fields';
 import SignInDto from '@/modules/user/dto/signin.dto';
 import { JwtRefreshPayloadParams } from '../../token/strategies/refresh-token.strategy';
-import { UserRepository } from '@/modules/user/repository/user.repository';
-import UserNotFoundException from '@/modules/user/exception/user.not-find.exception';
+import { UserRepository } from '@/modules/user/repositories/user.repository';
+import UserNotFoundException from '@/modules/user/exceptions/user.not-find.exception';
 import { TokenService } from '../../token/service/token.service';
+import {
+	UserEmailConflictException,
+	UserUsernameConflictException,
+} from '@/modules/user/exceptions/user.conflict.exception';
 
 @Injectable()
 export class AuthService {
@@ -60,11 +64,6 @@ export class AuthService {
 		});
 	}
 
-	async createLocaleProvider(userId: string, password: string) {
-		const hash = await this.hashPassword(password);
-		return this.providerRepo.createLocale(hash, userId);
-	}
-
 	async validateLocaleProvider(
 		username: UserUsername,
 		password: UserPassword,
@@ -80,11 +79,46 @@ export class AuthService {
 		return provider;
 	}
 
-	async hashPassword(password: string): Promise<string> {
+	async checkUsernameOrEmail(username?: UserUsername, email?: string) {
+		if (!username && !email) {
+			throw new HttpException(
+				'Username or email is required',
+				HttpStatus.BAD_REQUEST,
+			);
+		}
+
+		if (username) {
+			await this.checkUsername(username);
+		}
+		if (email) {
+			await this.checkEmail(email);
+		}
+	}
+
+	private async checkUsername(username: UserUsername) {
+		const isUsernameTaken = await this.userRepo.isByUsername(username);
+		if (isUsernameTaken) {
+			throw new UserUsernameConflictException();
+		}
+	}
+
+	private async checkEmail(email: string) {
+		const isEmailTaken = await this.userRepo.isByEmail(email);
+		if (isEmailTaken) {
+			throw new UserEmailConflictException();
+		}
+	}
+
+	private async createLocaleProvider(userId: string, password: string) {
+		const hash = await this.hashPassword(password);
+		return this.providerRepo.createLocale(hash, userId);
+	}
+
+	private async hashPassword(password: string) {
 		return await hash(password, AuthService.SALT);
 	}
 
-	async comparePassword(password: string, hash: string): Promise<boolean> {
+	private async comparePassword(password: string, hash: string) {
 		return await compare(password, hash);
 	}
 }

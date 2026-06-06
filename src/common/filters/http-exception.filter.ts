@@ -5,6 +5,7 @@ import {
 	HttpException,
 	HttpStatus,
 } from '@nestjs/common';
+import { AppHttpException } from './app.http.exception';
 import { Response } from 'express';
 
 type ExceptionString = string;
@@ -18,6 +19,7 @@ type ExceptionResponse = ExceptionString | ExceptionObject;
 type ErrorResponseBody = {
 	status: 'error';
 	message: string;
+	messageKey?: string;
 	code: number;
 	errors: Record<string, unknown> | null;
 };
@@ -46,6 +48,7 @@ export class ExceptionsFilter implements ExceptionFilter {
 		return response.status(code).json({
 			status: 'error',
 			message: this.extractMessage(res),
+			messageKey: this.extractMessageKey(exception),
 			code,
 			errors: this.extractErrors(res),
 		} satisfies ErrorResponseBody);
@@ -70,10 +73,23 @@ export class ExceptionsFilter implements ExceptionFilter {
 		return 'An error occurred';
 	};
 
+	private extractMessageKey = (exception: unknown): string | undefined => {
+		if (this.isCustomHttpException(exception)) {
+			return exception.messageKey;
+		}
+		return undefined;
+	};
+
 	private isHttpException = (
 		exception: unknown,
 	): exception is HttpException => {
 		return exception instanceof HttpException;
+	};
+
+	private isCustomHttpException = (
+		exception: unknown,
+	): exception is AppHttpException => {
+		return exception instanceof AppHttpException;
 	};
 
 	private isExceptionResponseObject = (

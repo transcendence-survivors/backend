@@ -12,6 +12,7 @@ export interface Env {
 	refreshToken: Token;
 	databaseUrl: string;
 	nodeEnv: 'development' | 'production';
+	port: number;
 }
 
 export const ENV = Symbol('ENV');
@@ -31,5 +32,6 @@ export const EnvProvider: Provider<Env> = {
 		},
 		databaseUrl: env.DATABASE_URL,
 		nodeEnv: env.NODE_ENV,
+		port: env.NEST_PORT,
 	},
 };

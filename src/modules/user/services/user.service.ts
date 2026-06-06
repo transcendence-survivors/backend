@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { UserEmail, UserUsername } from '../user.fields';
-import CreateUserDto from '../dto/create.dto';
-import { UserRepository } from '../repository/user.repository';
-import FindParamException from '../exception/user.find-param.exception';
+import CreateUserDto from '../dto/signup.dto';
+import { UserRepository } from '../repositories/user.repository';
+import FindParamException from '../exceptions/user.find-param.exception';
 import {
 	UserEmailConflictException,
 	UserUsernameConflictException,
-} from '../exception/user.conflict.exception';
-import UserNotFoundException from '../exception/user.not-find.exception';
+} from '../exceptions/user.conflict.exception';
+import UserNotFoundException from '../exceptions/user.not-find.exception';
 
 export interface UserFindSingleParams {
 	id?: string;

@@ -7,6 +7,7 @@ const envSchema = z.object({
 	JWT_ACCESS_TOKEN_EXPIRATION: z.coerce.number().min(60),
 	DATABASE_URL: z.url(),
 	NODE_ENV: z.enum(['development', 'production']),
+	NEST_PORT: z.coerce.number().min(1).max(65535),
 });
 
 const env = envSchema.parse(process.env);

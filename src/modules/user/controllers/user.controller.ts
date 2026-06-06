@@ -7,9 +7,9 @@ import {
 	Body,
 	HttpCode,
 } from '@nestjs/common';
-import { UserService } from '../service/user.service';
+import { UserService } from '../services/user.service';
 import { BaseController } from '@/common/base.controller';
-import CreateUserDto from '../dto/create.dto';
+import CreateUserDto from '../dto/signup.dto';
 import { type UserUsername } from '../user.fields';
 
 @Controller('users')

@@ -33,7 +33,6 @@ export const IsPassword = () =>
 export type UserEmail = Email;
 export const IsEmail = () =>
 	applyDecorators(
-		IsNotEmpty({ message: ERR.EMPTY }),
 		IsEmailValidator({}, { message: ERR.IS_EMAIL }),
 		MaxLength(255, { message: ERR.MAX_LENGTH }),
 		MinLength(5, { message: ERR.MIN_LENGTH }),
@@ -42,7 +41,6 @@ export const IsEmail = () =>
 export type UserUsername = string;
 export const IsUsername = () =>
 	applyDecorators(
-		IsNotEmpty({ message: ERR.EMPTY }),
 		IsString({ message: ERR.IS_STRING }),
 		MinLength(3, { message: ERR.MIN_LENGTH }),
 		MaxLength(20, { message: ERR.MAX_LENGTH }),
