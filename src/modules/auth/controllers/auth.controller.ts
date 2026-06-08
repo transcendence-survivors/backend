@@ -5,10 +5,10 @@ import {
 	Get,
 	HttpCode,
 	Post,
-	Query,
 	Res,
 	UseGuards,
 } from '@nestjs/common';
+import { type Request } from 'express';
 import { AuthService } from '../services/auth.service';
 import CreateUserDto from '@/modules/user/dto/signup.dto';
 import { type Response } from 'express';
@@ -24,7 +24,6 @@ import { RolesGuard } from '@/modules/token/guards/roles.guard';
 import { Roles } from '@/common/decorators/role.decorator';
 import { UserRole } from '@prisma-generated/enums';
 import { AccessTokenGuard } from '@/modules/token/guards/access-token.guard';
-import CheckUserDto from '@/modules/user/dto/check.dto';
 
 const Test = (...roles: UserRole[]) =>
 	applyDecorators(Roles(...roles), UseGuards(AccessTokenGuard, RolesGuard));
@@ -95,22 +94,13 @@ export class AuthController extends BaseController {
 		return this.ok('BENOIT');
 	}
 
-	@HttpCode(204)
-	@Get('check')
-	check(@Query() query: CheckUserDto) {
-		console.log(query);
-		return this.authService.checkUsernameOrEmail(
-			query.username,
-			query.email,
-		);
-	}
-
 	private setAccessTokenCookie(res: Response, accessToken: string) {
 		res.cookie(this.ACCESS_TOKEN, accessToken, {
 			httpOnly: true,
 			maxAge: this.env.accessToken.s,
-			secure: this.env.nodeEnv === 'production',
-			sameSite: 'strict',
+			secure: this.env.nodeEnv !== 'development',
+			sameSite: this.env.nodeEnv === 'development' ? 'lax' : 'strict',
+			path: '/',
 		});
 	}
 
@@ -118,8 +108,9 @@ export class AuthController extends BaseController {
 		res.cookie(this.REFRESH_TOKEN, refreshToken, {
 			httpOnly: true,
 			maxAge: this.env.refreshToken.s,
-			secure: this.env.nodeEnv === 'production',
-			sameSite: 'strict',
+			secure: this.env.nodeEnv !== 'development',
+			sameSite: this.env.nodeEnv === 'development' ? 'lax' : 'strict',
+			path: '/',
 		});
 	}
 }

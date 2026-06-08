@@ -22,7 +22,9 @@ export class RefreshTokenStrategy extends PassportStrategy(
 ) {
 	constructor(@InjectEnv() readonly env: Env) {
 		super({
-			jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+			jwtFromRequest: ExtractJwt.fromExtractors([
+				(req: Request) => req?.cookies?.refreshToken as string,
+			]),
 			secretOrKey: env.refreshToken.secret,
 			passReqToCallback: true,
 		});
@@ -32,10 +34,9 @@ export class RefreshTokenStrategy extends PassportStrategy(
 		req: Request,
 		{ sub }: JwtRefreshPayload,
 	): JwtRefreshPayloadParams {
-		const rawToken = req.get('Authorization')?.replace('Bearer', '').trim();
 		return {
 			userId: sub,
-			refreshToken: rawToken as string,
+			refreshToken: req.cookies?.refreshToken as string,
 		};
 	}
 }

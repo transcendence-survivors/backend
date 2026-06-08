@@ -37,4 +37,15 @@ export class UserController extends BaseController {
 	async delete(@Param('id') id: string) {
 		await this.userService.delete(id);
 	}
+
+	@Get('check-username/:username')
+	async checkUsername(@Param('username') username: string) {
+		console.log('Checking username:', username);
+		return this.userService.checkUsernameAvailability(username);
+	}
+
+	@Get('check-email/:email')
+	async checkEmail(@Param('email') email: string) {
+		return this.userService.checkEmailAvailability(email);
+	}
 }

@@ -4,6 +4,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { InjectEnv } from '@/modules/config/env/inject';
 import { type Env } from '@/modules/config/env/env.provider';
 import { UserRole } from '@prisma-generated/enums';
+import { type Request } from 'express';
 
 export interface JwtAccessPayload {
 	sub: string;
@@ -23,7 +24,9 @@ export interface JwtAccessPayloadParams {
 export class AccessTokenStrategy extends PassportStrategy(Strategy, 'jwt') {
 	constructor(@InjectEnv() readonly env: Env) {
 		super({
-			jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+			jwtFromRequest: ExtractJwt.fromExtractors([
+				(req: Request) => req?.cookies?.accessToken as string,
+			]),
 			secretOrKey: env.accessToken.secret,
 		});
 	}

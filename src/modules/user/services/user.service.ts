@@ -8,6 +8,7 @@ import {
 	UserUsernameConflictException,
 } from '../exceptions/user.conflict.exception';
 import UserNotFoundException from '../exceptions/user.not-find.exception';
+import { Email } from '@/libs/types';
 
 export interface UserFindSingleParams {
 	id?: string;
@@ -55,5 +56,19 @@ export class UserService {
 			return this.repository.findByUsername(username);
 		}
 		return null;
+	}
+
+	async checkUsernameAvailability(username: string) {
+		const exist = await this.repository.isByUsername(username);
+		if (exist) {
+			throw new UserUsernameConflictException();
+		}
+	}
+
+	async checkEmailAvailability(email: Email) {
+		const exist = await this.repository.isByEmail(email);
+		if (exist) {
+			throw new UserEmailConflictException();
+		}
 	}
 }

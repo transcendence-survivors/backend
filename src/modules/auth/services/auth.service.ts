@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, Injectable } from '@nestjs/common';
 import { hash, compare } from 'bcrypt';
 import CreateUserDto from '@/modules/user/dto/signup.dto';
 import { UserService } from '@/modules/user/services/user.service';
@@ -77,22 +77,6 @@ export class AuthService {
 			throw new HttpException('Invalid credentials', 401);
 		}
 		return provider;
-	}
-
-	async checkUsernameOrEmail(username?: UserUsername, email?: string) {
-		if (!username && !email) {
-			throw new HttpException(
-				'Username or email is required',
-				HttpStatus.BAD_REQUEST,
-			);
-		}
-
-		if (username) {
-			await this.checkUsername(username);
-		}
-		if (email) {
-			await this.checkEmail(email);
-		}
 	}
 
 	private async checkUsername(username: UserUsername) {
