@@ -3,7 +3,7 @@ import { hash, compare } from 'bcrypt';
 import CreateUserDto from '@/modules/user/dto/signup.dto';
 import { UserService } from '@/modules/user/services/user.service';
 import { ProviderRepository } from '../repositories/provider.repository';
-import { UserPassword, UserUsername } from '@/modules/user/user.fields';
+import { UserPassword, UserUsername } from '@/modules/user/user.decorators';
 import SignInDto from '@/modules/user/dto/signin.dto';
 import { JwtRefreshPayloadParams } from '../../token/strategies/refresh-token.strategy';
 import { UserRepository } from '@/modules/user/repositories/user.repository';
@@ -25,8 +25,11 @@ export class AuthService {
 		private tokenService: TokenService,
 	) {}
 
-	async signInLocale({ username, password }: SignInDto) {
-		const { user } = await this.validateLocaleProvider(username, password);
+	async signInLocale({ usernameOrEmail, password }: SignInDto) {
+		const { user } = await this.validateLocaleProvider(
+			usernameOrEmail,
+			password,
+		);
 
 		const { accessToken, refreshToken } =
 			await this.tokenService.buildTokens({
@@ -65,10 +68,13 @@ export class AuthService {
 	}
 
 	async validateLocaleProvider(
-		username: UserUsername,
+		usernameOrEmail: string,
 		password: UserPassword,
 	) {
-		const provider = await this.providerRepo.findLocaleByUsername(username);
+		const provider =
+			await this.providerRepo.findLocaleByUsernameOrEmail(
+				usernameOrEmail,
+			);
 		if (!provider || !provider.password) {
 			throw new HttpException('Invalid credentials', 401);
 		}

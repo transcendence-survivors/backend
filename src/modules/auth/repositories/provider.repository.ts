@@ -1,5 +1,4 @@
 import { PrismaService } from '@/common/prisma.service';
-import { UserPassword, UserUsername } from '@/modules/user/user.fields';
 import { Injectable } from '@nestjs/common';
 
 @Injectable()
@@ -11,7 +10,7 @@ export class ProviderRepository {
 		userId: true,
 	} satisfies Record<string, boolean>;
 
-	createLocale(hash: UserPassword, userId: string) {
+	createLocale(hash: string, userId: string) {
 		return this.prisma.authProvider.create({
 			data: {
 				provider: 'LOCAL',
@@ -36,13 +35,14 @@ export class ProviderRepository {
 		});
 	}
 
-	findLocaleByUsername(username: UserUsername) {
+	findLocaleByUsernameOrEmail(usernameOrEmail: string) {
 		return this.prisma.authProvider.findFirst({
 			where: {
 				provider: 'LOCAL',
-				user: {
-					username,
-				},
+				OR: [
+					{ user: { email: usernameOrEmail } },
+					{ user: { username: usernameOrEmail } },
+				],
 			},
 			select: {
 				...this.selectLocale,

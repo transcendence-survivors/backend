@@ -1,5 +1,5 @@
 import { IsOptional } from 'class-validator';
-import { IsDisplayName, IsLastName } from '../user.fields';
+import { IsDisplayName, IsLastName } from '../user.decorators';
 
 class UpdateUserDto {
 	@IsLastName()

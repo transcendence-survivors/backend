@@ -1,16 +1,15 @@
-import {
-	IsPassword,
-	IsUsername,
-	type UserPassword,
-	type UserUsername,
-} from '../user.fields';
+import { IsString, MaxLength, MinLength } from 'class-validator';
 
 export class SignInDto {
-	@IsUsername()
-	username!: UserUsername;
+	@IsString()
+	@MinLength(1)
+	@MaxLength(255)
+	usernameOrEmail!: string;
 
-	@IsPassword()
-	password!: UserPassword;
+	@IsString()
+	@MinLength(1)
+	@MaxLength(255)
+	password!: string;
 }
 
 export default SignInDto;

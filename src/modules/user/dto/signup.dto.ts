@@ -1,30 +1,37 @@
 import {
+	IsBio,
+	IsBirthDate,
 	IsDisplayName,
 	IsEmail,
 	IsFirstName,
+	IsGender,
 	IsLastName,
 	IsPassword,
 	IsUsername,
-} from '../user.fields';
+} from '../user.decorators';
 
 class CreateUserDto {
 	@IsEmail()
-	email!: string;
-
+	public readonly email!: string;
 	@IsUsername()
-	username!: string;
+	public readonly username!: string;
+
+	@IsGender()
+	public readonly gender!: string;
+	@IsFirstName()
+	public readonly firstName!: string;
+	@IsLastName()
+	public readonly lastName!: string;
+	@IsBirthDate()
+	public readonly dateOfBirth!: Date;
 
 	@IsDisplayName()
-	displayName!: string;
-
-	@IsFirstName()
-	firstName!: string;
-
-	@IsLastName()
-	lastName!: string;
+	public readonly displayName!: string;
+	@IsBio()
+	public readonly bio!: string;
 
 	@IsPassword()
-	password!: string;
+	public readonly password!: string;
 }
 
 export default CreateUserDto;

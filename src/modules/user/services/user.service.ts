@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { UserEmail, UserUsername } from '../user.fields';
+import { UserEmail, UserUsername } from '../user.decorators';
 import CreateUserDto from '../dto/signup.dto';
 import { UserRepository } from '../repositories/user.repository';
 import FindParamException from '../exceptions/user.find-param.exception';

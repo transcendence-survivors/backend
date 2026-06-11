@@ -10,7 +10,7 @@ import {
 import { UserService } from '../services/user.service';
 import { BaseController } from '@/common/base.controller';
 import CreateUserDto from '../dto/signup.dto';
-import { type UserUsername } from '../user.fields';
+import { type UserUsername } from '../user.decorators';
 
 @Controller('users')
 export class UserController extends BaseController {
