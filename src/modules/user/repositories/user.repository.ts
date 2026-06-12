@@ -82,7 +82,14 @@ export class UserRepository {
 	async create(data: Omit<CreateUserDto, 'password'>) {
 		return this.prisma.user.create({
 			data: {
-				...data,
+				birthDate: data.dateOfBirth,
+				email: data.email,
+				firstName: data.firstName,
+				displayName: data.displayName,
+				bio: data.bio,
+				lastName: data.lastName,
+				username: data.username,
+				gender: data.gender,
 				stats: {
 					create: {},
 				},

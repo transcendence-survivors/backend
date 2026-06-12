@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import { UserEmail, UserUsername } from '../user.decorators';
 import CreateUserDto from '../dto/signup.dto';
 import { UserRepository } from '../repositories/user.repository';
 import FindParamException from '../exceptions/user.find-param.exception';
@@ -12,8 +11,8 @@ import { Email } from '@/libs/types';
 
 export interface UserFindSingleParams {
 	id?: string;
-	email?: UserEmail;
-	username?: UserUsername;
+	email?: string;
+	username?: string;
 }
 
 @Injectable()

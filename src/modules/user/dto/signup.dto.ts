@@ -1,3 +1,4 @@
+import { UserGender } from '@prisma-generated/client';
 import {
 	IsBio,
 	IsBirthDate,
@@ -17,7 +18,7 @@ class CreateUserDto {
 	public readonly username!: string;
 
 	@IsGender()
-	public readonly gender!: string;
+	public readonly gender!: UserGender;
 	@IsFirstName()
 	public readonly firstName!: string;
 	@IsLastName()

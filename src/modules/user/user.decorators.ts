@@ -1,5 +1,6 @@
 import { IsAtLeast13Constraint } from '@/common/validators/isAtLeast13';
 import { applyDecorators } from '@nestjs/common';
+import { UserGender } from '@prisma-generated/enums';
 import { Type } from 'class-transformer';
 
 import {
@@ -43,10 +44,7 @@ export const IsBirthDate = () => {
 	);
 };
 export const IsGender = () => {
-	return applyDecorators(
-		IsString(),
-		IsEnum(['male', 'female', 'other', 'prefer_not_to_say']),
-	);
+	return applyDecorators(IsEnum(UserGender));
 };
 
 export const IsDisplayName = () => {

@@ -3,7 +3,6 @@ import { hash, compare } from 'bcrypt';
 import CreateUserDto from '@/modules/user/dto/signup.dto';
 import { UserService } from '@/modules/user/services/user.service';
 import { ProviderRepository } from '../repositories/provider.repository';
-import { UserPassword, UserUsername } from '@/modules/user/user.decorators';
 import SignInDto from '@/modules/user/dto/signin.dto';
 import { JwtRefreshPayloadParams } from '../../token/strategies/refresh-token.strategy';
 import { UserRepository } from '@/modules/user/repositories/user.repository';
@@ -67,10 +66,7 @@ export class AuthService {
 		});
 	}
 
-	async validateLocaleProvider(
-		usernameOrEmail: string,
-		password: UserPassword,
-	) {
+	async validateLocaleProvider(usernameOrEmail: string, password: string) {
 		const provider =
 			await this.providerRepo.findLocaleByUsernameOrEmail(
 				usernameOrEmail,
@@ -85,7 +81,7 @@ export class AuthService {
 		return provider;
 	}
 
-	private async checkUsername(username: UserUsername) {
+	private async checkUsername(username: string) {
 		const isUsernameTaken = await this.userRepo.isByUsername(username);
 		if (isUsernameTaken) {
 			throw new UserUsernameConflictException();

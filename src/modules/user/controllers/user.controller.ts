@@ -10,7 +10,6 @@ import {
 import { UserService } from '../services/user.service';
 import { BaseController } from '@/common/base.controller';
 import CreateUserDto from '../dto/signup.dto';
-import { type UserUsername } from '../user.decorators';
 
 @Controller('users')
 export class UserController extends BaseController {
@@ -20,7 +19,7 @@ export class UserController extends BaseController {
 
 	@HttpCode(200)
 	@Get(':username')
-	async findOne(@Param('username') username: UserUsername) {
+	async findOne(@Param('username') username: string) {
 		const user = await this.userService.getSingle({ username });
 		return this.ok(user, 'User found');
 	}
