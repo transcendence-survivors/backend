@@ -2,18 +2,17 @@ import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
-import { type Env } from '@/modules/config/env/env.provider';
-import { InjectEnv } from '@/modules/config/env/inject';
+import { type Env } from '@/modules/env/providers/env.provider';
+import { InjectEnv } from '@/modules/env/injects/env.inject';
 
 export interface JwtRefreshPayloadParams {
 	userId: string;
 	refreshToken: string;
 }
 
-export interface JwtRefreshPayload {
+export type JwtRefreshPayload = Omit<JwtRefreshPayloadParams, 'userId'> & {
 	sub: string;
-	refreshToken: string;
-}
+};
 
 @Injectable()
 export class RefreshTokenStrategy extends PassportStrategy(

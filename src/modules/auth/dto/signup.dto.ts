@@ -9,7 +9,7 @@ import {
 	IsLastName,
 	IsPassword,
 	IsUsername,
-} from '../user.decorators';
+} from '@modules/user/user.decorators';
 
 class CreateUserDto {
 	@IsEmail()

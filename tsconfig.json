@@ -22,7 +22,9 @@
 		"noFallthroughCasesInSwitch": false,
 		"paths": {
 			"@/*": ["./src/*"],
+			"@modules/*": ["./src/modules/*"],
 			"@prisma-generated/*": ["./prisma/generated/prisma/*"]
-		}
+		},
+		"types": ["node", "jest"]
 	}
 }

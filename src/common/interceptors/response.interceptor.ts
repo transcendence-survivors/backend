@@ -37,7 +37,7 @@ export class ResponseInterceptor<T> implements NestInterceptor<
 	SuccessResponse<T>
 > {
 	intercept(
-		context: ExecutionContext,
+		_: ExecutionContext,
 		next: CallHandler<ResponseInput<T>>,
 	): Observable<SuccessResponse<T>> {
 		return next.handle().pipe(

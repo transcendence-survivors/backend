@@ -1,5 +1,5 @@
-import { type Env } from '@/modules/config/env/env.provider';
-import { InjectEnv } from '@/modules/config/env/inject';
+import { type Env } from '@/modules/env/providers/env.provider';
+import { InjectEnv } from '@/modules/env/injects/env.inject';
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma-generated/client';
 import { PrismaPg } from '@prisma/adapter-pg';

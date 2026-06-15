@@ -1,6 +1,6 @@
-import { PrismaService } from '@/common/prisma.service';
+import { PrismaService } from '@/common/services/prisma.service';
 import { Injectable } from '@nestjs/common';
-import CreateUserDto from '../dto/signup.dto';
+import CreateUserDto from '../../auth/dto/signup.dto';
 
 @Injectable()
 export class UserRepository {
@@ -24,62 +24,7 @@ export class UserRepository {
 		role: true,
 	};
 
-	async findById(id: string, selectStats = false) {
-		const statsSelect = selectStats
-			? { select: this.userStatsSelect }
-			: undefined;
-
-		return this.prisma.user.findUnique({
-			where: { id },
-			select: {
-				...this.userSelect,
-				stats: statsSelect,
-			},
-		});
-	}
-
-	async findByEmail(email: string, selectStats = false) {
-		const statsSelect = selectStats
-			? { select: this.userStatsSelect }
-			: undefined;
-
-		return this.prisma.user.findUnique({
-			where: { email },
-			select: {
-				...this.userSelect,
-				stats: statsSelect,
-			},
-		});
-	}
-	async findByUsername(username: string, selectStats = false) {
-		const statsSelect = selectStats
-			? { select: this.userStatsSelect }
-			: undefined;
-
-		return this.prisma.user.findUnique({
-			where: { username },
-			select: {
-				...this.userSelect,
-				stats: statsSelect,
-			},
-		});
-	}
-
-	async getTokenData(id: string) {
-		return this.prisma.user.findUnique({
-			where: {
-				id,
-			},
-			select: {
-				id: true,
-				role: true,
-				email: true,
-				username: true,
-			},
-		});
-	}
-
-	async create(data: Omit<CreateUserDto, 'password'>) {
+	save(data: Omit<CreateUserDto, 'password'>) {
 		return this.prisma.user.create({
 			data: {
 				birthDate: data.dateOfBirth,
@@ -98,7 +43,69 @@ export class UserRepository {
 		});
 	}
 
-	async delete(id: string): Promise<void> {
+	findById(id: string, selectStats = false) {
+		const statsSelect = selectStats
+			? { select: this.userStatsSelect }
+			: undefined;
+
+		return this.prisma.user.findUnique({
+			where: { id },
+			select: {
+				...this.userSelect,
+				stats: statsSelect,
+			},
+		});
+	}
+
+	findByEmail(email: string, selectStats = false) {
+		const statsSelect = selectStats
+			? { select: this.userStatsSelect }
+			: undefined;
+
+		return this.prisma.user.findUnique({
+			where: { email },
+			select: {
+				...this.userSelect,
+				stats: statsSelect,
+			},
+		});
+	}
+	findByUsername(username: string, selectStats = false) {
+		const statsSelect = selectStats
+			? { select: this.userStatsSelect }
+			: undefined;
+
+		return this.prisma.user.findUnique({
+			where: { username },
+			select: {
+				...this.userSelect,
+				stats: statsSelect,
+			},
+		});
+	}
+
+	getTokenData(id: string) {
+		return this.prisma.user.findUnique({
+			where: {
+				id,
+			},
+			select: {
+				id: true,
+				role: true,
+				email: true,
+				username: true,
+			},
+		});
+	}
+
+	getIdByEmail(email: string) {
+		return this.prisma.user.findUnique({
+			where: { email },
+			select: { id: true },
+		});
+	}
+
+	async delete(id: string) {
 		await this.prisma.user.delete({ where: { id } });
 	}
 

@@ -1,27 +1,29 @@
 import { HttpException, Injectable } from '@nestjs/common';
 import { hash, compare } from 'bcrypt';
-import CreateUserDto from '@/modules/user/dto/signup.dto';
+import CreateUserDto from '@/modules/auth/dto/signup.dto';
 import { UserService } from '@/modules/user/services/user.service';
 import { ProviderRepository } from '../repositories/provider.repository';
-import SignInDto from '@/modules/user/dto/signin.dto';
+import SignInDto from '@/modules/auth/dto/signin.dto';
 import { JwtRefreshPayloadParams } from '../../token/strategies/refresh-token.strategy';
 import { UserRepository } from '@/modules/user/repositories/user.repository';
 import UserNotFoundException from '@/modules/user/exceptions/user.not-find.exception';
 import { TokenService } from '../../token/service/token.service';
-import {
-	UserEmailConflictException,
-	UserUsernameConflictException,
-} from '@/modules/user/exceptions/user.conflict.exception';
+import { ForgotPasswordDto } from '../dto/forgot-password.dto';
+import { EmailService } from '@/modules/email/services/email.service';
+import { ResetPasswordDto } from '../dto/reset-password.dto';
+import { PrismaService } from '@/common/services/prisma.service';
 
 @Injectable()
 export class AuthService {
-	private static readonly SALT = 10;
+	private readonly SALT = 10;
 
 	constructor(
-		private providerRepo: ProviderRepository,
-		private userService: UserService,
-		private userRepo: UserRepository,
-		private tokenService: TokenService,
+		private readonly providerRepo: ProviderRepository,
+		private readonly userService: UserService,
+		private readonly userRepo: UserRepository,
+		private readonly tokenService: TokenService,
+		private readonly emailService: EmailService,
+		private readonly prisma: PrismaService,
 	) {}
 
 	async signInLocale({ usernameOrEmail, password }: SignInDto) {
@@ -30,13 +32,12 @@ export class AuthService {
 			password,
 		);
 
-		const { accessToken, refreshToken } =
-			await this.tokenService.buildTokens({
-				userId: user.id,
-				username: user.username,
-				email: user.email,
-				role: user.role,
-			});
+		const { accessToken, refreshToken } = await this.tokenService.buildJWT({
+			userId: user.id,
+			username: user.username,
+			email: user.email,
+			role: user.role,
+		});
 		return { accessToken, refreshToken, user };
 	}
 
@@ -44,13 +45,12 @@ export class AuthService {
 		const user = await this.userService.create(userData);
 		await this.createLocaleProvider(user.id, password);
 
-		const { accessToken, refreshToken } =
-			await this.tokenService.buildTokens({
-				userId: user.id,
-				username: user.username,
-				email: user.email,
-				role: user.role,
-			});
+		const { accessToken, refreshToken } = await this.tokenService.buildJWT({
+			userId: user.id,
+			username: user.username,
+			email: user.email,
+			role: user.role,
+		});
 		return { accessToken, refreshToken, user };
 	}
 
@@ -60,10 +60,31 @@ export class AuthService {
 		if (!userData) {
 			throw new UserNotFoundException();
 		}
-		return this.tokenService.generateAccessToken({
+		return this.tokenService.generateAccess({
 			userId: userData.id,
 			...userData,
 		});
+	}
+
+	async forgotPassword({ email }: ForgotPasswordDto) {
+		const exist = await this.userRepo.getIdByEmail(email);
+		if (!exist) {
+			throw new UserNotFoundException();
+		}
+		const token = await this.tokenService.createPasswordReset(exist.id);
+		await this.emailService.sendResetPassword(email, token);
+	}
+
+	async resetPassword({ token, newPassword }: ResetPasswordDto) {
+		const { id, userId } =
+			await this.tokenService.getValidPasswordReset(token);
+		const hash = await this.hashPassword(newPassword);
+
+		await this.prisma.$transaction([
+			this.providerRepo.updateLocalePassword(userId, hash),
+			this.tokenService.usePasswordResetToken(id),
+			this.tokenService.revokeUserRefresh(userId),
+		]);
 	}
 
 	async validateLocaleProvider(usernameOrEmail: string, password: string) {
@@ -81,30 +102,16 @@ export class AuthService {
 		return provider;
 	}
 
-	private async checkUsername(username: string) {
-		const isUsernameTaken = await this.userRepo.isByUsername(username);
-		if (isUsernameTaken) {
-			throw new UserUsernameConflictException();
-		}
-	}
-
-	private async checkEmail(email: string) {
-		const isEmailTaken = await this.userRepo.isByEmail(email);
-		if (isEmailTaken) {
-			throw new UserEmailConflictException();
-		}
-	}
-
 	private async createLocaleProvider(userId: string, password: string) {
 		const hash = await this.hashPassword(password);
 		return this.providerRepo.createLocale(hash, userId);
 	}
 
-	private async hashPassword(password: string) {
-		return await hash(password, AuthService.SALT);
+	private hashPassword(password: string) {
+		return hash(password, this.SALT);
 	}
 
-	private async comparePassword(password: string, hash: string) {
-		return await compare(password, hash);
+	private comparePassword(password: string, hash: string) {
+		return compare(password, hash);
 	}
 }

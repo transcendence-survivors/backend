@@ -2,7 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './modules/app.module';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { ExceptionsFilter } from './common/filters/http-exception.filter';
-import { CustomValidationPipe } from './common/custom-validation.pipe';
+import { CustomValidationPipe } from './common/pipes/custom-validation.pipe';
 import cookieParser from 'cookie-parser';
 
 void (async () => {

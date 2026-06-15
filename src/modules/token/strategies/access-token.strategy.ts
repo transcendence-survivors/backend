@@ -1,8 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
-import { InjectEnv } from '@/modules/config/env/inject';
-import { type Env } from '@/modules/config/env/env.provider';
+import { InjectEnv } from '@/modules/env/injects/env.inject';
+import { type Env } from '@/modules/env/providers/env.provider';
 import { UserRole } from '@prisma-generated/enums';
 import { type Request } from 'express';
 
@@ -13,12 +13,9 @@ export interface JwtAccessPayload {
 	username: string;
 }
 
-export interface JwtAccessPayloadParams {
+export type JwtAccessPayloadParams = Omit<JwtAccessPayload, 'sub'> & {
 	userId: string;
-	email: string;
-	role: UserRole;
-	username: string;
-}
+};
 
 @Injectable()
 export class AccessTokenStrategy extends PassportStrategy(Strategy, 'jwt') {

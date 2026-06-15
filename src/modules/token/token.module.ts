@@ -1,19 +1,24 @@
-import { PrismaService } from '@/common/prisma.service';
+import { PrismaService } from '@/common/services/prisma.service';
 import { AccessTokenStrategy } from './strategies/access-token.strategy';
 import { RefreshTokenStrategy } from './strategies/refresh-token.strategy';
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { TokenService } from './service/token.service';
-import { TokenRepository } from './repository/token.repository';
+import { PasswordTokenRepository } from './repository/password-token.repository';
+import { RefreshTokenRepository } from './repository/refresh-token.repository';
 
 @Module({
 	imports: [JwtModule],
 	providers: [
 		PrismaService,
+
 		AccessTokenStrategy,
 		RefreshTokenStrategy,
+
 		TokenService,
-		TokenRepository,
+
+		PasswordTokenRepository,
+		RefreshTokenRepository,
 	],
 	exports: [RefreshTokenStrategy, AccessTokenStrategy, TokenService],
 })

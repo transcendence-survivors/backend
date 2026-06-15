@@ -1,7 +1,7 @@
-import { PrismaService } from '@/common/prisma.service';
+import { PrismaService } from '@/common/services/prisma.service';
 import { Injectable } from '@nestjs/common';
 
-interface TokenSave {
+interface RefreshTokenSave {
 	hashedToken: string;
 	expireInMs: number;
 	familyId?: string;
@@ -14,10 +14,16 @@ interface TokenSave {
 }
 
 @Injectable()
-export class TokenRepository {
+export class RefreshTokenRepository {
 	constructor(private prisma: PrismaService) {}
 
-	save({ hashedToken, expireInMs, userId, familyId, meta }: TokenSave) {
+	save({
+		hashedToken,
+		expireInMs,
+		userId,
+		familyId,
+		meta,
+	}: RefreshTokenSave) {
 		const expirationDate = new Date(Date.now() + expireInMs);
 		return this.prisma.refreshToken.create({
 			data: {
@@ -26,6 +32,9 @@ export class TokenRepository {
 				familyId,
 				userId,
 				...meta,
+			},
+			select: {
+				id: true,
 			},
 		});
 	}
@@ -47,6 +56,20 @@ export class TokenRepository {
 		return this.prisma.refreshToken.update({
 			where: {
 				hashToken,
+			},
+			data: {
+				isRevoked: true,
+			},
+			select: {
+				id: true,
+			},
+		});
+	}
+
+	revokeUser(userId: string) {
+		return this.prisma.refreshToken.updateMany({
+			where: {
+				userId,
 			},
 			data: {
 				isRevoked: true,

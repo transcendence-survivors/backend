@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import CreateUserDto from '../dto/signup.dto';
+import CreateUserDto from '../../auth/dto/signup.dto';
 import { UserRepository } from '../repositories/user.repository';
 import FindParamException from '../exceptions/user.find-param.exception';
 import {
@@ -41,7 +41,7 @@ export class UserService {
 		if (await this.repository.isByUsername(dto.username)) {
 			throw new UserUsernameConflictException();
 		}
-		return this.repository.create(dto);
+		return this.repository.save(dto);
 	}
 
 	async findSingle({ id, email, username }: UserFindSingleParams) {

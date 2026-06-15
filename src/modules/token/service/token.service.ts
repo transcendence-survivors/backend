@@ -1,57 +1,54 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
-import { TokenRepository } from '../repository/token.repository';
-import { JwtService } from '@nestjs/jwt';
-import { type Env } from '@/modules/config/env/env.provider';
-import { InjectEnv } from '@/modules/config/env/inject';
+import { Injectable } from '@nestjs/common';
+import { InjectEnv } from '@/modules/env/injects/env.inject';
 import { JwtAccessPayloadParams } from '../strategies/access-token.strategy';
-import { createHash } from 'crypto';
+import { createHash, randomBytes } from 'crypto';
+
 import { JwtRefreshPayloadParams } from '../strategies/refresh-token.strategy';
+import { RefreshTokenRepository } from '../repository/refresh-token.repository';
+import { JwtService } from '@nestjs/jwt';
+import { PasswordTokenRepository } from '../repository/password-token.repository';
+import { type Env } from '@/modules/env/providers/env.provider';
+
+import TokenNotFoundException from '../exceptions/token.not-fing.exception';
+import TokenRevokedException from '../exceptions/token.revoked.exception';
+import TokenExpiredException from '../exceptions/token.expired.exception';
 
 @Injectable()
 export class TokenService {
 	private readonly HASH_PROTOCOL = 'sha256';
 	private readonly HEX_DIGEST = 'hex';
+
 	constructor(
-		private tokenRepo: TokenRepository,
-		private jwtService: JwtService,
-		@InjectEnv() private env: Env,
+		private readonly refreshRepo: RefreshTokenRepository,
+		private readonly passwordRepo: PasswordTokenRepository,
+		private readonly jwtService: JwtService,
+		@InjectEnv() private readonly env: Env,
 	) {}
 
-	async buildTokens({
-		userId,
-		role,
-		email,
-		username,
-	}: JwtAccessPayloadParams) {
+	logout(user: JwtRefreshPayloadParams) {
+		return this.refreshRepo.revoke(this.hash(user.refreshToken));
+	}
+
+	async buildJWT({ userId, role, email, username }: JwtAccessPayloadParams) {
 		const [refreshToken, accessToken] = await Promise.all([
-			this.createRefreshToken(userId),
-			this.generateAccessToken({
-				userId,
-				role,
-				email,
-				username,
-			}),
+			this.createRefresh(userId),
+			this.generateAccess({ userId, role, email, username }),
 		]);
 
 		return { refreshToken, accessToken };
 	}
 
-	async generateAccessToken({
-		userId,
-		role,
-		email,
-		username,
-	}: JwtAccessPayloadParams) {
+	generateAccess({ userId, role, email, username }: JwtAccessPayloadParams) {
 		const payload = { sub: userId, role, email, username };
-		return await this.jwtService.signAsync(payload, {
+		return this.jwtService.signAsync(payload, {
 			expiresIn: `${this.env.accessToken.ms}ms`,
 			secret: this.env.accessToken.secret,
 		});
 	}
 
-	async createRefreshToken(userId: string) {
-		const refreshToken = await this.generateRefreshToken(userId);
-		await this.tokenRepo.save({
+	async createRefresh(userId: string) {
+		const refreshToken = await this.generateRefresh(userId);
+		await this.refreshRepo.save({
 			hashedToken: this.hash(refreshToken),
 			expireInMs: this.env.refreshToken.ms,
 			userId,
@@ -59,28 +56,59 @@ export class TokenService {
 		return refreshToken;
 	}
 
+	async createPasswordReset(userId: string) {
+		const resetToken = this.generatePasswordResetToken();
+		await this.passwordRepo.save({
+			hashedToken: this.hash(resetToken),
+			userId,
+			expireInMs: this.env.passwordResetToken.ms,
+		});
+		return resetToken;
+	}
+
+	usePasswordResetToken(tokenId: string) {
+		return this.passwordRepo.use(tokenId);
+	}
+
+	revokeUserRefresh(userId: string) {
+		return this.refreshRepo.revokeUser(userId);
+	}
+
 	async validateRefresh(user: JwtRefreshPayloadParams) {
 		const hashToken = this.hash(user.refreshToken);
-		const token = await this.tokenRepo.get(hashToken, user.userId);
-		if (!token)
-			throw new HttpException('No token', HttpStatus.UNAUTHORIZED);
-		if (token.isRevoked === true)
-			throw new HttpException('Token revoked', HttpStatus.UNAUTHORIZED);
-		if (new Date(Date.now()) <= token.expiredAt) return;
-		await this.tokenRepo.revoke(hashToken);
-		throw new HttpException('Token expired', HttpStatus.UNAUTHORIZED);
+		const token = await this.refreshRepo.get(hashToken, user.userId);
+
+		if (!token) throw new TokenNotFoundException();
+		if (token.isRevoked) throw new TokenRevokedException();
+
+		if (new Date(Date.now()) <= token.expiredAt) {
+			return;
+		}
+
+		await this.refreshRepo.revoke(hashToken);
+		throw new TokenExpiredException();
 	}
 
-	logout(user: JwtRefreshPayloadParams) {
-		return this.tokenRepo.revoke(this.hash(user.refreshToken));
+	async getValidPasswordReset(token: string) {
+		const hashedToken = this.hash(token);
+		const passwordToken =
+			await this.passwordRepo.getByHashToken(hashedToken);
+		if (!passwordToken) {
+			throw new TokenNotFoundException();
+		}
+		return passwordToken;
 	}
 
-	private async generateRefreshToken(userId: string) {
+	private generateRefresh(userId: string) {
 		const payload = { sub: userId };
-		return await this.jwtService.signAsync(payload, {
+		return this.jwtService.signAsync(payload, {
 			expiresIn: `${this.env.refreshToken.ms}ms`,
 			secret: this.env.refreshToken.secret,
 		});
+	}
+
+	private generatePasswordResetToken() {
+		return randomBytes(32).toString('hex');
 	}
 
 	private hash(refreshToken: string) {

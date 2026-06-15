@@ -1,32 +1,24 @@
 import {
-	applyDecorators,
 	Body,
 	Controller,
-	Get,
 	HttpCode,
 	Post,
 	Res,
 	UseGuards,
 } from '@nestjs/common';
-import { type Request } from 'express';
 import { AuthService } from '../services/auth.service';
-import CreateUserDto from '@/modules/user/dto/signup.dto';
+import CreateUserDto from '@/modules/auth/dto/signup.dto';
 import { type Response } from 'express';
 import { BaseController } from '@/common/base.controller';
-import { SignInDto } from '@/modules/user/dto/signin.dto';
-import { InjectEnv } from '@/modules/config/env/inject';
-import { type Env } from '@/modules/config/env/env.provider';
+import { SignInDto } from '@/modules/auth/dto/signin.dto';
+import { InjectEnv } from '@/modules/env/injects/env.inject';
+import { type Env } from '@/modules/env/providers/env.provider';
 import { RefreshTokenGuard } from '../../token/guards/refresh-token.guard';
 import { CurrentUserRefresh } from '@/common/decorators/current-user.decorator';
 import { type JwtRefreshPayloadParams } from '../../token/strategies/refresh-token.strategy';
 import { TokenService } from '@/modules/token/service/token.service';
-import { RolesGuard } from '@/modules/token/guards/roles.guard';
-import { Roles } from '@/common/decorators/role.decorator';
-import { UserRole } from '@prisma-generated/enums';
-import { AccessTokenGuard } from '@/modules/token/guards/access-token.guard';
-
-const Test = (...roles: UserRole[]) =>
-	applyDecorators(Roles(...roles), UseGuards(AccessTokenGuard, RolesGuard));
+import { ForgotPasswordDto } from '../dto/forgot-password.dto';
+import { ResetPasswordDto } from '../dto/reset-password.dto';
 
 @Controller('auth')
 export class AuthController extends BaseController {
@@ -40,6 +32,7 @@ export class AuthController extends BaseController {
 		super();
 	}
 
+	@HttpCode(200)
 	@Post('login')
 	async signIn(
 		@Body() signInDto: SignInDto,
@@ -72,6 +65,7 @@ export class AuthController extends BaseController {
 		@CurrentUserRefresh() user: JwtRefreshPayloadParams,
 		@Res({ passthrough: true }) res: Response,
 	) {
+		console.log('Refreshing token for user:', user.userId);
 		const accessToken = await this.authService.refresh(user);
 		this.setAccessTokenCookie(res, accessToken);
 	}
@@ -88,10 +82,16 @@ export class AuthController extends BaseController {
 		res.clearCookie(this.ACCESS_TOKEN);
 	}
 
-	@Get('test')
-	@Test(UserRole.ADMIN)
-	test() {
-		return this.ok('BENOIT');
+	@HttpCode(204)
+	@Post('forgot-password')
+	async forgotPassword(@Body() dto: ForgotPasswordDto) {
+		await this.authService.forgotPassword(dto);
+	}
+
+	@HttpCode(204)
+	@Post('reset-password')
+	async resetPassword(@Body() dto: ResetPasswordDto) {
+		await this.authService.resetPassword(dto);
 	}
 
 	private setAccessTokenCookie(res: Response, accessToken: string) {

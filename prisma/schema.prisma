@@ -1,17 +1,17 @@
 generator client {
-  provider     = "prisma-client"
-  output       = "./generated/prisma"
-  moduleFormat = "cjs"
+    provider     = "prisma-client"
+    output       = "./generated/prisma"
+    moduleFormat = "cjs"
 }
 
 datasource db {
-  provider = "postgresql"
+    provider = "postgresql"
 }
 
 enum UserRole {
-  USER
-  ADMIN
-  SUPER_ADMIN
+    USER
+    ADMIN
+    SUPER_ADMIN
 }
 
 enum UserGender {
@@ -20,7 +20,6 @@ enum UserGender {
     OTHER
     PREFER_NOT_TO_SAY
 }
-
 
 enum AuthProviderType {
     LOCAL
@@ -34,14 +33,14 @@ model User {
     username String @unique
     email    String @unique
 
-    gender        UserGender
+    gender    UserGender
     firstName String
     lastName  String
-    birthDate     DateTime
+    birthDate DateTime
 
-    displayName   String
-    bio           String?
-    
+    displayName String
+    bio         String?
+
     avatarUrl     String?
     coverImageUrl String?
     location      String?
@@ -49,106 +48,125 @@ model User {
 
     role UserRole @default(USER)
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    posts     Post[]
+    likes     Like[]
+    followers Follow[] @relation("followers")
+    following Follow[] @relation("following")
 
-    posts         Post[]
-    likes         Like[]
-    followers     Follow[]       @relation("followers")
-    following     Follow[]       @relation("following")
     providers     AuthProvider[]
     refreshTokens RefreshToken[]
+    resetTokens   ResetPasswordToken[]
 
     stats UserStats? @relation
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 }
 
 model AuthProvider {
-  id       String           @id @default(uuid())
-  provider AuthProviderType
+    id       String           @id @default(uuid())
+    provider AuthProviderType
 
-  providerId String?
-  password   String?
+    providerId String?
+    password   String?
 
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime @default(now())
+    createdAt DateTime @default(now())
 
-  @@unique([userId, provider])
-  @@index([provider, providerId])
-}
-
-model UserStats {
-  userId String @id
-
-  postCount      Int @default(0)
-  followerCount  Int @default(0)
-  followingCount Int @default(0)
-
-  likesGiven    Int @default(0)
-  likesReceived Int @default(0)
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model Post {
-  id String @id @default(uuid())
-
-  title     String
-  content   String?
-  published Boolean @default(false)
-
-  authorId String
-  author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
-
-  likes Like[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Like {
-  id String @id @default(uuid())
-
-  userId String
-  postId String
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@unique([userId, postId])
-}
-
-model Follow {
-  followerId  String
-  followingId String
-
-  follower  User @relation("followers", fields: [followerId], references: [id], onDelete: Cascade)
-  following User @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-
-  @@id([followerId, followingId])
+    @@unique([userId, provider])
+    @@index([provider, providerId])
 }
 
 model RefreshToken {
-  id        Int     @id @default(autoincrement())
-  hashToken String  @unique
-  userAgent String?
-  ip        String?
-  deviceId  String?
-  familyId  String  @default(uuid())
-  isRevoked Boolean @default(false)
+    id        Int     @id @default(autoincrement())
+    hashToken String  @unique
+    userAgent String?
+    ip        String?
+    deviceId  String?
+    familyId  String  @default(uuid())
+    isRevoked Boolean @default(false)
 
-  userId String
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime @default(now())
-  expiredAt DateTime
+    createdAt DateTime @default(now())
+    expiredAt DateTime
 
-  @@index([expiredAt])
-  @@index([userId])
-  @@index([familyId])
+    @@index([expiredAt])
+    @@index([userId])
+    @@index([familyId])
+}
+
+model ResetPasswordToken {
+    id String @id @default(uuid())
+
+    tokenHash String @unique
+
+    userId String
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    used Boolean @default(false)
+
+    createdAt DateTime @default(now())
+    expiresAt DateTime
+
+    @@index([userId])
+    @@index([expiresAt])
+}
+
+model UserStats {
+    userId String @id
+
+    postCount      Int @default(0)
+    followerCount  Int @default(0)
+    followingCount Int @default(0)
+
+    likesGiven    Int @default(0)
+    likesReceived Int @default(0)
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Post {
+    id String @id @default(uuid())
+
+    title     String
+    content   String?
+    published Boolean @default(false)
+
+    authorId String
+    author   User   @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+    likes Like[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model Like {
+    id String @id @default(uuid())
+
+    userId String
+    postId String
+
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+    post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now())
+
+    @@unique([userId, postId])
+}
+
+model Follow {
+    followerId  String
+    followingId String
+
+    follower  User @relation("followers", fields: [followerId], references: [id], onDelete: Cascade)
+    following User @relation("following", fields: [followingId], references: [id], onDelete: Cascade)
+
+    createdAt DateTime @default(now())
+
+    @@id([followerId, followingId])
 }
