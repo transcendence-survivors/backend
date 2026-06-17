@@ -25,6 +25,7 @@
 			"@modules/*": ["./src/modules/*"],
 			"@prisma-generated/*": ["./prisma/generated/prisma/*"]
 		},
+		"resolveJsonModule": true,
 		"types": ["node", "jest"]
 	}
 }

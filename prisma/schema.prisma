@@ -14,6 +14,14 @@ enum UserRole {
     SUPER_ADMIN
 }
 
+enum LocalePreference {
+    EN
+    FR
+    DE
+    ES
+    IT
+}
+
 enum UserGender {
     MALE
     FEMALE
@@ -46,7 +54,8 @@ model User {
     location      String?
     website       String?
 
-    role UserRole @default(USER)
+    localePreference LocalePreference @default(EN)
+    role             UserRole         @default(USER)
 
     posts     Post[]
     likes     Like[]

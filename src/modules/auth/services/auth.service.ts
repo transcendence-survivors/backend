@@ -44,6 +44,15 @@ export class AuthService {
 	async signUpLocale({ password, ...userData }: CreateUserDto) {
 		const user = await this.userService.create(userData);
 		await this.createLocaleProvider(user.id, password);
+		await this.emailService.sendWelcomeEmail(
+			{
+				firstName: userData.firstName,
+				lastName: userData.lastName,
+				email: userData.email,
+				name: userData.username,
+			},
+			userData.localePreference,
+		);
 
 		const { accessToken, refreshToken } = await this.tokenService.buildJWT({
 			userId: user.id,
@@ -72,7 +81,11 @@ export class AuthService {
 			throw new UserNotFoundException();
 		}
 		const token = await this.tokenService.createPasswordReset(exist.id);
-		await this.emailService.sendResetPassword(email, token);
+		await this.emailService.sendResetPassword(
+			email,
+			token,
+			exist.localePreference,
+		);
 	}
 
 	async resetPassword({ token, newPassword }: ResetPasswordDto) {

@@ -35,6 +35,7 @@ export class UserRepository {
 				lastName: data.lastName,
 				username: data.username,
 				gender: data.gender,
+				localePreference: data.localePreference,
 				stats: {
 					create: {},
 				},
@@ -101,7 +102,7 @@ export class UserRepository {
 	getIdByEmail(email: string) {
 		return this.prisma.user.findUnique({
 			where: { email },
-			select: { id: true },
+			select: { localePreference: true, id: true },
 		});
 	}
 
@@ -117,5 +118,17 @@ export class UserRepository {
 	async isByUsername(username: string): Promise<boolean> {
 		const count = await this.prisma.user.count({ where: { username } });
 		return count > 0;
+	}
+
+	isConflict(email: string, username: string) {
+		return this.prisma.user.findFirst({
+			where: {
+				OR: [{ email }, { username }],
+			},
+			select: {
+				email: true,
+				username: true,
+			},
+		});
 	}
 }

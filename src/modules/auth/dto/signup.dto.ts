@@ -1,4 +1,4 @@
-import { UserGender } from '@prisma-generated/client';
+import type { LocalePreference, UserGender } from '@prisma-generated/client';
 import {
 	IsBio,
 	IsBirthDate,
@@ -7,6 +7,7 @@ import {
 	IsFirstName,
 	IsGender,
 	IsLastName,
+	IsLocalePreference,
 	IsPassword,
 	IsUsername,
 } from '@modules/user/user.decorators';
@@ -25,6 +26,8 @@ class CreateUserDto {
 	public readonly lastName!: string;
 	@IsBirthDate()
 	public readonly dateOfBirth!: Date;
+	@IsLocalePreference()
+	public readonly localePreference!: LocalePreference;
 
 	@IsDisplayName()
 	public readonly displayName!: string;

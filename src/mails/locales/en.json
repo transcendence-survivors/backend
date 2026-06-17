@@ -1,0 +1,33 @@
+{
+	"welcome": {
+		"subject": "Welcome to Transcendence Survivor",
+
+		"title": "Welcome to Transcendence Survivor",
+		"greeting": "Hey {{firstName}} {{lastName}}",
+		"intro": "Nice to see you in Transcendence Survivor 👾",
+		"account_confirmed": "Account confirmed as {{username}} using {{email}}",
+
+		"next_title": "What happens next?",
+		"step_1": "Explore the world",
+		"step_2": "Complete your first mission",
+		"step_3": "Level up your survivor profile",
+
+		"footer_text": "You received this email because you recently confirmed your account setup."
+	},
+	"resetPassword": {
+		"subject": "Password Reset Request",
+
+		"headerSub": "Security Center",
+		"title": "Password Reset Requests",
+		"message": "Click below to reset your password:",
+		"button": "Reset Password",
+		"expires": "This link expires in 15 minutes.",
+		"ignoreWarning": "If you did not request this, you can safely ignore this email.",
+		"troubleClicking": "Button not working? Copy and paste this link into your browser:",
+		"automatedEmailText": "This is an automated operational security message.",
+		"supportText": "Contact Support"
+	},
+	"footer": {
+		"rights_reserved": "All rights reserved."
+	}
+}

@@ -1,11 +1,10 @@
 import { IsAtLeast13Constraint } from '@/common/validators/isAtLeast13';
 import { applyDecorators } from '@nestjs/common';
-import { UserGender } from '@prisma-generated/enums';
+import { LocalePreference, UserGender } from '@prisma-generated/enums';
 import { Type } from 'class-transformer';
 
 import {
 	IsEmail as IsEmailValidator,
-	IsNotEmpty,
 	IsString,
 	MaxLength,
 	MinLength,
@@ -65,4 +64,8 @@ export const IsPassword = () => {
 			minSymbols: 1,
 		}),
 	);
+};
+
+export const IsLocalePreference = () => {
+	return applyDecorators(IsEnum(LocalePreference));
 };

@@ -35,12 +35,12 @@ export class UserService {
 	}
 
 	async create(dto: Omit<CreateUserDto, 'password'>) {
-		if (await this.repository.isByEmail(dto.email)) {
-			throw new UserEmailConflictException();
-		}
-		if (await this.repository.isByUsername(dto.username)) {
-			throw new UserUsernameConflictException();
-		}
+		const existing = await this.repository.isConflict(
+			dto.email,
+			dto.username,
+		);
+		if (existing?.email) throw new UserEmailConflictException();
+		if (existing?.username) throw new UserUsernameConflictException();
 		return this.repository.save(dto);
 	}
 

@@ -1,0 +1,33 @@
+{
+	"welcome": {
+		"subject": "Inscription Transcendence Survivor",
+
+		"title": "Bienvenue dans Transcendence Survivor",
+		"greeting": "Salut {{firstName}} {{lastName}}",
+		"intro": "Ravi de te voir dans Transcendence Survivor 👾",
+		"account_confirmed": "Compte créé sous le pseudo {{username}} avec {{email}}",
+
+		"next_title": "Et maintenant ?",
+		"step_1": "Explore le monde",
+		"step_2": "Termine ta première mission",
+		"step_3": "Fais évoluer ton profil de survivant",
+
+		"footer_text": "Vous avez reçu cet e-mail car vous avez récemment confirmé la configuration de votre compte."
+	},
+	"resetPassword": {
+		"subject": "Réinitialisation de mot de passe",
+
+		"headerSub": "Centre de Sécurité",
+		"title": "Demande de réinitialisation de mot de passe",
+		"message": "Cliquez ci-dessous pour réinitialiser votre mot de passe :",
+		"button": "Réinitialiser le mot de passe",
+		"expires": "Ce lien expirera dans 15 minutes.",
+		"ignoreWarning": "Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail en toute sécurité.",
+		"troubleClicking": "Le bouton ne fonctionne pas ? Copiez et collez ce lien dans votre navigateur :",
+		"automatedEmailText": "Ceci est un message de sécurité automatisé.",
+		"supportText": "Contacter le support"
+	},
+	"footer": {
+		"rights_reserved": "Tous droits réservés."
+	}
+}

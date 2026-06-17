@@ -1,0 +1,20 @@
+{
+	"welcome": {
+		"title": "Welcome to Transcendence Survivor",
+		"greeting": "Salut {{firstName}} {{lastName}}",
+		"intro": "Ravi de te voir dans Transcendence Survivor 👾",
+		"account_confirmed": "Compte créé sous le pseudo {{username}} avec {{email}}",
+
+		"next_title": "Et maintenant ?",
+		"step_1": "Explore le monde",
+		"step_2": "Termine ta première mission",
+		"step_3": "Fais évoluer ton profil de survivant"
+	},
+	"resetPassword": {
+		"subject": "Password Reset Request",
+		"title": "Password Reset",
+		"message": "Click below to reset your password:",
+		"button": "Reset Password",
+		"expires": "This link expires in 15 minutes."
+	}
+}
