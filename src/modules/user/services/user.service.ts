@@ -24,9 +24,7 @@ export class UserService {
 			throw new FindParamException();
 		}
 		const user = await this.findSingle({ id, email, username });
-		if (!user) {
-			throw new UserNotFoundException();
-		}
+		if (!user) throw new UserNotFoundException();
 		return user;
 	}
 
@@ -45,15 +43,9 @@ export class UserService {
 	}
 
 	async findSingle({ id, email, username }: UserFindSingleParams) {
-		if (id) {
-			return this.repository.findById(id);
-		}
-		if (email) {
-			return this.repository.findByEmail(email);
-		}
-		if (username) {
-			return this.repository.findByUsername(username);
-		}
+		if (id) return this.repository.findById(id);
+		if (email) return this.repository.findByEmail(email);
+		if (username) return this.repository.findByUsername(username);
 		return null;
 	}
 

@@ -1,15 +1,6 @@
-import {
-	Controller,
-	Get,
-	Post,
-	Delete,
-	Param,
-	Body,
-	HttpCode,
-} from '@nestjs/common';
+import { Controller, Get, Delete, Param, Body, HttpCode } from '@nestjs/common';
 import { UserService } from '../services/user.service';
 import { BaseController } from '@/common/base.controller';
-import CreateUserDto from '../../auth/dto/signup.dto';
 
 @Controller('users')
 export class UserController extends BaseController {
@@ -22,13 +13,6 @@ export class UserController extends BaseController {
 	async findOne(@Param('username') username: string) {
 		const user = await this.userService.getSingle({ username });
 		return this.ok(user, 'User found');
-	}
-
-	@HttpCode(201)
-	@Post()
-	async create(@Body() dto: CreateUserDto) {
-		const user = await this.userService.create(dto);
-		return this.ok(user, 'User created');
 	}
 
 	@HttpCode(204)

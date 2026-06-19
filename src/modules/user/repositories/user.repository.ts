@@ -1,6 +1,7 @@
 import { PrismaService } from '@/common/services/prisma.service';
 import { Injectable } from '@nestjs/common';
 import CreateUserDto from '../../auth/dto/signup.dto';
+import { User, UserStats } from '@prisma-generated/client';
 
 @Injectable()
 export class UserRepository {
@@ -12,17 +13,15 @@ export class UserRepository {
 		likesReceived: true,
 		followerCount: true,
 		followingCount: true,
-	};
+	} satisfies Partial<Record<keyof UserStats, boolean>>;
 
 	private userSelect = {
 		id: true,
-		email: true,
 		username: true,
 		displayName: true,
-		firstName: true,
-		lastName: true,
+		avatarUrl: true,
 		role: true,
-	};
+	} satisfies Partial<Record<keyof User, boolean>>;
 
 	save(data: Omit<CreateUserDto, 'password'>) {
 		return this.prisma.user.create({
@@ -40,7 +39,10 @@ export class UserRepository {
 					create: {},
 				},
 			},
-			select: this.userSelect,
+			select: {
+				...this.userSelect,
+				email: true,
+			},
 		});
 	}
 
@@ -53,6 +55,10 @@ export class UserRepository {
 			where: { id },
 			select: {
 				...this.userSelect,
+				bio: true,
+				coverImageUrl: true,
+				birthDate: true,
+				localePreference: true,
 				stats: statsSelect,
 			},
 		});
