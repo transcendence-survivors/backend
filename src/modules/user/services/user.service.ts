@@ -8,6 +8,8 @@ import {
 } from '../exceptions/user.conflict.exception';
 import UserNotFoundException from '../exceptions/user.not-find.exception';
 import { Email } from '@/libs/types';
+import { UserQueryDto } from '../dto/user-query.dto';
+import { PaginationService } from '@/common/services/pagination.service';
 
 export interface UserFindSingleParams {
 	id?: string;
@@ -17,7 +19,20 @@ export interface UserFindSingleParams {
 
 @Injectable()
 export class UserService {
-	constructor(private repository: UserRepository) {}
+	constructor(
+		private readonly repository: UserRepository,
+		private readonly pagination: PaginationService,
+	) {}
+
+	async findPage(query: UserQueryDto) {
+		const { page, limit, orderBy } = query;
+		const { data, total } = await this.repository.findPage(
+			page,
+			limit,
+			orderBy,
+		);
+		return this.pagination.create(data, page, limit, total);
+	}
 
 	async getSingle({ id, email, username }: UserFindSingleParams) {
 		if (Object.keys({ id, email, username }).length === 0) {

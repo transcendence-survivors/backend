@@ -34,7 +34,6 @@ export class ExceptionsFilter implements ExceptionFilter {
 		const response = ctx.getResponse<Response>();
 
 		if (!this.isHttpException(exception)) {
-			console.error('Non-HTTP exception:', exception);
 			return response.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
 				status: 'error',
 				message: 'Internal server error',

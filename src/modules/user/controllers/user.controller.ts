@@ -1,6 +1,15 @@
-import { Controller, Get, Delete, Param, Body, HttpCode } from '@nestjs/common';
+import {
+	Controller,
+	Get,
+	Delete,
+	Param,
+	Body,
+	HttpCode,
+	Query,
+} from '@nestjs/common';
 import { UserService } from '../services/user.service';
 import { BaseController } from '@/common/base.controller';
+import { UserQueryDto } from '../dto/user-query.dto';
 
 @Controller('users')
 export class UserController extends BaseController {
@@ -15,6 +24,13 @@ export class UserController extends BaseController {
 		return this.ok(user, 'User found');
 	}
 
+	@Get()
+	async getUsers(@Query() query: UserQueryDto) {
+		const res = await this.userService.findPage(query);
+		console.log(res);
+		return this.ok(res, 'Users found');
+	}
+
 	@HttpCode(204)
 	@Delete(':id')
 	async delete(@Param('id') id: string) {
@@ -23,7 +39,6 @@ export class UserController extends BaseController {
 
 	@Get('check-username/:username')
 	async checkUsername(@Param('username') username: string) {
-		console.log('Checking username:', username);
 		return this.userService.checkUsernameAvailability(username);
 	}
 

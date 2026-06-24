@@ -2,12 +2,22 @@ import { PrismaService } from '@/common/services/prisma.service';
 import { Injectable } from '@nestjs/common';
 import CreateUserDto from '../../auth/dto/signup.dto';
 import { User, UserStats } from '@prisma-generated/client';
+import { UserOrderByWithRelationInput } from '@prisma-generated/internal/prismaNamespaceBrowser';
+
+export const USER_ORDER_BY = [
+	'date-asc',
+	'date-desc',
+	'username-asc',
+	'username-desc',
+] as const;
+
+export type OrderBy = (typeof USER_ORDER_BY)[number];
 
 @Injectable()
 export class UserRepository {
 	constructor(private readonly prisma: PrismaService) {}
 
-	private userStatsSelect = {
+	private readonly userStatsSelect = {
 		postCount: true,
 		likesGiven: true,
 		likesReceived: true,
@@ -15,13 +25,22 @@ export class UserRepository {
 		followingCount: true,
 	} satisfies Partial<Record<keyof UserStats, boolean>>;
 
-	private userSelect = {
+	private readonly userSelect = {
 		id: true,
 		username: true,
 		displayName: true,
 		avatarUrl: true,
-		role: true,
 	} satisfies Partial<Record<keyof User, boolean>>;
+
+	private readonly orderByMapping: Record<
+		OrderBy,
+		UserOrderByWithRelationInput
+	> = {
+		'date-asc': { createdAt: 'asc' },
+		'date-desc': { createdAt: 'desc' },
+		'username-asc': { username: 'asc' },
+		'username-desc': { username: 'desc' },
+	};
 
 	save(data: Omit<CreateUserDto, 'password'>) {
 		return this.prisma.user.create({
@@ -42,7 +61,26 @@ export class UserRepository {
 			select: {
 				...this.userSelect,
 				email: true,
+				role: true,
 			},
+		});
+	}
+
+	async findPage(page: number, limit: number, orderBy?: OrderBy) {
+		const skip = (page - 1) * limit;
+
+		return this.prisma.$transaction(async (tx) => {
+			const [data, total] = await Promise.all([
+				tx.user.findMany({
+					skip,
+					take: limit,
+					orderBy: orderBy ? this.orderByMapping[orderBy] : undefined,
+					select: this.userSelect,
+				}),
+				tx.user.count(),
+			]);
+
+			return { data, total };
 		});
 	}
 
@@ -117,13 +155,13 @@ export class UserRepository {
 	}
 
 	async isByEmail(email: string): Promise<boolean> {
-		const count = await this.prisma.user.count({ where: { email } });
-		return count > 0;
+		const exist = await this.prisma.user.findFirst({ where: { email } });
+		return exist !== null;
 	}
 
 	async isByUsername(username: string): Promise<boolean> {
-		const count = await this.prisma.user.count({ where: { username } });
-		return count > 0;
+		const exist = await this.prisma.user.findFirst({ where: { username } });
+		return exist !== null;
 	}
 
 	isConflict(email: string, username: string) {

@@ -65,7 +65,6 @@ export class AuthController extends BaseController {
 		@CurrentUserRefresh() user: JwtRefreshPayloadParams,
 		@Res({ passthrough: true }) res: Response,
 	) {
-		console.log('Refreshing token for user:', user.userId);
 		const accessToken = await this.authService.refresh(user);
 		this.setAccessTokenCookie(res, accessToken);
 	}
