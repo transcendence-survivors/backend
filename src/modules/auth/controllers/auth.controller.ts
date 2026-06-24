@@ -15,7 +15,7 @@ import { TokenService } from '@/modules/auth/token/service/token.service';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
 import SignUpDto from '@/modules/auth/dto/signup.dto';
-import { RefreshTokenGuard } from '@/core/security/guards/refresh-token.guard';
+import { JWTRefreshGuard } from '@/core/security/guards/jwt-refresh.guard';
 import { type Response } from 'express';
 import { type Env } from '@/core/config/env/providers/env.provider';
 import { type JwtRefreshPayload } from '@/core/security/interfaces/jwt-payload.interface';
@@ -59,7 +59,7 @@ export class AuthController extends BaseController {
 	}
 
 	@HttpCode(204)
-	@UseGuards(RefreshTokenGuard)
+	@UseGuards(JWTRefreshGuard)
 	@Post('refresh')
 	async refresh(
 		@CurrentUserRefresh() user: JwtRefreshPayload,
@@ -70,7 +70,7 @@ export class AuthController extends BaseController {
 	}
 
 	@HttpCode(204)
-	@UseGuards(RefreshTokenGuard)
+	@UseGuards(JWTRefreshGuard)
 	@Post('logout')
 	async logout(
 		@CurrentUserRefresh() user: JwtRefreshPayload,

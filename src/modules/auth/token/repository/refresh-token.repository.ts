@@ -5,7 +5,6 @@ import { Injectable } from '@nestjs/common';
 interface RefreshTokenSave {
 	hashedToken: string;
 	expireInMs: number;
-	familyId?: string;
 	userId: string;
 	meta?: {
 		userAgent: string;
@@ -19,7 +18,7 @@ export class RefreshTokenRepository {
 	constructor(private prisma: PrismaService) {}
 
 	save(
-		{ hashedToken, expireInMs, userId, familyId, meta }: RefreshTokenSave,
+		{ hashedToken, expireInMs, userId, meta }: RefreshTokenSave,
 		ctx?: DbContext,
 	) {
 		const expirationDate = new Date(Date.now() + expireInMs);
@@ -27,7 +26,6 @@ export class RefreshTokenRepository {
 			data: {
 				hashToken: hashedToken,
 				expiredAt: expirationDate,
-				familyId,
 				userId,
 				...meta,
 			},

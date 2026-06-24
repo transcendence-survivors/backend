@@ -6,7 +6,7 @@ import {
 	UserEmailConflictException,
 	UserUsernameConflictException,
 } from '../exceptions/user.conflict.exception';
-import UserNotFoundException from '../exceptions/user.not-find.exception';
+import UserNotFoundException from '../exceptions/user.not-found.exception';
 import { UserQueryDto } from '../dto/user-query.dto';
 import { PaginationService } from '@/shared/services/pagination.service';
 import { IUserService } from '@/contracts/services/user-service.port';
@@ -34,7 +34,7 @@ export class UserService implements IUserService {
 
 	async findPage(query: UserQueryDto) {
 		const { page, limit, orderBy } = query;
-		const [data, total] = await this.repo.findPage(page, limit, orderBy);
+		const [data, total] = await this.repo.paginate(page, limit, orderBy);
 		return this.pagination.create(data, page, limit, total);
 	}
 	async getSingle({ id, email, username }: UserFindSingleParams) {
@@ -74,6 +74,11 @@ export class UserService implements IUserService {
 		const user = await this.repo.getLocalPreferenceByEmail(email, ctx);
 		if (!user) throw new UserNotFoundException();
 		return user;
+	}
+
+	async validateUserId(userId: string, ctx?: DbContext) {
+		const user = await this.repo.isByUserId(userId, ctx);
+		if (!user) throw new UserNotFoundException();
 	}
 
 	async delete(id: string) {

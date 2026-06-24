@@ -9,7 +9,7 @@ import { type JwtRefreshPayload } from '../interfaces/jwt-payload.interface';
 export const JWT_REFRESH_TOKEN_KEY = 'jwt-refresh';
 
 @Injectable()
-export class RefreshTokenStrategy extends PassportStrategy(
+export class JWTRefreshStrategy extends PassportStrategy(
 	Strategy,
 	JWT_REFRESH_TOKEN_KEY,
 ) {
@@ -23,15 +23,7 @@ export class RefreshTokenStrategy extends PassportStrategy(
 		});
 	}
 
-	validate(
-		req: Request,
-		{ sub, ...rest }: JwtRefreshPayload,
-	): JwtRefreshPayload {
-		console.log('RefreshTokenStrategy.validate', {
-			sub,
-			rest,
-			cookies: req.cookies,
-		});
+	validate(req: Request, { sub }: JwtRefreshPayload): JwtRefreshPayload {
 		return {
 			sub,
 			refreshToken: req.cookies?.refreshToken as string,

@@ -26,4 +26,6 @@ export interface IUserService {
 		email: string,
 		ctx?: DbContext,
 	): Promise<GetIdByEmailResult | null>;
+
+	validateUserId(userId: string, ctx?: DbContext): Promise<void>;
 }

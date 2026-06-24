@@ -5,6 +5,7 @@ import { CoreModule } from '@/core/core.module';
 import { UserModule } from './user/user.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { SharedModule } from '@/shared/shared.module';
+import { RelationshipsModule } from './relationship/relationship.module';
 
 @Module({
 	imports: [
@@ -13,6 +14,7 @@ import { SharedModule } from '@/shared/shared.module';
 		SharedModule,
 		AuthModule,
 		UserModule,
+		RelationshipsModule,
 	],
 })
 export class AppModule {}

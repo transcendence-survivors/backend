@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import SignInDto from '@/modules/auth/dto/signin.dto';
-import UserNotFoundException from '@/modules/user/exceptions/user.not-find.exception';
+import UserNotFoundException from '@/modules/user/exceptions/user.not-found.exception';
 import { TokenService } from '../token/service/token.service';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
