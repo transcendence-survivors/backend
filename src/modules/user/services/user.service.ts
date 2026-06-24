@@ -61,8 +61,10 @@ export class UserService implements IUserService {
 			input.username,
 			ctx,
 		);
-		if (existing?.email) throw new UserEmailConflictException();
-		if (existing?.username) throw new UserUsernameConflictException();
+		if (existing?.email === input.email)
+			throw new UserEmailConflictException();
+		if (existing?.username === input.username)
+			throw new UserUsernameConflictException();
 		return this.repo.save(input, ctx);
 	}
 	getTokenData(userId: string, ctx?: DbContext) {
