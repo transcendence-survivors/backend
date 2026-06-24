@@ -3,22 +3,16 @@ import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { InjectEnv } from '@/core/config/env/injects/env.inject';
 import { type Env } from '@/core/config/env/providers/env.provider';
-import { UserRole } from '@prisma-generated/enums';
 import { type Request } from 'express';
+import { JwtAccessPayload } from '../interfaces/jwt-payload.interface';
 
-export interface JwtAccessPayload {
-	sub: string;
-	email: string;
-	role: UserRole;
-	username: string;
-}
-
-export type JwtAccessPayloadParams = Omit<JwtAccessPayload, 'sub'> & {
-	userId: string;
-};
+export const JWT_ACCESS_TOKEN_KEY = 'jwt-access-token';
 
 @Injectable()
-export class AccessTokenStrategy extends PassportStrategy(Strategy, 'jwt') {
+export class AccessTokenStrategy extends PassportStrategy(
+	Strategy,
+	JWT_ACCESS_TOKEN_KEY,
+) {
 	constructor(@InjectEnv() readonly env: Env) {
 		super({
 			jwtFromRequest: ExtractJwt.fromExtractors([
@@ -28,11 +22,7 @@ export class AccessTokenStrategy extends PassportStrategy(Strategy, 'jwt') {
 		});
 	}
 
-	validate({ sub, email, role }: JwtAccessPayload) {
-		return {
-			userId: sub,
-			email,
-			role,
-		};
+	validate(payload: JwtAccessPayload): JwtAccessPayload {
+		return payload;
 	}
 }

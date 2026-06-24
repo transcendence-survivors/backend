@@ -2,22 +2,16 @@ import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Request } from 'express';
-import { type Env } from '@/core/config/env/providers/env.provider';
 import { InjectEnv } from '@/core/config/env/injects/env.inject';
+import { type Env } from '@/core/config/env/providers/env.provider';
+import { type JwtRefreshPayload } from '../interfaces/jwt-payload.interface';
 
-export interface JwtRefreshPayloadParams {
-	userId: string;
-	refreshToken: string;
-}
-
-export type JwtRefreshPayload = Omit<JwtRefreshPayloadParams, 'userId'> & {
-	sub: string;
-};
+export const JWT_REFRESH_TOKEN_KEY = 'jwt-refresh';
 
 @Injectable()
 export class RefreshTokenStrategy extends PassportStrategy(
 	Strategy,
-	'jwt-refresh',
+	JWT_REFRESH_TOKEN_KEY,
 ) {
 	constructor(@InjectEnv() readonly env: Env) {
 		super({
@@ -31,10 +25,15 @@ export class RefreshTokenStrategy extends PassportStrategy(
 
 	validate(
 		req: Request,
-		{ sub }: JwtRefreshPayload,
-	): JwtRefreshPayloadParams {
+		{ sub, ...rest }: JwtRefreshPayload,
+	): JwtRefreshPayload {
+		console.log('RefreshTokenStrategy.validate', {
+			sub,
+			rest,
+			cookies: req.cookies,
+		});
 		return {
-			userId: sub,
+			sub,
 			refreshToken: req.cookies?.refreshToken as string,
 		};
 	}

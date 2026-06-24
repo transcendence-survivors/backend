@@ -1,9 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectEnv } from '@/core/config/env/injects/env.inject';
-import { JwtAccessPayloadParams } from '../strategies/access-token.strategy';
 import { createHash, randomBytes } from 'crypto';
-
-import { JwtRefreshPayloadParams } from '../strategies/refresh-token.strategy';
 import { RefreshTokenRepository } from '../repository/refresh-token.repository';
 import { JwtService } from '@nestjs/jwt';
 import { PasswordTokenRepository } from '../repository/password-token.repository';
@@ -13,6 +10,10 @@ import TokenNotFoundException from '../exceptions/token.not-fing.exception';
 import TokenRevokedException from '../exceptions/token.revoked.exception';
 import TokenExpiredException from '../exceptions/token.expired.exception';
 import { DbContext } from '@/core/database/uow/db-context';
+import {
+	JwtAccessPayload,
+	JwtRefreshPayload,
+} from '@/core/security/interfaces/jwt-payload.interface';
 
 @Injectable()
 export class TokenService {
@@ -26,21 +27,20 @@ export class TokenService {
 		@InjectEnv() private readonly env: Env,
 	) {}
 
-	logout(user: JwtRefreshPayloadParams) {
+	logout(user: JwtRefreshPayload) {
 		return this.refreshRepo.revoke(this.hash(user.refreshToken));
 	}
 
-	async buildJWT({ userId, role, email, username }: JwtAccessPayloadParams) {
+	async buildJWT(payload: JwtAccessPayload) {
 		const [refreshToken, accessToken] = await Promise.all([
-			this.createRefresh(userId),
-			this.generateAccess({ userId, role, email, username }),
+			this.createRefresh(payload.sub),
+			this.generateAccess(payload),
 		]);
 
 		return { refreshToken, accessToken };
 	}
 
-	generateAccess({ userId, role, email, username }: JwtAccessPayloadParams) {
-		const payload = { sub: userId, role, email, username };
+	generateAccess(payload: JwtAccessPayload) {
 		return this.jwtService.signAsync(payload, {
 			expiresIn: `${this.env.accessToken.ms}ms`,
 			secret: this.env.accessToken.secret,
@@ -67,9 +67,9 @@ export class TokenService {
 		return resetToken;
 	}
 
-	async validateRefresh(user: JwtRefreshPayloadParams) {
+	async validateRefresh(user: JwtRefreshPayload) {
 		const hashToken = this.hash(user.refreshToken);
-		const token = await this.refreshRepo.get(hashToken, user.userId);
+		const token = await this.refreshRepo.get(hashToken, user.sub);
 
 		if (!token) throw new TokenNotFoundException();
 		if (token.isRevoked) throw new TokenRevokedException();

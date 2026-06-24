@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import SignInDto from '@/modules/auth/dto/signin.dto';
-import { JwtRefreshPayloadParams } from '../token/strategies/refresh-token.strategy';
 import UserNotFoundException from '@/modules/user/exceptions/user.not-find.exception';
 import { TokenService } from '../token/service/token.service';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto';
@@ -14,6 +13,7 @@ import { InjectUserService } from '@/contracts/services/user-service.inject';
 import { type IUserService } from '@/contracts/services/user-service.port';
 import { UnitOfWork } from '@/core/database/uow/unit-of-work';
 import SignUpDto from '@/modules/auth/dto/signup.dto';
+import { JwtRefreshPayload } from '@/core/security/interfaces/jwt-payload.interface';
 
 @Injectable()
 export class AuthService {
@@ -37,7 +37,7 @@ export class AuthService {
 		}
 
 		const { accessToken, refreshToken } = await this.tokenService.buildJWT({
-			userId: user.id,
+			sub: user.id,
 			username: user.username,
 			email: user.email,
 			role: user.role,
@@ -67,7 +67,7 @@ export class AuthService {
 		);
 
 		const { accessToken, refreshToken } = await this.tokenService.buildJWT({
-			userId: user.id,
+			sub: user.id,
 			username: userData.username,
 			email: userData.email,
 			role: user.role,
@@ -75,14 +75,14 @@ export class AuthService {
 		return { accessToken, refreshToken, user };
 	}
 
-	async refresh(user: JwtRefreshPayloadParams) {
+	async refresh(user: JwtRefreshPayload) {
 		await this.tokenService.validateRefresh(user);
-		const userData = await this.userService.getTokenData(user.userId);
+		const userData = await this.userService.getTokenData(user.sub);
 		if (!userData) {
 			throw new UserNotFoundException();
 		}
 		return this.tokenService.generateAccess({
-			userId: userData.id,
+			sub: userData.id,
 			...userData,
 		});
 	}

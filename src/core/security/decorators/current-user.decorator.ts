@@ -1,7 +1,9 @@
-import { JwtAccessPayload } from '@/modules/auth/token/strategies/access-token.strategy';
-import { JwtRefreshPayloadParams } from '@/modules/auth/token/strategies/refresh-token.strategy';
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { Request } from 'express';
+import {
+	JwtAccessPayload,
+	JwtRefreshPayload,
+} from '../interfaces/jwt-payload.interface';
 
 export const CurrentUser = createParamDecorator(
 	(_, ctx: ExecutionContext): JwtAccessPayload => {
@@ -11,8 +13,8 @@ export const CurrentUser = createParamDecorator(
 );
 
 export const CurrentUserRefresh = createParamDecorator(
-	(_, ctx: ExecutionContext): JwtRefreshPayloadParams => {
+	(_, ctx: ExecutionContext): JwtRefreshPayload => {
 		const request = ctx.switchToHttp().getRequest<Request>();
-		return request.user as JwtRefreshPayloadParams;
+		return request.user as JwtRefreshPayload;
 	},
 );

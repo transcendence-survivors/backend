@@ -6,6 +6,7 @@ import {
 	Body,
 	HttpCode,
 	Query,
+	UseGuards,
 } from '@nestjs/common';
 import { UserService } from '../services/user.service';
 import { BaseController } from '@/shared/base.controller';
@@ -27,7 +28,6 @@ export class UserController extends BaseController {
 	@Get()
 	async getUsers(@Query() query: UserQueryDto) {
 		const res = await this.userService.findPage(query);
-		console.log(res);
 		return this.ok(res, 'Users found');
 	}
 

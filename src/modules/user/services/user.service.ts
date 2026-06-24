@@ -25,12 +25,18 @@ export class UserService implements IUserService {
 		private readonly pagination: PaginationService,
 	) {}
 
-	async findPage(query: UserQueryDto) {
-		const { page, limit, orderBy } = query;
-		const { data, total } = await this.repo.findPage(page, limit, orderBy);
-		return this.pagination.create(data, page, limit, total);
+	private findSingle({ id, email, username }: UserFindSingleParams) {
+		if (id) return this.repo.findById(id);
+		if (email) return this.repo.findByEmail(email);
+		if (username) return this.repo.findByUsername(username);
+		return null;
 	}
 
+	async findPage(query: UserQueryDto) {
+		const { page, limit, orderBy } = query;
+		const [data, total] = await this.repo.findPage(page, limit, orderBy);
+		return this.pagination.create(data, page, limit, total);
+	}
 	async getSingle({ id, email, username }: UserFindSingleParams) {
 		if (Object.keys({ id, email, username }).length === 0) {
 			throw new FindParamException();
@@ -40,39 +46,23 @@ export class UserService implements IUserService {
 		return user;
 	}
 
-	async delete(id: string) {
-		await this.repo.delete(id);
+	async checkUsernameAvailability(username: string) {
+		const exist = await this.repo.findIdByUsername(username);
+		if (exist) throw new UserUsernameConflictException();
+	}
+	async checkEmailAvailability(email: string) {
+		const exist = await this.repo.findIdByEmail(email);
+		if (exist) throw new UserEmailConflictException();
 	}
 
-	async create(dto: Omit<CreateUserDto, 'password'>) {
-		const existing = await this.repo.isConflict(dto.email, dto.username);
+	async createUser(input: CreateUserDto, ctx?: DbContext) {
+		const existing = await this.repo.isConflict(
+			input.email,
+			input.username,
+			ctx,
+		);
 		if (existing?.email) throw new UserEmailConflictException();
 		if (existing?.username) throw new UserUsernameConflictException();
-		return this.repo.save(dto);
-	}
-
-	findSingle({ id, email, username }: UserFindSingleParams) {
-		if (id) return this.repo.findById(id);
-		if (email) return this.repo.findByEmail(email);
-		if (username) return this.repo.findByUsername(username);
-		return null;
-	}
-
-	async checkUsernameAvailability(username: string) {
-		const exist = await this.repo.isByUsername(username);
-		if (exist) {
-			throw new UserUsernameConflictException();
-		}
-	}
-
-	async checkEmailAvailability(email: string) {
-		const exist = await this.repo.isByEmail(email);
-		if (exist) {
-			throw new UserEmailConflictException();
-		}
-	}
-
-	createUser(input: CreateUserDto, ctx?: DbContext) {
 		return this.repo.save(input, ctx);
 	}
 	getTokenData(userId: string, ctx?: DbContext) {
@@ -82,5 +72,9 @@ export class UserService implements IUserService {
 		const user = await this.repo.getLocalPreferenceByEmail(email, ctx);
 		if (!user) throw new UserNotFoundException();
 		return user;
+	}
+
+	async delete(id: string) {
+		await this.repo.delete(id);
 	}
 }

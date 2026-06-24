@@ -43,22 +43,18 @@ export class UserRepository {
 		'username-desc': { username: 'desc' },
 	};
 
-	async findPage(page: number, limit: number, orderBy?: OrderBy) {
+	findPage(page: number, limit: number, orderBy?: OrderBy, ctx?: DbContext) {
 		const skip = (page - 1) * limit;
-
-		return this.prisma.$transaction(async (tx) => {
-			const [data, total] = await Promise.all([
-				tx.user.findMany({
-					skip,
-					take: limit,
-					orderBy: orderBy ? this.orderByMapping[orderBy] : undefined,
-					select: this.userSelect,
-				}),
-				tx.user.count(),
-			]);
-
-			return { data, total };
-		});
+		const client = ctx?.client ?? this.prisma;
+		return Promise.all([
+			client.user.findMany({
+				skip,
+				take: limit,
+				orderBy: orderBy ? this.orderByMapping[orderBy] : undefined,
+				select: this.userSelect,
+			}),
+			client.user.count(),
+		]);
 	}
 
 	findById(id: string, selectStats = false) {
@@ -109,17 +105,22 @@ export class UserRepository {
 	async delete(id: string, ctx?: DbContext) {
 		await (ctx?.client ?? this.prisma).user.delete({ where: { id } });
 	}
-	async isByEmail(email: string, ctx?: DbContext): Promise<boolean> {
-		const exist = await (ctx?.client ?? this.prisma).user.findFirst({
+
+	findIdByEmail(email: string, ctx?: DbContext) {
+		return (ctx?.client ?? this.prisma).user.findFirst({
 			where: { email },
+			select: {
+				id: true,
+			},
 		});
-		return exist !== null;
 	}
-	async isByUsername(username: string, ctx?: DbContext): Promise<boolean> {
-		const exist = await (ctx?.client ?? this.prisma).user.findFirst({
+	findIdByUsername(username: string, ctx?: DbContext) {
+		return (ctx?.client ?? this.prisma).user.findFirst({
 			where: { username },
+			select: {
+				id: true,
+			},
 		});
-		return exist !== null;
 	}
 
 	isConflict(email: string, username: string, ctx?: DbContext) {
