@@ -7,18 +7,18 @@ import {
 	UseGuards,
 } from '@nestjs/common';
 import { AuthService } from '../services/auth.service';
-import CreateUserDto from '@/modules/auth/dto/signup.dto';
 import { type Response } from 'express';
-import { BaseController } from '@/common/base.controller';
+import { BaseController } from '@/shared/base.controller';
 import { SignInDto } from '@/modules/auth/dto/signin.dto';
-import { InjectEnv } from '@/modules/env/injects/env.inject';
-import { type Env } from '@/modules/env/providers/env.provider';
-import { RefreshTokenGuard } from '../../token/guards/refresh-token.guard';
-import { CurrentUserRefresh } from '@/common/decorators/current-user.decorator';
-import { type JwtRefreshPayloadParams } from '../../token/strategies/refresh-token.strategy';
-import { TokenService } from '@/modules/token/service/token.service';
+import { InjectEnv } from '@/core/config/env/injects/env.inject';
+import { type Env } from '@/core/config/env/providers/env.provider';
+import { RefreshTokenGuard } from '../token/guards/refresh-token.guard';
+import { CurrentUserRefresh } from '@/shared/decorators/current-user.decorator';
+import { type JwtRefreshPayloadParams } from '../token/strategies/refresh-token.strategy';
+import { TokenService } from '@/modules/auth/token/service/token.service';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
+import SignUpDto from '@/modules/auth/dto/signup.dto';
 
 @Controller('auth')
 export class AuthController extends BaseController {
@@ -48,7 +48,7 @@ export class AuthController extends BaseController {
 	@HttpCode(201)
 	@Post('register')
 	async signUp(
-		@Body() signUpDto: CreateUserDto,
+		@Body() signUpDto: SignUpDto,
 		@Res({ passthrough: true }) res: Response,
 	) {
 		const { refreshToken, accessToken, user } =

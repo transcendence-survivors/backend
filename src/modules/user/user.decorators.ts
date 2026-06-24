@@ -1,4 +1,4 @@
-import { IsAtLeast13Constraint } from '@/common/validators/isAtLeast13';
+import { IsAtLeast13Constraint } from '@/shared/validators/isAtLeast13';
 import { applyDecorators } from '@nestjs/common';
 import { LocalePreference, UserGender } from '@prisma-generated/enums';
 import { Type } from 'class-transformer';

@@ -8,7 +8,7 @@ import {
 	Query,
 } from '@nestjs/common';
 import { UserService } from '../services/user.service';
-import { BaseController } from '@/common/base.controller';
+import { BaseController } from '@/shared/base.controller';
 import { UserQueryDto } from '../dto/user-query.dto';
 
 @Controller('users')

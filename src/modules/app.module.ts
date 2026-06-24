@@ -1,9 +1,18 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from './auth/auth.module';
-import { EnvModule } from './env/env.module';
-import { EmailModule } from './email/email.module';
+
+import { CoreModule } from '@/core/core.module';
+import { UserModule } from './user/user.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { SharedModule } from '@/shared/shared.module';
 
 @Module({
-	imports: [EnvModule, AuthModule, EmailModule],
+	imports: [
+		EventEmitterModule.forRoot(),
+		CoreModule,
+		SharedModule,
+		AuthModule,
+		UserModule,
+	],
 })
 export class AppModule {}

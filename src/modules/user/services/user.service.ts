@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import CreateUserDto from '../../auth/dto/signup.dto';
+import CreateUserDto from '../dto/user-create.dto';
 import { UserRepository } from '../repositories/user.repository';
 import FindParamException from '../exceptions/user.find-param.exception';
 import {
@@ -7,9 +7,10 @@ import {
 	UserUsernameConflictException,
 } from '../exceptions/user.conflict.exception';
 import UserNotFoundException from '../exceptions/user.not-find.exception';
-import { Email } from '@/libs/types';
 import { UserQueryDto } from '../dto/user-query.dto';
-import { PaginationService } from '@/common/services/pagination.service';
+import { PaginationService } from '@/shared/services/pagination.service';
+import { IUserService } from '@/contracts/services/user-service.port';
+import { DbContext } from '@/core/database/uow/db-context';
 
 export interface UserFindSingleParams {
 	id?: string;
@@ -18,19 +19,15 @@ export interface UserFindSingleParams {
 }
 
 @Injectable()
-export class UserService {
+export class UserService implements IUserService {
 	constructor(
-		private readonly repository: UserRepository,
+		private readonly repo: UserRepository,
 		private readonly pagination: PaginationService,
 	) {}
 
 	async findPage(query: UserQueryDto) {
 		const { page, limit, orderBy } = query;
-		const { data, total } = await this.repository.findPage(
-			page,
-			limit,
-			orderBy,
-		);
+		const { data, total } = await this.repo.findPage(page, limit, orderBy);
 		return this.pagination.create(data, page, limit, total);
 	}
 
@@ -44,37 +41,46 @@ export class UserService {
 	}
 
 	async delete(id: string) {
-		await this.repository.delete(id);
+		await this.repo.delete(id);
 	}
 
 	async create(dto: Omit<CreateUserDto, 'password'>) {
-		const existing = await this.repository.isConflict(
-			dto.email,
-			dto.username,
-		);
+		const existing = await this.repo.isConflict(dto.email, dto.username);
 		if (existing?.email) throw new UserEmailConflictException();
 		if (existing?.username) throw new UserUsernameConflictException();
-		return this.repository.save(dto);
+		return this.repo.save(dto);
 	}
 
-	async findSingle({ id, email, username }: UserFindSingleParams) {
-		if (id) return this.repository.findById(id);
-		if (email) return this.repository.findByEmail(email);
-		if (username) return this.repository.findByUsername(username);
+	findSingle({ id, email, username }: UserFindSingleParams) {
+		if (id) return this.repo.findById(id);
+		if (email) return this.repo.findByEmail(email);
+		if (username) return this.repo.findByUsername(username);
 		return null;
 	}
 
 	async checkUsernameAvailability(username: string) {
-		const exist = await this.repository.isByUsername(username);
+		const exist = await this.repo.isByUsername(username);
 		if (exist) {
 			throw new UserUsernameConflictException();
 		}
 	}
 
-	async checkEmailAvailability(email: Email) {
-		const exist = await this.repository.isByEmail(email);
+	async checkEmailAvailability(email: string) {
+		const exist = await this.repo.isByEmail(email);
 		if (exist) {
 			throw new UserEmailConflictException();
 		}
+	}
+
+	createUser(input: CreateUserDto, ctx?: DbContext) {
+		return this.repo.save(input, ctx);
+	}
+	getTokenData(userId: string, ctx?: DbContext) {
+		return this.repo.getTokenData(userId, ctx);
+	}
+	async getLocalPreferenceByEmail(email: string, ctx?: DbContext) {
+		const user = await this.repo.getLocalPreferenceByEmail(email, ctx);
+		if (!user) throw new UserNotFoundException();
+		return user;
 	}
 }

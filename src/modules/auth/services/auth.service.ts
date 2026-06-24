@@ -1,36 +1,40 @@
-import { HttpException, Injectable } from '@nestjs/common';
-import { hash, compare } from 'bcrypt';
-import CreateUserDto from '@/modules/auth/dto/signup.dto';
-import { UserService } from '@/modules/user/services/user.service';
-import { ProviderRepository } from '../repositories/provider.repository';
+import { Injectable } from '@nestjs/common';
 import SignInDto from '@/modules/auth/dto/signin.dto';
-import { JwtRefreshPayloadParams } from '../../token/strategies/refresh-token.strategy';
-import { UserRepository } from '@/modules/user/repositories/user.repository';
+import { JwtRefreshPayloadParams } from '../token/strategies/refresh-token.strategy';
 import UserNotFoundException from '@/modules/user/exceptions/user.not-find.exception';
-import { TokenService } from '../../token/service/token.service';
+import { TokenService } from '../token/service/token.service';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto';
-import { EmailService } from '@/modules/email/services/email.service';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
-import { PrismaService } from '@/common/services/prisma.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { PasswordResetRequestedEvent } from '@/contracts/events/password-reset-requested.event';
+import { AppEvents } from '@/contracts/events/event-names';
+import { UserCreatedEvent } from '@/contracts/events';
+import { LocalAuthProviderService } from '../auth-provider/services/local-auth.services';
+import { InjectUserService } from '@/contracts/services/user-service.inject';
+import { type IUserService } from '@/contracts/services/user-service.port';
+import { UnitOfWork } from '@/core/database/uow/unit-of-work';
+import SignUpDto from '@/modules/auth/dto/signup.dto';
 
 @Injectable()
 export class AuthService {
-	private readonly SALT = 10;
-
 	constructor(
-		private readonly providerRepo: ProviderRepository,
-		private readonly userService: UserService,
-		private readonly userRepo: UserRepository,
+		@InjectUserService() private readonly userService: IUserService,
+		private readonly uow: UnitOfWork,
+		private readonly localAuth: LocalAuthProviderService,
 		private readonly tokenService: TokenService,
-		private readonly emailService: EmailService,
-		private readonly prisma: PrismaService,
+		private readonly eventEmitter: EventEmitter2,
 	) {}
 
-	async signInLocale({ usernameOrEmail, password }: SignInDto) {
-		const { user } = await this.validateLocaleProvider(
-			usernameOrEmail,
-			password,
+	async signInLocale(dto: SignInDto) {
+		const provider = await this.localAuth.validate(
+			dto.usernameOrEmail,
+			dto.password,
 		);
+
+		const user = await this.userService.getTokenData(provider.userId);
+		if (!user) {
+			throw new UserNotFoundException();
+		}
 
 		const { accessToken, refreshToken } = await this.tokenService.buildJWT({
 			userId: user.id,
@@ -41,23 +45,31 @@ export class AuthService {
 		return { accessToken, refreshToken, user };
 	}
 
-	async signUpLocale({ password, ...userData }: CreateUserDto) {
-		const user = await this.userService.create(userData);
-		await this.createLocaleProvider(user.id, password);
-		await this.emailService.sendWelcomeEmail(
-			{
-				firstName: userData.firstName,
-				lastName: userData.lastName,
-				email: userData.email,
-				name: userData.username,
-			},
-			userData.localePreference,
+	async signUpLocale(dto: SignUpDto) {
+		const { password, ...userData } = dto;
+
+		const user = await this.uow.run(async (ctx) => {
+			const user = await this.userService.createUser(userData, ctx);
+			await this.localAuth.create(user.id, password, ctx);
+			return user;
+		});
+
+		this.eventEmitter.emit(
+			AppEvents.USER_CREATED,
+			new UserCreatedEvent(
+				user.id,
+				userData.email,
+				userData.firstName,
+				userData.lastName,
+				userData.username,
+				userData.localePreference,
+			),
 		);
 
 		const { accessToken, refreshToken } = await this.tokenService.buildJWT({
 			userId: user.id,
-			username: user.username,
-			email: user.email,
+			username: userData.username,
+			email: userData.email,
 			role: user.role,
 		});
 		return { accessToken, refreshToken, user };
@@ -65,7 +77,7 @@ export class AuthService {
 
 	async refresh(user: JwtRefreshPayloadParams) {
 		await this.tokenService.validateRefresh(user);
-		const userData = await this.userRepo.getTokenData(user.userId);
+		const userData = await this.userService.getTokenData(user.userId);
 		if (!userData) {
 			throw new UserNotFoundException();
 		}
@@ -75,56 +87,32 @@ export class AuthService {
 		});
 	}
 
-	async forgotPassword({ email }: ForgotPasswordDto) {
-		const exist = await this.userRepo.getIdByEmail(email);
-		if (!exist) {
-			throw new UserNotFoundException();
-		}
-		const token = await this.tokenService.createPasswordReset(exist.id);
-		await this.emailService.sendResetPassword(
-			email,
-			token,
-			exist.localePreference,
+	async forgotPassword(dto: ForgotPasswordDto) {
+		const user = await this.userService.getLocalPreferenceByEmail(
+			dto.email,
+		);
+		if (!user) throw new UserNotFoundException();
+		const token = await this.tokenService.createPasswordReset(user.id);
+
+		this.eventEmitter.emit(
+			AppEvents.PASSWORD_RESET_REQUESTED,
+			new PasswordResetRequestedEvent(
+				dto.email,
+				token,
+				user.localePreference,
+			),
 		);
 	}
 
-	async resetPassword({ token, newPassword }: ResetPasswordDto) {
-		const { id, userId } =
-			await this.tokenService.getValidPasswordReset(token);
-		const hash = await this.hashPassword(newPassword);
+	async resetPassword(dto: ResetPasswordDto) {
+		const { id, userId } = await this.tokenService.getValidPasswordReset(
+			dto.token,
+		);
 
-		await this.prisma.$transaction([
-			this.providerRepo.updateLocalePassword(userId, hash),
-			this.tokenService.usePasswordResetToken(id),
-			this.tokenService.revokeUserRefresh(userId),
-		]);
-	}
-
-	async validateLocaleProvider(usernameOrEmail: string, password: string) {
-		const provider =
-			await this.providerRepo.findLocaleByUsernameOrEmail(
-				usernameOrEmail,
-			);
-		if (!provider || !provider.password) {
-			throw new HttpException('Invalid credentials', 401);
-		}
-		const isMatch = await this.comparePassword(password, provider.password);
-		if (!isMatch) {
-			throw new HttpException('Invalid credentials', 401);
-		}
-		return provider;
-	}
-
-	private async createLocaleProvider(userId: string, password: string) {
-		const hash = await this.hashPassword(password);
-		return this.providerRepo.createLocale(hash, userId);
-	}
-
-	private hashPassword(password: string) {
-		return hash(password, this.SALT);
-	}
-
-	private comparePassword(password: string, hash: string) {
-		return compare(password, hash);
+		await this.uow.run(async (ctx) => {
+			await this.localAuth.updatePassword(userId, dto.newPassword, ctx);
+			await this.tokenService.usePasswordResetToken(id, ctx);
+			await this.tokenService.revokeUserRefresh(userId, ctx);
+		});
 	}
 }
