@@ -1,10 +1,10 @@
-import { BaseController } from '@/common/base.controller';
+import { BaseController } from '@/shared/base.controller';
 import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { PostService } from '../services/post.service';
-import { AccessTokenGuard } from '@/modules/token/guards/access-token.guard';
-import { CurrentUser } from '@/common/decorators/current-user.decorator';
-import { type JwtAccessPayloadParams } from '@/modules/token/strategies/access-token.strategy';
 import { CreatePostDto } from '../dto/post.dto';
+import { JWTAccessGuard } from '@/core/security/guards/jwt-access.guard';
+import type { JwtAccessPayload } from '@/core/security/interfaces/jwt-payload.interface';
+import { CurrentUser } from '@/core/security/decorators/current-user.decorator';
 
 @Controller('post')
 export class PostController extends BaseController {
@@ -17,13 +17,13 @@ export class PostController extends BaseController {
 		return this.postService.findAll();
 	}
 
-	@UseGuards(AccessTokenGuard)
+	@UseGuards(JWTAccessGuard)
 	@Post()
 	writePost(
 		@Body() createPostDto: CreatePostDto,
-		@CurrentUser() user: JwtAccessPayloadParams,
+		@CurrentUser() user: JwtAccessPayload,
 	) {
-		return this.postService.create(user.userId, createPostDto);
+		return this.postService.create(user.sub, createPostDto);
 	}
 
 	//@CurrentUser()user: JwtAccessPayloadParams
