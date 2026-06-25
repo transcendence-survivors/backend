@@ -9,7 +9,7 @@ import {
 import UserNotFoundException from '../exceptions/user.not-found.exception';
 import { UserQueryDto } from '../dto/user-query.dto';
 import { PaginationService } from '@/shared/services/pagination.service';
-import { IUserService } from '@/contracts/services/user-service.port';
+import { IUserService } from '@/contracts/services/user/user-service.port';
 import { DbContext } from '@/core/database/uow/db-context';
 
 export interface UserFindSingleParams {

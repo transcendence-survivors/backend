@@ -1,15 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { BlockRepository } from '../repositories/block.repository';
-import { InjectUserService } from '@/contracts/services/user-service.inject';
-import type { IUserService } from '@/contracts/services/user-service.port';
+import { InjectUserService } from '@/contracts/services/user/user-service.inject';
+import type { IUserService } from '@/contracts/services/user/user-service.port';
 import { BadBlockException } from '../exceptions/block.bad.exception';
 import { BlockConflictException } from '../exceptions/block.conflict.exception';
 import { BlockNotFoundException } from '../exceptions/block.not-found.exceptions';
 import { BlockQueryDto } from '../dto/blocker-query.dto';
 import { PaginationService } from '@/shared/services/pagination.service';
+import { type IBlockService } from '@/contracts/services/block/block-service.port';
 
 @Injectable()
-export class BlockService {
+export class BlockService implements IBlockService {
 	constructor(
 		@InjectUserService() private readonly userService: IUserService,
 		private readonly repo: BlockRepository,
@@ -46,5 +47,18 @@ export class BlockService {
 		});
 		const blockedUsers = data.map((block) => block.blocked);
 		return this.pagination.create(blockedUsers, page, limit, total);
+	}
+
+	findBlockedBlockerById(userId: string, otherId: string) {
+		return Promise.all([
+			this.repo.findBlockedById({
+				blockedId: otherId,
+				blockerId: userId,
+			}),
+			this.repo.findBlockedById({
+				blockedId: userId,
+				blockerId: otherId,
+			}),
+		]);
 	}
 }

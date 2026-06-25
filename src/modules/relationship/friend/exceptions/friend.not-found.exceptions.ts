@@ -6,10 +6,14 @@ class FriendNotFoundException extends AppHttpException {
 	}
 }
 
-class FriendRequestNotFoundException extends AppHttpException {
+class FriendRequestDoesNotExistException extends AppHttpException {
 	constructor() {
-		super('Friend request not found', 'friend.request.not.found', 404);
+		super(
+			'Friend request does not exist',
+			'friend_request_does_not_exist',
+			404,
+		);
 	}
 }
 
-export { FriendNotFoundException, FriendRequestNotFoundException };
+export { FriendNotFoundException, FriendRequestDoesNotExistException };

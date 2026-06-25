@@ -7,6 +7,7 @@ import type {
 	FriendshipOrderByWithRelationInput,
 	FriendshipWhereInput,
 } from '@prisma-generated/models';
+import { FriendQueryDto } from '../dto/friend-query.dto';
 
 export const FRIENDSHIP_ORDER_BY = ['createdAsc', 'createdDesc'] as const;
 
@@ -24,14 +25,9 @@ interface DeleteFriendShip {
 	friendId: string;
 }
 
-interface PaginateFriendShips {
+type PaginateFriendShips = FriendQueryDto & {
 	userId: string;
-	page: number;
-	limit: number;
-	orderBy: FriendShipOrderBy;
-	search?: string;
-	status: FriendshipState;
-}
+};
 
 @Injectable()
 export class FriendRepository {
@@ -46,7 +42,15 @@ export class FriendRepository {
 	constructor(private readonly prisma: PrismaService) {}
 
 	paginate(
-		{ userId, page, limit, orderBy, search, status }: PaginateFriendShips,
+		{
+			userId,
+			page,
+			limit,
+			orderBy,
+			search,
+			status,
+			request,
+		}: PaginateFriendShips,
 		ctx?: DbContext,
 	) {
 		const skip = (page - 1) * limit;
@@ -54,6 +58,12 @@ export class FriendRepository {
 
 		const where: FriendshipWhereInput = {
 			state: status,
+			senderId:
+				status === FriendshipState.PENDING
+					? request === 'incoming'
+						? { not: userId }
+						: userId
+					: undefined,
 			OR: [
 				{
 					userAId: userId,

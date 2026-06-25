@@ -23,6 +23,11 @@ interface DeleteBlock {
 	blockedUserId: string;
 }
 
+interface FindBlockedById {
+	blockerId: string;
+	blockedId: string;
+}
+
 interface PaginateBlocks {
 	userId: string;
 	page: number;
@@ -114,5 +119,23 @@ export class BlockRepository {
 			},
 		});
 		return block !== null;
+	}
+
+	findBlockedById(
+		{ blockerId, blockedId }: FindBlockedById,
+		ctx?: DbContext,
+	) {
+		return (ctx?.client ?? this.prisma).block.findUnique({
+			where: {
+				blockerId_blockedId: {
+					blockerId,
+					blockedId,
+				},
+			},
+			select: {
+				id: true,
+				blockedId: true,
+			},
+		});
 	}
 }

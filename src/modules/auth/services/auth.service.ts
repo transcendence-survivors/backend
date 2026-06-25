@@ -9,8 +9,8 @@ import { PasswordResetRequestedEvent } from '@/contracts/events/password-reset-r
 import { AppEvents } from '@/contracts/events/event-names';
 import { UserCreatedEvent } from '@/contracts/events';
 import { LocalAuthProviderService } from '../auth-provider/services/local-auth.services';
-import { InjectUserService } from '@/contracts/services/user-service.inject';
-import { type IUserService } from '@/contracts/services/user-service.port';
+import { InjectUserService } from '@/contracts/services/user/user-service.inject';
+import { type IUserService } from '@/contracts/services/user/user-service.port';
 import { UnitOfWork } from '@/core/database/uow/unit-of-work';
 import SignUpDto from '@/modules/auth/dto/signup.dto';
 import { JwtRefreshPayload } from '@/core/security/interfaces/jwt-payload.interface';
