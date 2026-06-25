@@ -1,12 +1,20 @@
 import { BaseController } from '@/shared/base.controller';
-import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
+import {
+	Body,
+	Controller,
+	Delete,
+	Get,
+	Param,
+	Post,
+	UseGuards,
+} from '@nestjs/common';
 import { PostService } from '../services/post.service';
 import { CreatePostDto } from '../dto/post.dto';
 import { JWTAccessGuard } from '@/core/security/guards/jwt-access.guard';
 import type { JwtAccessPayload } from '@/core/security/interfaces/jwt-payload.interface';
 import { CurrentUser } from '@/core/security/decorators/current-user.decorator';
 
-@Controller('post')
+@Controller('posts')
 export class PostController extends BaseController {
 	constructor(private readonly postService: PostService) {
 		super();
@@ -24,6 +32,12 @@ export class PostController extends BaseController {
 		@CurrentUser() user: JwtAccessPayload,
 	) {
 		return this.postService.create(user.sub, createPostDto);
+	}
+
+	@UseGuards(JWTAccessGuard)
+	@Delete(':id')
+	deletePost(@Param('id') id: string, @CurrentUser() user: JwtAccessPayload) {
+		return this.postService.delete(id, user.sub);
 	}
 
 	//@CurrentUser()user: JwtAccessPayloadParams
