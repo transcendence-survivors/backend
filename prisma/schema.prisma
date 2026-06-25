@@ -83,8 +83,9 @@ model User {
 model Friendship {
     id String @id @default(uuid())
 
-    userAId String
-    userBId String
+    userAId  String
+    userBId  String
+    senderId String
 
     state FriendshipState
 
@@ -97,6 +98,7 @@ model Friendship {
     @@unique([userAId, userBId])
     @@index([userAId])
     @@index([userBId])
+    @@index([senderId])
 }
 
 model Block {

@@ -28,8 +28,10 @@ export class BlockService {
 
 	async remove(userId: string, blockedUserId: string) {
 		if (userId === blockedUserId) throw new BadBlockException();
+
 		const isBlocked = await this.repo.isBlocked(userId, blockedUserId);
 		if (!isBlocked) throw new BlockNotFoundException();
+
 		return this.repo.delete({ userId, blockedUserId });
 	}
 

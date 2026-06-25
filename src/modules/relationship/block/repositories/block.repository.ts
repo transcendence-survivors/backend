@@ -56,7 +56,6 @@ export class BlockRepository {
 			client.block.findMany({
 				skip,
 				take: limit,
-				orderBy: this.orderByMapping[orderBy],
 				where: {
 					blocked: {
 						username: username
@@ -73,6 +72,7 @@ export class BlockRepository {
 						select: UserRepository.userSelect,
 					},
 				},
+				orderBy: this.orderByMapping[orderBy],
 			}),
 			client.block.count(),
 		]);
@@ -83,6 +83,9 @@ export class BlockRepository {
 			data: {
 				blockerId: userId,
 				blockedId: blockedUserId,
+			},
+			select: {
+				id: true,
 			},
 		});
 	}
