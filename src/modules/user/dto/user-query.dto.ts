@@ -1,19 +1,15 @@
-import { IsIn, IsInt, IsOptional, Max, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsIn, IsOptional } from 'class-validator';
 import { USER_ORDER_BY, type OrderBy } from '../repositories/user.repository';
+import {
+	IsPaginationLimit,
+	IsPaginationPage,
+} from '@/shared/decorators/pagination.decorators';
 
 export class UserQueryDto {
-	@IsOptional()
-	@Type(() => Number)
-	@IsInt()
-	@Min(1)
+	@IsPaginationPage()
 	page: number = 1;
 
-	@IsOptional()
-	@Type(() => Number)
-	@IsInt()
-	@Min(1)
-	@Max(100)
+	@IsPaginationLimit({})
 	limit: number = 20;
 
 	@IsOptional()

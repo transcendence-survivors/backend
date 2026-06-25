@@ -26,7 +26,7 @@ export class UserRepository {
 		followingCount: true,
 	} satisfies Partial<Record<keyof UserStats, boolean>>;
 
-	private readonly userSelect = {
+	static readonly userSelect = {
 		id: true,
 		username: true,
 		displayName: true,
@@ -43,7 +43,7 @@ export class UserRepository {
 		'username-desc': { username: 'desc' },
 	};
 
-	findPage(page: number, limit: number, orderBy?: OrderBy, ctx?: DbContext) {
+	paginate(page: number, limit: number, orderBy?: OrderBy, ctx?: DbContext) {
 		const skip = (page - 1) * limit;
 		const client = ctx?.client ?? this.prisma;
 		return Promise.all([
@@ -51,7 +51,7 @@ export class UserRepository {
 				skip,
 				take: limit,
 				orderBy: orderBy ? this.orderByMapping[orderBy] : undefined,
-				select: this.userSelect,
+				select: UserRepository.userSelect,
 			}),
 			client.user.count(),
 		]);
@@ -65,7 +65,7 @@ export class UserRepository {
 		return this.prisma.user.findUnique({
 			where: { id },
 			select: {
-				...this.userSelect,
+				...UserRepository.userSelect,
 				bio: true,
 				coverImageUrl: true,
 				birthDate: true,
@@ -83,11 +83,12 @@ export class UserRepository {
 		return this.prisma.user.findUnique({
 			where: { email },
 			select: {
-				...this.userSelect,
+				...UserRepository.userSelect,
 				stats: statsSelect,
 			},
 		});
 	}
+
 	findByUsername(username: string, selectStats = false) {
 		const statsSelect = selectStats
 			? { select: this.userStatsSelect }
@@ -96,7 +97,7 @@ export class UserRepository {
 		return this.prisma.user.findUnique({
 			where: { username },
 			select: {
-				...this.userSelect,
+				...UserRepository.userSelect,
 				stats: statsSelect,
 			},
 		});
@@ -152,7 +153,7 @@ export class UserRepository {
 				},
 			},
 			select: {
-				...this.userSelect,
+				...UserRepository.userSelect,
 				email: true,
 				role: true,
 			},
@@ -177,5 +178,15 @@ export class UserRepository {
 				id: true,
 			},
 		});
+	}
+
+	async isByUserId(userId: string, ctx?: DbContext) {
+		const user = await (ctx?.client ?? this.prisma).user.findUnique({
+			where: { id: userId },
+			select: {
+				id: true,
+			},
+		});
+		return user !== null;
 	}
 }

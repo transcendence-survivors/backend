@@ -9,7 +9,7 @@ import { JwtAccessPayload } from '../interfaces/jwt-payload.interface';
 export const JWT_ACCESS_TOKEN_KEY = 'jwt-access-token';
 
 @Injectable()
-export class AccessTokenStrategy extends PassportStrategy(
+export class JWTAccessStrategy extends PassportStrategy(
 	Strategy,
 	JWT_ACCESS_TOKEN_KEY,
 ) {

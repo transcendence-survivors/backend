@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectEnv } from '@/core/config/env/injects/env.inject';
-import { createHash, randomBytes } from 'crypto';
+import { createHash, randomBytes, randomUUID } from 'crypto';
 import { RefreshTokenRepository } from '../repository/refresh-token.repository';
 import { JwtService } from '@nestjs/jwt';
 import { PasswordTokenRepository } from '../repository/password-token.repository';
@@ -93,7 +93,7 @@ export class TokenService {
 	}
 
 	private generateRefresh(userId: string) {
-		const payload = { sub: userId };
+		const payload = { sub: userId, jti: randomUUID() };
 		return this.jwtService.signAsync(payload, {
 			expiresIn: `${this.env.refreshToken.ms}ms`,
 			secret: this.env.refreshToken.secret,
