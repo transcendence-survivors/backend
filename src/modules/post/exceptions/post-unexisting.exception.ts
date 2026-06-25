@@ -1,14 +1,14 @@
 import { AppHttpException } from '@/shared/filters/app.http.exception';
 import { HttpStatus } from '@nestjs/common';
 
-class PostUnexistingException extends AppHttpException {
+class PostDoesNotExistException extends AppHttpException {
 	constructor() {
 		super(
-			"Post doesn't belong to you",
-			'post ownership',
+			"Post doesn't exist",
+			'post_does_not_exist',
 			HttpStatus.NOT_FOUND,
 		);
 	}
 }
 
-export { PostUnexistingException };
+export { PostDoesNotExistException };

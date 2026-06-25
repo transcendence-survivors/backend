@@ -5,7 +5,7 @@ class PostOwnershipException extends AppHttpException {
 	constructor() {
 		super(
 			"Post doesn't belong to you",
-			'post ownership',
+			'post_ownership',
 			HttpStatus.UNAUTHORIZED,
 		);
 	}
