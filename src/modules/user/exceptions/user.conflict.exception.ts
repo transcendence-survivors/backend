@@ -1,4 +1,4 @@
-import { AppHttpException } from '@/common/filters/app.http.exception';
+import { AppHttpException } from '@/shared/filters/app.http.exception';
 import { HttpStatus } from '@nestjs/common';
 
 class UserConflictException extends AppHttpException {

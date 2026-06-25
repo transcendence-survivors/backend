@@ -1,13 +1,24 @@
-import { PrismaService } from '@/common/services/prisma.service';
+import { PrismaService } from '@/core/database/services/prisma.service';
 import { Injectable } from '@nestjs/common';
-import CreateUserDto from '../../auth/dto/signup.dto';
 import { User, UserStats } from '@prisma-generated/client';
+import { UserOrderByWithRelationInput } from '@prisma-generated/internal/prismaNamespaceBrowser';
+import { DbContext } from '@/core/database/uow/db-context';
+import CreateUserDto from '../dto/user-create.dto';
+
+export const USER_ORDER_BY = [
+	'date-asc',
+	'date-desc',
+	'username-asc',
+	'username-desc',
+] as const;
+
+export type OrderBy = (typeof USER_ORDER_BY)[number];
 
 @Injectable()
 export class UserRepository {
 	constructor(private readonly prisma: PrismaService) {}
 
-	private userStatsSelect = {
+	private readonly userStatsSelect = {
 		postCount: true,
 		likesGiven: true,
 		likesReceived: true,
@@ -15,35 +26,35 @@ export class UserRepository {
 		followingCount: true,
 	} satisfies Partial<Record<keyof UserStats, boolean>>;
 
-	private userSelect = {
+	private readonly userSelect = {
 		id: true,
 		username: true,
 		displayName: true,
 		avatarUrl: true,
-		role: true,
 	} satisfies Partial<Record<keyof User, boolean>>;
 
-	save(data: Omit<CreateUserDto, 'password'>) {
-		return this.prisma.user.create({
-			data: {
-				birthDate: data.dateOfBirth,
-				email: data.email,
-				firstName: data.firstName,
-				displayName: data.displayName,
-				bio: data.bio,
-				lastName: data.lastName,
-				username: data.username,
-				gender: data.gender,
-				localePreference: data.localePreference,
-				stats: {
-					create: {},
-				},
-			},
-			select: {
-				...this.userSelect,
-				email: true,
-			},
-		});
+	private readonly orderByMapping: Record<
+		OrderBy,
+		UserOrderByWithRelationInput
+	> = {
+		'date-asc': { createdAt: 'asc' },
+		'date-desc': { createdAt: 'desc' },
+		'username-asc': { username: 'asc' },
+		'username-desc': { username: 'desc' },
+	};
+
+	findPage(page: number, limit: number, orderBy?: OrderBy, ctx?: DbContext) {
+		const skip = (page - 1) * limit;
+		const client = ctx?.client ?? this.prisma;
+		return Promise.all([
+			client.user.findMany({
+				skip,
+				take: limit,
+				orderBy: orderBy ? this.orderByMapping[orderBy] : undefined,
+				select: this.userSelect,
+			}),
+			client.user.count(),
+		]);
 	}
 
 	findById(id: string, selectStats = false) {
@@ -91,49 +102,79 @@ export class UserRepository {
 		});
 	}
 
-	getTokenData(id: string) {
-		return this.prisma.user.findUnique({
-			where: {
-				id,
-			},
+	async delete(id: string, ctx?: DbContext) {
+		await (ctx?.client ?? this.prisma).user.delete({ where: { id } });
+	}
+
+	findIdByEmail(email: string, ctx?: DbContext) {
+		return (ctx?.client ?? this.prisma).user.findFirst({
+			where: { email },
 			select: {
 				id: true,
-				role: true,
-				email: true,
-				username: true,
+			},
+		});
+	}
+	findIdByUsername(username: string, ctx?: DbContext) {
+		return (ctx?.client ?? this.prisma).user.findFirst({
+			where: { username },
+			select: {
+				id: true,
 			},
 		});
 	}
 
-	getIdByEmail(email: string) {
-		return this.prisma.user.findUnique({
-			where: { email },
-			select: { localePreference: true, id: true },
-		});
-	}
-
-	async delete(id: string) {
-		await this.prisma.user.delete({ where: { id } });
-	}
-
-	async isByEmail(email: string): Promise<boolean> {
-		const count = await this.prisma.user.count({ where: { email } });
-		return count > 0;
-	}
-
-	async isByUsername(username: string): Promise<boolean> {
-		const count = await this.prisma.user.count({ where: { username } });
-		return count > 0;
-	}
-
-	isConflict(email: string, username: string) {
-		return this.prisma.user.findFirst({
+	isConflict(email: string, username: string, ctx?: DbContext) {
+		return (ctx?.client ?? this.prisma).user.findFirst({
 			where: {
 				OR: [{ email }, { username }],
 			},
 			select: {
 				email: true,
 				username: true,
+			},
+		});
+	}
+
+	save(data: CreateUserDto, ctx?: DbContext) {
+		return (ctx?.client ?? this.prisma).user.create({
+			data: {
+				birthDate: data.dateOfBirth,
+				email: data.email,
+				firstName: data.firstName,
+				displayName: data.displayName,
+				bio: data.bio,
+				lastName: data.lastName,
+				username: data.username,
+				gender: data.gender,
+				localePreference: data.localePreference,
+				stats: {
+					create: {},
+				},
+			},
+			select: {
+				...this.userSelect,
+				email: true,
+				role: true,
+			},
+		});
+	}
+	getTokenData(userId: string, ctx?: DbContext) {
+		return (ctx?.client ?? this.prisma).user.findUnique({
+			where: { id: userId },
+			select: {
+				id: true,
+				username: true,
+				email: true,
+				role: true,
+			},
+		});
+	}
+	getLocalPreferenceByEmail(email: string, ctx?: DbContext) {
+		return (ctx?.client ?? this.prisma).user.findUnique({
+			where: { email },
+			select: {
+				localePreference: true,
+				id: true,
 			},
 		});
 	}
