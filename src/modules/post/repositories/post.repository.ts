@@ -2,6 +2,10 @@ import { PrismaService } from '@/core/database/services/prisma.service';
 import { Injectable } from '@nestjs/common';
 import { CreatePostDto } from '../dto/post.dto';
 
+export const USER_ORDER_BY = ['date-asc', 'date-desc'] as const;
+
+export type OrderBy = (typeof USER_ORDER_BY)[number];
+
 @Injectable()
 export class PostRepository {
 	constructor(private readonly prisma: PrismaService) {}
