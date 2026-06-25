@@ -1,12 +1,10 @@
 import { BaseController } from '@/common/base.controller';
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 import { PostService } from '../services/post.service';
 import { AccessTokenGuard } from '@/modules/token/guards/access-token.guard';
 import { CurrentUser } from '@/common/decorators/current-user.decorator';
-import {
-	type JwtAccessPayloadParams,
-	type JwtAccessPayload,
-} from '@/modules/token/strategies/access-token.strategy';
+import { type JwtAccessPayloadParams } from '@/modules/token/strategies/access-token.strategy';
+import { CreatePostDto } from '../dto/post.dto';
 
 @Controller('post')
 export class PostController extends BaseController {
@@ -14,10 +12,18 @@ export class PostController extends BaseController {
 		super();
 	}
 
-	//@UseGuards(AccessTokenGuard) que si je veux ecrore
 	@Get()
 	async getAllPosts() {
 		return this.postService.findAll();
+	}
+
+	@UseGuards(AccessTokenGuard)
+	@Post()
+	writePost(
+		@Body() createPostDto: CreatePostDto,
+		@CurrentUser() user: JwtAccessPayloadParams,
+	) {
+		return this.postService.create(user.userId, createPostDto);
 	}
 
 	//@CurrentUser()user: JwtAccessPayloadParams
