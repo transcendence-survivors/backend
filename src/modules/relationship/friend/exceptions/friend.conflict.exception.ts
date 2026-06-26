@@ -5,7 +5,7 @@ class FriendAlreadyExistsException extends AppHttpException {
 	constructor() {
 		super(
 			'Friend already exists',
-			'friend_already_exists',
+			'friendship_already_exists',
 			HttpStatus.CONFLICT,
 		);
 	}
@@ -15,7 +15,7 @@ class FriendRequestAlreadySentException extends AppHttpException {
 	constructor() {
 		super(
 			'Friend request already sent',
-			'friend_request_already_sent',
+			'friendship_request_already_sent',
 			HttpStatus.CONFLICT,
 		);
 	}

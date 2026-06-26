@@ -5,10 +5,6 @@ import { MailerService } from '@nestjs-modules/mailer';
 import { TranslationService } from './translation.service';
 import { type LocalePreference } from '@prisma-generated/client';
 import { type SentMessageInfo } from 'nodemailer';
-import { OnEvent } from '@nestjs/event-emitter';
-import { UserCreatedEvent } from '@/contracts/events/user-created.event';
-import { PasswordResetRequestedEvent } from '@/contracts/events/password-reset-requested.event';
-import { AppEvents } from '@/contracts/events/event-names';
 
 type Template = 'reset-password' | 'verify-email' | 'welcome';
 
@@ -43,7 +39,7 @@ export class EmailService {
 		});
 	}
 
-	private sendResetPassword(
+	sendResetPassword(
 		to: string,
 		resetToken: string,
 		locale: LocalePreference,
@@ -71,7 +67,7 @@ export class EmailService {
 		});
 	}
 
-	private sendWelcomeEmail(
+	sendWelcomeEmail(
 		user: {
 			firstName: string;
 			lastName: string;
@@ -104,23 +100,5 @@ export class EmailService {
 				footer_text: t('footer_text'),
 			},
 		});
-	}
-
-	@OnEvent(AppEvents.USER_CREATED)
-	async handleUserCreated(event: UserCreatedEvent) {
-		await this.sendWelcomeEmail(
-			{
-				firstName: event.firstName,
-				lastName: event.lastName,
-				email: event.email,
-				name: event.username,
-			},
-			event.locale,
-		);
-	}
-
-	@OnEvent(AppEvents.PASSWORD_RESET_REQUESTED)
-	async handlePasswordReset(event: PasswordResetRequestedEvent) {
-		await this.sendResetPassword(event.email, event.token, event.locale);
 	}
 }

@@ -4,29 +4,29 @@ import { PaginationService } from '@/shared/services/pagination.service';
 import { type IUserService } from '@/contracts/services/user/user-service.port';
 import { InjectUserService } from '@/contracts/services/user/user-service.inject';
 import { FriendshipState } from '@prisma-generated/enums';
+import { FriendQueryDto } from '../dto/friend-query.dto';
+import { FriendRequestQueryDto } from '../dto/friend-request-query.dto';
+import { InjectBlockService } from '@/contracts/services/block/block-service.inject';
+import { type IBlockService } from '@/contracts/services/block/block-service.port';
 
 import {
-	BadAddFriendException,
-	BadFriendDeleteException,
+	SelfFriendDeleteException,
+	SelfFriendRequestDeleteException,
+	SelfFriendRequestSentException,
 } from '../exceptions/friend.bad.exception';
 import {
-	FriendNotFoundException,
+	FriendDoesNotExistException,
 	FriendRequestDoesNotExistException,
-} from '../exceptions/friend.not-found.exceptions';
-
+} from '../exceptions/friend.not-found.exception';
 import {
 	FriendAlreadyExistsException,
 	FriendRequestAlreadySentException,
 } from '../exceptions/friend.conflict.exception';
-
-import { FriendQueryDto } from '../dto/friend-query.dto';
-import { InjectBlockService } from '@/contracts/services/block/block-service.inject';
-import { type IBlockService } from '@/contracts/services/block/block-service.port';
 import {
 	FriendshipBlockedByUserException,
 	FriendshipBlockedByYouException,
 } from '../exceptions/friend.forbidden.exception';
-import { FriendshipSelfAcceptException } from '../exceptions/friend.unprocessable';
+import { FriendRequestSelfAcceptException } from '../exceptions/friend.unprocessable.exception';
 
 @Injectable()
 export class FriendService {
@@ -37,65 +37,106 @@ export class FriendService {
 		private readonly pagination: PaginationService,
 	) {}
 
-	async create(userId: string, friendId: string) {
-		if (userId === friendId) throw new BadAddFriendException();
-		await this.valideFriendship(userId, friendId);
+	async findRequestsPage(userId: string, query: FriendRequestQueryDto) {
+		const [data, total] = await this.repo.paginate({
+			userId,
+			status: FriendshipState.PENDING,
+			...query,
+		});
+
+		const requests = data.map((f) => {
+			const friend = f.userA.id === userId ? f.userB : f.userA;
+			return {
+				friendshipId: f.id,
+				status: f.state,
+				since: f.createdAt,
+				friend,
+			};
+		});
+		return this.pagination.create(requests, query.page, query.limit, total);
+	}
+	async sendRequest(userId: string, friendId: string) {
+		if (userId === friendId) throw new SelfFriendRequestSentException();
 
 		await this.userService.validateUserId(friendId);
 		await this.validateBlock(userId, friendId);
+		await this.validateFriendship(userId, friendId);
+
 		return this.repo.save({ userId, friendId });
 	}
 
-	async remove(userId: string, friendId: string) {
-		if (userId === friendId) throw new BadFriendDeleteException();
+	async acceptRequest(userId: string, friendId: string) {
+		if (userId === friendId) throw new FriendRequestSelfAcceptException();
 
-		const friend = await this.repo.findFriendShip(userId, friendId);
-		if (!friend) throw new FriendNotFoundException();
+		const friendship = await this.repo.findFriendShip(userId, friendId);
+		if (!friendship) throw new FriendRequestDoesNotExistException();
 
-		return this.repo.delete({ userId, friendId });
-	}
-
-	async accept(userId: string, friendId: string) {
-		if (userId === friendId) throw new FriendshipSelfAcceptException();
-
-		const friend = await this.repo.findFriendShip(userId, friendId);
-		if (!friend) throw new FriendRequestDoesNotExistException();
-
-		if (friend.senderId === userId)
-			throw new FriendshipSelfAcceptException();
-		if (friend.state === FriendshipState.ACCEPTED)
+		if (friendship.senderId === userId)
+			throw new FriendRequestSelfAcceptException();
+		if (friendship.state === FriendshipState.ACCEPTED)
 			throw new FriendAlreadyExistsException();
 
 		return this.repo.accept({ userId, friendId });
 	}
+	async removeRequest(userId: string, friendId: string) {
+		if (userId === friendId) throw new SelfFriendRequestDeleteException();
 
-	async findPage(userId: string, query: FriendQueryDto) {
-		const { page, limit, status } = query;
-		const [data, total] = await this.repo.paginate({
+		const { count } = await this.repo.deleteFromState({
 			userId,
-			...query,
+			friendId,
+			status: FriendshipState.PENDING,
 		});
-		const friends = data.map((f) => ({
-			friendshipId: f.id,
-			status: f.state,
-			since:
-				status === FriendshipState.ACCEPTED ? f.createdAt : f.updatedAt,
-			friend: f.userA.id === userId ? f.userB : f.userA,
-		}));
-		return this.pagination.create(friends, page, limit, total);
+		if (count === 0) throw new FriendRequestDoesNotExistException();
 	}
 
-	private async valideFriendship(userId: string, friendId: string) {
-		const friend = await this.repo.findFriendShip(userId, friendId);
-		if (friend?.state === FriendshipState.PENDING)
+	async findFriendsPage(userId: string, query: FriendQueryDto) {
+		const [data, total] = await this.repo.paginate({
+			userId,
+			status: FriendshipState.ACCEPTED,
+			...query,
+		});
+
+		const friends = data.map((f) => {
+			const friend = f.userA.id === userId ? f.userB : f.userA;
+			return {
+				friendshipId: f.id,
+				status: f.state,
+				since: f.updatedAt,
+				friend,
+			};
+		});
+		return this.pagination.create(friends, query.page, query.limit, total);
+	}
+	async removeFriend(userId: string, friendId: string) {
+		if (userId === friendId) throw new SelfFriendDeleteException();
+
+		const { count } = await this.repo.deleteFromState({
+			userId,
+			friendId,
+			status: FriendshipState.ACCEPTED,
+		});
+		if (count === 0) throw new FriendDoesNotExistException();
+	}
+
+	public removeIfExists(userId: string, friendId: string) {
+		return this.repo.delete({
+			userId,
+			friendId,
+		});
+	}
+
+	private async validateFriendship(userId: string, friendId: string) {
+		const friendship = await this.repo.findFriendShip(userId, friendId);
+
+		if (friendship?.state === FriendshipState.PENDING)
 			throw new FriendRequestAlreadySentException();
-		if (friend?.state === FriendshipState.ACCEPTED)
+		if (friendship?.state === FriendshipState.ACCEPTED)
 			throw new FriendAlreadyExistsException();
 	}
 
 	private async validateBlock(userId: string, friendId: string) {
 		const [blocker, blocked] =
-			await this.blockService.findBlockedBlockerById(userId, friendId);
+			await this.blockService.findBlockerBlockedById(userId, friendId);
 
 		if (blocked) throw new FriendshipBlockedByUserException();
 		if (blocker) throw new FriendshipBlockedByYouException();

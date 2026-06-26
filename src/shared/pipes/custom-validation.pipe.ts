@@ -28,7 +28,6 @@ export class CustomValidationPipe extends ValidationPipe {
 
 			if (error.children?.length) {
 				const childErrors = this.formatValidationErrors(error.children);
-
 				for (const key in childErrors) {
 					result[key] = childErrors[key];
 				}

@@ -1,8 +1,8 @@
 import { IsUUID } from 'class-validator';
 
-class FriendAddDto {
+class FriendRequestAddDto {
 	@IsUUID()
 	friendId!: string;
 }
 
-export { FriendAddDto };
+export { FriendRequestAddDto };

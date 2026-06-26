@@ -94,14 +94,11 @@ export class BlockRepository {
 			},
 		});
 	}
-
 	delete({ userId, blockedUserId }: DeleteBlock, ctx?: DbContext) {
-		return (ctx?.client ?? this.prisma).block.delete({
+		return (ctx?.client ?? this.prisma).block.deleteMany({
 			where: {
-				blockerId_blockedId: {
-					blockerId: userId,
-					blockedId: blockedUserId,
-				},
+				blockerId: userId,
+				blockedId: blockedUserId,
 			},
 		});
 	}

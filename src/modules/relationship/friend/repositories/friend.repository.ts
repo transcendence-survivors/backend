@@ -7,7 +7,7 @@ import type {
 	FriendshipOrderByWithRelationInput,
 	FriendshipWhereInput,
 } from '@prisma-generated/models';
-import { FriendQueryDto } from '../dto/friend-query.dto';
+import { FriendBaseQueryDto } from '../dto/friend-base-query.dto';
 
 export const FRIENDSHIP_ORDER_BY = ['createdAsc', 'createdDesc'] as const;
 
@@ -23,11 +23,21 @@ type AcceptFriendShip = CreateFriendShip;
 interface DeleteFriendShip {
 	userId: string;
 	friendId: string;
+	status: FriendshipState;
 }
 
-type PaginateFriendShips = FriendQueryDto & {
+type PaginateFriendShips = FriendBaseQueryDto & {
 	userId: string;
-};
+} & (
+		| {
+				status: Extract<FriendshipState, 'PENDING'>;
+				direction: 'incoming' | 'outgoing';
+		  }
+		| {
+				status: Extract<FriendshipState, 'ACCEPTED'>;
+				direction?: never;
+		  }
+	);
 
 @Injectable()
 export class FriendRepository {
@@ -49,18 +59,15 @@ export class FriendRepository {
 			orderBy,
 			search,
 			status,
-			request,
+			direction,
 		}: PaginateFriendShips,
 		ctx?: DbContext,
 	) {
-		const skip = (page - 1) * limit;
-		const client = ctx?.client ?? this.prisma;
-
 		const where: FriendshipWhereInput = {
 			state: status,
 			senderId:
 				status === FriendshipState.PENDING
-					? request === 'incoming'
+					? direction === 'incoming'
 						? { not: userId }
 						: userId
 					: undefined,
@@ -84,6 +91,8 @@ export class FriendRepository {
 			],
 		};
 
+		const client = ctx?.client ?? this.prisma;
+		const skip = (page - 1) * limit;
 		return Promise.all([
 			client.friendship.findMany({
 				skip,
@@ -141,7 +150,31 @@ export class FriendRepository {
 		});
 	}
 
-	delete({ userId, friendId }: DeleteFriendShip, ctx?: DbContext) {
+	deleteFromState(
+		{ userId, friendId, status }: DeleteFriendShip,
+		ctx?: DbContext,
+	) {
+		return (ctx?.client ?? this.prisma).friendship.deleteMany({
+			where: {
+				state: status,
+				OR: [
+					{
+						userAId: userId,
+						userBId: friendId,
+					},
+					{
+						userAId: friendId,
+						userBId: userId,
+					},
+				],
+			},
+		});
+	}
+
+	delete(
+		{ userId, friendId }: Omit<DeleteFriendShip, 'status'>,
+		ctx?: DbContext,
+	) {
 		return (ctx?.client ?? this.prisma).friendship.deleteMany({
 			where: {
 				OR: [

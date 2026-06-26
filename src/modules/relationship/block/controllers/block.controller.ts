@@ -15,37 +15,35 @@ import { CurrentUser } from '@/core/security/decorators/current-user.decorator';
 import type { JwtAccessPayload } from '@/core/security/interfaces/jwt-payload.interface';
 import { BlockService } from '../services/block.service';
 import { BlockQueryDto } from '../dto/blocker-query.dto';
-import { BaseController } from '@/shared/base.controller';
+import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
 
 @Controller('blocks')
 @UseGuards(JWTAccessGuard)
-export class BlockController extends BaseController {
-	constructor(private readonly service: BlockService) {
-		super();
-	}
+export class BlockController {
+	constructor(private readonly service: BlockService) {}
 
-	@HttpCode(200)
 	@Get()
-	async getAll(
+	@HttpCode(200)
+	@ResponseEnvelope('Successfully retrieved blocked users')
+	getAll(
 		@CurrentUser() { sub }: JwtAccessPayload,
 		@Query() query: BlockQueryDto,
 	) {
-		const result = await this.service.findPage(sub, query);
-		return this.ok(result, 'Successfully retrieved blocked users');
+		return this.service.findPage(sub, query);
 	}
 
-	@HttpCode(201)
 	@Post()
+	@HttpCode(201)
+	@ResponseEnvelope('User blocked successfully')
 	async add(
 		@CurrentUser() { sub }: JwtAccessPayload,
 		@Body() body: BlockAddDto,
 	) {
-		const result = await this.service.create(sub, body.blockedUserId);
-		return this.ok(result, 'User blocked successfully');
+		return this.service.create(sub, body.blockedUserId);
 	}
 
-	@HttpCode(204)
 	@Delete(':blockedUserId')
+	@HttpCode(204)
 	async delete(
 		@CurrentUser() { sub }: JwtAccessPayload,
 		@Param('blockedUserId') blockedUserId: string,

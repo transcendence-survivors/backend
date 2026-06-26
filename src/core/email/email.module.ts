@@ -8,6 +8,7 @@ import { join } from 'path';
 import { TranslationService } from './services/translation.service';
 import { EnvModule } from '../../core/config/env/env.module';
 import { TranslationProvider } from './providers/translation.provider';
+import { EMailListener } from './listeners/email.listener';
 
 @Module({
 	imports: [
@@ -42,7 +43,12 @@ import { TranslationProvider } from './providers/translation.provider';
 			},
 		}),
 	],
-	providers: [EmailService, TranslationService, TranslationProvider],
+	providers: [
+		EmailService,
+		TranslationService,
+		TranslationProvider,
+		EMailListener,
+	],
 	exports: [EmailService],
 })
 export class EmailModule {}

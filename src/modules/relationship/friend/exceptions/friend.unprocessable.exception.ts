@@ -1,7 +1,7 @@
 import { AppHttpException } from '@/shared/filters/app.http.exception';
 import { HttpStatus } from '@nestjs/common';
 
-class FriendshipSelfAcceptException extends AppHttpException {
+class FriendRequestSelfAcceptException extends AppHttpException {
 	constructor() {
 		super(
 			'You cannot accept your own friend request.',
@@ -11,4 +11,4 @@ class FriendshipSelfAcceptException extends AppHttpException {
 	}
 }
 
-export { FriendshipSelfAcceptException };
+export { FriendRequestSelfAcceptException };

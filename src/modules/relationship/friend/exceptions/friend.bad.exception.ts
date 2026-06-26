@@ -1,24 +1,38 @@
 import { AppHttpException } from '@/shared/filters/app.http.exception';
 import { HttpStatus } from '@nestjs/common';
 
-class BadAddFriendException extends AppHttpException {
+class SelfFriendRequestSentException extends AppHttpException {
 	constructor() {
 		super(
-			'You cannot add yourself as a friend.',
-			'bad_friend_request',
+			'You cannot send a friend request to yourself.',
+			'friend_request_self_sent',
 			HttpStatus.BAD_REQUEST,
 		);
 	}
 }
 
-class BadFriendDeleteException extends AppHttpException {
+class SelfFriendDeleteException extends AppHttpException {
 	constructor() {
 		super(
 			'You cannot delete yourself as a friend.',
-			'bad_friend_delete',
+			'friend_request_self_delete',
 			HttpStatus.BAD_REQUEST,
 		);
 	}
 }
 
-export { BadAddFriendException, BadFriendDeleteException };
+class SelfFriendRequestDeleteException extends AppHttpException {
+	constructor() {
+		super(
+			'You cannot delete a friend request to yourself because it cannot exist.',
+			'friend_request_self_delete',
+			HttpStatus.BAD_REQUEST,
+		);
+	}
+}
+
+export {
+	SelfFriendRequestSentException,
+	SelfFriendDeleteException,
+	SelfFriendRequestDeleteException,
+};

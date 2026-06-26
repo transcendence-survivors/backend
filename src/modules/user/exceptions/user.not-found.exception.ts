@@ -1,9 +1,14 @@
-import { HttpException, HttpStatus } from '@nestjs/common';
+import { AppHttpException } from '@/shared/filters/app.http.exception';
+import { HttpStatus } from '@nestjs/common';
 
-class UserNotFoundException extends HttpException {
+class UserDoesNotExistException extends AppHttpException {
 	constructor() {
-		super('User not found', HttpStatus.NOT_FOUND);
+		super(
+			'User does not exist',
+			'user_does_not_exist',
+			HttpStatus.NOT_FOUND,
+		);
 	}
 }
 
-export default UserNotFoundException;
+export default UserDoesNotExistException;

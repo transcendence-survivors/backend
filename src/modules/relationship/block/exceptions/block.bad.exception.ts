@@ -1,7 +1,17 @@
 import { AppHttpException } from '@/shared/filters/app.http.exception';
 import { HttpStatus } from '@nestjs/common';
 
-class BadBlockException extends AppHttpException {
+class SelfUnblockBadException extends AppHttpException {
+	constructor() {
+		super(
+			'You cannot unblock yourself.',
+			'bad_unblock_request',
+			HttpStatus.BAD_REQUEST,
+		);
+	}
+}
+
+class SelfBlockBadException extends AppHttpException {
 	constructor() {
 		super(
 			'You cannot block yourself.',
@@ -11,4 +21,4 @@ class BadBlockException extends AppHttpException {
 	}
 }
 
-export { BadBlockException };
+export { SelfUnblockBadException, SelfBlockBadException };

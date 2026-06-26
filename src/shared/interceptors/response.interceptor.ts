@@ -6,43 +6,37 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
+import {
+	ApiSuccess,
+	ApiSuccessEnvelope,
+} from '../interfaces/api-response.interface';
 
-export type ResponseInput<T> =
-	| T
-	| {
-			data: T;
-			message?: string;
-	  };
+export type ResponseInput<T> = T | ApiSuccessEnvelope<T>;
 
-export interface SuccessResponse<T> {
-	status: 'success';
-	message?: string;
-	data: T;
-}
-
-type ResponseWithMeta<T> = {
-	data: T;
-	message?: string;
-};
-
-const isResponseWithMeta = <T>(
+const isApiSuccessEnvelope = <T>(
 	value: unknown,
-): value is ResponseWithMeta<T> => {
-	return typeof value === 'object' && value !== null && 'data' in value;
+): value is ApiSuccessEnvelope<T> => {
+	if (typeof value !== 'object' || value === null) {
+		return false;
+	}
+	if (!('message' in value) && !('data' in value)) {
+		return false;
+	}
+	return true;
 };
 
 @Injectable()
 export class ResponseInterceptor<T> implements NestInterceptor<
 	ResponseInput<T>,
-	SuccessResponse<T>
+	ApiSuccess<T>
 > {
 	intercept(
 		_: ExecutionContext,
 		next: CallHandler<ResponseInput<T>>,
-	): Observable<SuccessResponse<T>> {
+	): Observable<ApiSuccess<T>> {
 		return next.handle().pipe(
 			map((response) => {
-				if (isResponseWithMeta<T>(response)) {
+				if (isApiSuccessEnvelope<T>(response)) {
 					return {
 						status: 'success',
 						message: response.message,

@@ -3,31 +3,29 @@ import {
 	Get,
 	Delete,
 	Param,
-	Body,
 	HttpCode,
 	Query,
 } from '@nestjs/common';
 import { UserService } from '../services/user.service';
-import { BaseController } from '@/shared/base.controller';
 import { UserQueryDto } from '../dto/user-query.dto';
+import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
 
 @Controller('users')
-export class UserController extends BaseController {
-	constructor(private readonly userService: UserService) {
-		super();
-	}
+export class UserController {
+	constructor(private readonly userService: UserService) {}
 
-	@HttpCode(200)
 	@Get(':username')
-	async findOne(@Param('username') username: string) {
-		const user = await this.userService.getSingle({ username });
-		return this.ok(user, 'User found');
+	@HttpCode(200)
+	@ResponseEnvelope('User found successfully')
+	findOne(@Param('username') username: string) {
+		return this.userService.getSingle({ username });
 	}
 
 	@Get()
-	async getUsers(@Query() query: UserQueryDto) {
-		const res = await this.userService.findPage(query);
-		return this.ok(res, 'Users found');
+	@HttpCode(200)
+	@ResponseEnvelope('Users found successfully')
+	getUsers(@Query() query: UserQueryDto) {
+		return this.userService.findPage(query);
 	}
 
 	@HttpCode(204)
@@ -37,11 +35,15 @@ export class UserController extends BaseController {
 	}
 
 	@Get('check-username/:username')
+	@HttpCode(200)
+	@ResponseEnvelope('Username availability checked successfully')
 	async checkUsername(@Param('username') username: string) {
 		return this.userService.checkUsernameAvailability(username);
 	}
 
 	@Get('check-email/:email')
+	@HttpCode(200)
+	@ResponseEnvelope('Email availability checked successfully')
 	async checkEmail(@Param('email') email: string) {
 		return this.userService.checkEmailAvailability(email);
 	}

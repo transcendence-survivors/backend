@@ -5,7 +5,7 @@ class FriendshipBlockedByUserException extends AppHttpException {
 	constructor() {
 		super(
 			'Friendship cannot be created because the user has blocked you.',
-			'friendship_blocked',
+			'friendship_blocked_by_user',
 			HttpStatus.FORBIDDEN,
 		);
 	}
@@ -15,7 +15,7 @@ class FriendshipBlockedByYouException extends AppHttpException {
 	constructor() {
 		super(
 			'Friendship cannot be created because you have blocked the user.',
-			'friendship_blocker',
+			'friendship_blocked_by_you',
 			HttpStatus.FORBIDDEN,
 		);
 	}

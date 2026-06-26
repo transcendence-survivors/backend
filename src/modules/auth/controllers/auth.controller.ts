@@ -7,7 +7,6 @@ import {
 	UseGuards,
 } from '@nestjs/common';
 import { AuthService } from '../services/auth.service';
-import { BaseController } from '@/shared/base.controller';
 import { SignInDto } from '@/modules/auth/dto/signin.dto';
 import { InjectEnv } from '@/core/config/env/injects/env.inject';
 import { CurrentUserRefresh } from '@/core/security/decorators/current-user.decorator';
@@ -19,21 +18,21 @@ import { JWTRefreshGuard } from '@/core/security/guards/jwt-refresh.guard';
 import { type Response } from 'express';
 import { type Env } from '@/core/config/env/providers/env.provider';
 import { type JwtRefreshPayload } from '@/core/security/interfaces/jwt-payload.interface';
+import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
 
 @Controller('auth')
-export class AuthController extends BaseController {
+export class AuthController {
 	private readonly REFRESH_TOKEN = 'refreshToken';
 	private readonly ACCESS_TOKEN = 'accessToken';
 	constructor(
 		private authService: AuthService,
 		private tokenService: TokenService,
 		@InjectEnv() private env: Env,
-	) {
-		super();
-	}
+	) {}
 
-	@HttpCode(200)
 	@Post('login')
+	@HttpCode(200)
+	@ResponseEnvelope('User logged in successfully')
 	async signIn(
 		@Body() signInDto: SignInDto,
 		@Res({ passthrough: true }) res: Response,
@@ -42,11 +41,12 @@ export class AuthController extends BaseController {
 			await this.authService.signInLocale(signInDto);
 		this.setAccessTokenCookie(res, accessToken);
 		this.setRefreshTokenCookie(res, refreshToken);
-		return this.ok(user, 'User logged in successfully');
+		return user;
 	}
 
-	@HttpCode(201)
 	@Post('register')
+	@HttpCode(201)
+	@ResponseEnvelope('User registered successfully')
 	async signUp(
 		@Body() signUpDto: SignUpDto,
 		@Res({ passthrough: true }) res: Response,
@@ -55,7 +55,7 @@ export class AuthController extends BaseController {
 			await this.authService.signUpLocale(signUpDto);
 		this.setAccessTokenCookie(res, accessToken);
 		this.setRefreshTokenCookie(res, refreshToken);
-		return this.ok(user, 'User created successfully');
+		return user;
 	}
 
 	@HttpCode(204)
