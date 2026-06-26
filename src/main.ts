@@ -17,7 +17,6 @@ void (async () => {
 			credentials: true,
 		});
 	}
-	console.debug('Using SocketIoAdapter for WebSocket communication');
 	appV1.useWebSocketAdapter(new SocketIoAdapter(appV1));
 	appV1.setGlobalPrefix('api/v1');
 	appV1.use(cookieParser());
