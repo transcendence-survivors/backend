@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { FriendService } from '../services/friend.service';
 import { OnEvent } from '@nestjs/event-emitter';
-import { AppEvents, BlockCreatedEvent } from '@/contracts/events';
+import { AppEvents, BlockCreatedEvent } from '@/contracts/events/internal';
 
 @Injectable()
 export class FriendListener {

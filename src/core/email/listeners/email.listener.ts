@@ -2,7 +2,7 @@ import {
 	AppEvents,
 	PasswordResetRequestedEvent,
 	UserCreatedEvent,
-} from '@/contracts/events';
+} from '@/contracts/events/internal';
 import { EmailService } from '../services/email.service';
 import { OnEvent } from '@nestjs/event-emitter';
 import { Injectable } from '@nestjs/common';

@@ -5,8 +5,11 @@ import { TokenService } from '../token/service/token.service';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { PasswordResetRequestedEvent } from '@/contracts/events/password-reset-requested.event';
-import { AppEvents, UserCreatedEvent } from '@/contracts/events';
+import {
+	AppEvents,
+	UserCreatedEvent,
+	PasswordResetRequestedEvent,
+} from '@/contracts/events/internal';
 import { LocalAuthProviderService } from '../auth-provider/services/local-auth.services';
 import { InjectUserService } from '@/contracts/services/user/user-service.inject';
 import { type IUserService } from '@/contracts/services/user/user-service.port';

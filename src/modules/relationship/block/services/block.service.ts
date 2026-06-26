@@ -12,7 +12,7 @@ import { BlockQueryDto } from '../dto/blocker-query.dto';
 import { PaginationService } from '@/shared/services/pagination.service';
 import { type IBlockService } from '@/contracts/services/block/block-service.port';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { AppEvents, BlockCreatedEvent } from '@/contracts/events';
+import { AppEvents, BlockCreatedEvent } from '@/contracts/events/internal';
 
 @Injectable()
 export class BlockService implements IBlockService {
