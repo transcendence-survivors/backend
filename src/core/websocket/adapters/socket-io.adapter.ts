@@ -2,6 +2,8 @@ import { IoAdapter } from '@nestjs/platform-socket.io';
 import { Server, ServerOptions } from 'socket.io';
 import { INestApplicationContext } from '@nestjs/common';
 import { Env, ENV } from '@/core/config/env/providers/env.provider';
+import { SocketAuthMiddleware } from '../middlewares/socket-auth.middleware';
+import { type ClientSocket } from '@/core/websocket/interface/ws-socket.inteface';
 
 export class SocketIoAdapter extends IoAdapter {
 	constructor(private readonly appContext: INestApplicationContext) {
@@ -10,6 +12,7 @@ export class SocketIoAdapter extends IoAdapter {
 
 	createIOServer(port: number, options?: ServerOptions): Server {
 		const env = this.appContext.get<Env>(ENV);
+		const authMiddleware = this.appContext.get(SocketAuthMiddleware);
 
 		const cors: ServerOptions['cors'] = {
 			...options?.cors,
@@ -17,9 +20,15 @@ export class SocketIoAdapter extends IoAdapter {
 			credentials: true,
 		};
 
-		return super.createIOServer(port, {
+		const server = super.createIOServer(port, {
 			...options,
 			cors,
 		}) as Server;
+
+		server.use((client: ClientSocket, next) => {
+			authMiddleware.use(client, next);
+		});
+
+		return server;
 	}
 }
