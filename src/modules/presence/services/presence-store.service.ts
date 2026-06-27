@@ -49,6 +49,10 @@ export class PresenceStoreService implements IPresenceStore {
 		return { userId, isCompletelyOffline: false };
 	}
 
+	getStatus(userId: string) {
+		const user = this.users.get(userId);
+		return user ? user.status : undefined;
+	}
 	setStatus(userId: string, status: PresenceStatus): void {
 		const user = this.users.get(userId);
 		if (user) {
@@ -56,7 +60,10 @@ export class PresenceStoreService implements IPresenceStore {
 		}
 	}
 	getOnlineUserCount(): number {
-		return this.users.size;
+		const notInvisibleUsers = Array.from(this.users.values()).filter(
+			(user) => user.status !== PresenceStatus.INVISIBLE,
+		);
+		return notInvisibleUsers.length;
 	}
 
 	public getSocketsByUserId(userId: string): string[] {

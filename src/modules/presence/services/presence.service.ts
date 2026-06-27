@@ -4,6 +4,13 @@ import { FriendshipState } from '@prisma-generated/enums';
 import { PresenceStoreService } from './presence-store.service';
 import { PresenceStatus } from '../intefaces/presence.interface';
 
+type UpdateStatusResult =
+	| { broadcastStatus: false; broadcastCount: false }
+	| ({ broadcastStatus: true; userId: string; status: PresenceStatus } & (
+			| { broadcastCount: true; onlineCount: number }
+			| { broadcastCount: false }
+	  ));
+
 @Injectable()
 export class PresenceService {
 	constructor(
@@ -59,10 +66,48 @@ export class PresenceService {
 		};
 	}
 
-	updateStatus(userId: string, status: PresenceStatus) {
-		this.store.setStatus(userId, status);
+	private isVisibleStatus(status: PresenceStatus): boolean {
+		return (
+			status === PresenceStatus.ONLINE ||
+			status === PresenceStatus.DO_NOT_DISTURB
+		);
+	}
+	private shouldBroadcastCount(
+		currentStatus: PresenceStatus,
+		newStatus: PresenceStatus,
+	): boolean {
+		return (
+			this.isVisibleStatus(currentStatus) !==
+			this.isVisibleStatus(newStatus)
+		);
+	}
 
+	updateStatus(userId: string, status: PresenceStatus): UpdateStatusResult {
+		const currentStatus = this.store.getStatus(userId);
+		if (currentStatus === status || !currentStatus) {
+			return {
+				broadcastStatus: false,
+				broadcastCount: false,
+			};
+		}
+		this.store.setStatus(userId, status);
+		const shouldBroadcastCount = this.shouldBroadcastCount(
+			currentStatus,
+			status,
+		);
+
+		if (shouldBroadcastCount) {
+			return {
+				broadcastStatus: true,
+				broadcastCount: true,
+				userId,
+				status,
+				onlineCount: this.store.getOnlineUserCount(),
+			};
+		}
 		return {
+			broadcastStatus: true,
+			broadcastCount: false,
 			userId,
 			status,
 		};

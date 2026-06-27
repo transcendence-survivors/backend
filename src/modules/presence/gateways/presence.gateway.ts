@@ -55,35 +55,32 @@ export class PresenceGateway
 
 	@UseGuards(WsJWTAccessGuard)
 	@SubscribeMessage(PRESENCE_EVENTS.RECEIVE.GO_VISIBLE)
-	handleGoVisible(@ConnectedSocket() client: UserSocket) {
-		const result = this.presenceService.updateStatus(
-			client.data.user.sub,
-			PresenceStatus.ONLINE,
-		);
-
-		this.broadcastStatus(result.userId, result.status);
+	GoVisible(@ConnectedSocket() client: UserSocket) {
+		this.handleStatusChange(client.data.user.sub, PresenceStatus.ONLINE);
 	}
 
 	@UseGuards(WsJWTAccessGuard)
 	@SubscribeMessage(PRESENCE_EVENTS.RECEIVE.GO_INVISIBLE)
-	handleGoInvisible(@ConnectedSocket() client: UserSocket) {
-		const result = this.presenceService.updateStatus(
-			client.data.user.sub,
-			PresenceStatus.INVISIBLE,
-		);
-
-		this.broadcastStatus(result.userId, result.status);
+	GoInvisible(@ConnectedSocket() client: UserSocket) {
+		this.handleStatusChange(client.data.user.sub, PresenceStatus.INVISIBLE);
 	}
 
 	@UseGuards(WsJWTAccessGuard)
 	@SubscribeMessage(PRESENCE_EVENTS.RECEIVE.GO_DND)
-	handleGoDoNotDisturb(@ConnectedSocket() client: UserSocket) {
-		const result = this.presenceService.updateStatus(
+	GoDoNotDisturb(@ConnectedSocket() client: UserSocket) {
+		this.handleStatusChange(
 			client.data.user.sub,
 			PresenceStatus.DO_NOT_DISTURB,
 		);
+	}
 
-		this.broadcastStatus(result.userId, result.status);
+	private handleStatusChange(userId: string, status: PresenceStatus) {
+		const result = this.presenceService.updateStatus(userId, status);
+
+		if (result.broadcastCount)
+			this.broadcastOnlineCount(result.onlineCount);
+		if (result.broadcastStatus)
+			this.broadcastStatus(result.userId, result.status);
 	}
 
 	private broadcastStatus(userId: string, status: PresenceStatus) {
