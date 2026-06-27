@@ -1,13 +1,16 @@
+const PRESENCE_PREFIX = 'presence:';
+
 const PRESENCE_EVENTS = {
 	RECEIVE: {
-		GO_INVISIBLE: 'go_invisible',
-		FORCE_ONLINE: 'force_online',
+		GO_INVISIBLE: `${PRESENCE_PREFIX}go_invisible`,
+		GO_VISIBLE: `${PRESENCE_PREFIX}go_visible`,
+		GO_DND: `${PRESENCE_PREFIX}go_do_not_disturb`,
 	},
 
 	SEND: {
-		GLOBAL_COUNT: 'global_online_count',
-		STATUS_CHANGE: 'friend_status_change',
-		INITIAL_FRIENDS: 'initial_online_friends',
+		GLOBAL_COUNT: `${PRESENCE_PREFIX}global_online_count`,
+		STATUS_CHANGE: `${PRESENCE_PREFIX}friend_status_change`,
+		INITIAL_FRIENDS: `${PRESENCE_PREFIX}initial_online_friends`,
 	},
 } as const;
 

@@ -6,17 +6,18 @@ import {
 	SubscribeMessage,
 	ConnectedSocket,
 } from '@nestjs/websockets';
-import { UseGuards } from '@nestjs/common';
 import { Server } from 'socket.io';
-import { WsJWTAccessGuard } from '@/core/security/guards/jwt-access.guard';
-import { PrismaService } from '@/core/database/services/prisma.service';
+
+import { PresenceService } from '../services/presence.service';
 import {
-	ClientSocket,
+	type ClientSocket,
 	type UserSocket,
 } from '@/core/websocket/interface/ws-socket.inteface';
-import { FriendshipState } from '@prisma-generated/enums';
+
+import { PresenceStatus } from '../intefaces/presence.interface';
+import { UseGuards } from '@nestjs/common';
 import { PRESENCE_EVENTS } from '@/contracts/events/socket/presence.events';
-import { PresenceStoreService } from '../services/presence-store.service';
+import { WsJWTAccessGuard } from '@/core/security/guards/jwt-access.guard';
 
 @WebSocketGateway()
 export class PresenceGateway
@@ -25,35 +26,67 @@ export class PresenceGateway
 	@WebSocketServer()
 	server!: Server;
 
-	constructor(
-		private readonly prisma: PrismaService,
-		private readonly store: PresenceStoreService,
-	) {}
+	constructor(private readonly presenceService: PresenceService) {}
 
 	async handleConnection(client: ClientSocket) {
 		const userId = client.data.user?.sub;
 		if (!userId) return;
 
-		const isFirstSession = this.store.addConnection(userId, client.id);
-		await this.syncPresenceSession(client, userId, isFirstSession);
-		this.updateGlobalCount();
+		const result = await this.presenceService.connect(userId, client.id);
+		for (const room of result.rooms) {
+			await client.join(room);
+		}
+		client.emit(PRESENCE_EVENTS.SEND.INITIAL_FRIENDS, result.activeFriends);
+
+		if (result.statusChanged)
+			this.broadcastStatus(result.userId, result.status);
+		this.broadcastOnlineCount(result.onlineCount);
 	}
 
 	handleDisconnect(client: ClientSocket) {
-		const { userId, isCompletelyOffline } = this.store.removeConnection(
-			client.id,
-		);
-		if (!userId) return;
-		if (isCompletelyOffline) {
-			this.updateStatusForFriends(userId, 'offline');
+		const result = this.presenceService.disconnect(client.id);
+
+		if (!result.userId) return;
+		if (result.isCompletelyOffline) {
+			this.broadcastStatus(result.userId, PresenceStatus.OFFLINE);
 		}
-		this.updateGlobalCount();
+		this.broadcastOnlineCount(result.onlineCount);
 	}
 
-	private updateStatusForFriends(
-		userId: string,
-		status: 'online' | 'offline',
-	) {
+	@UseGuards(WsJWTAccessGuard)
+	@SubscribeMessage(PRESENCE_EVENTS.RECEIVE.GO_VISIBLE)
+	handleGoVisible(@ConnectedSocket() client: UserSocket) {
+		const result = this.presenceService.updateStatus(
+			client.data.user.sub,
+			PresenceStatus.ONLINE,
+		);
+
+		this.broadcastStatus(result.userId, result.status);
+	}
+
+	@UseGuards(WsJWTAccessGuard)
+	@SubscribeMessage(PRESENCE_EVENTS.RECEIVE.GO_INVISIBLE)
+	handleGoInvisible(@ConnectedSocket() client: UserSocket) {
+		const result = this.presenceService.updateStatus(
+			client.data.user.sub,
+			PresenceStatus.INVISIBLE,
+		);
+
+		this.broadcastStatus(result.userId, result.status);
+	}
+
+	@UseGuards(WsJWTAccessGuard)
+	@SubscribeMessage(PRESENCE_EVENTS.RECEIVE.GO_DND)
+	handleGoDoNotDisturb(@ConnectedSocket() client: UserSocket) {
+		const result = this.presenceService.updateStatus(
+			client.data.user.sub,
+			PresenceStatus.DO_NOT_DISTURB,
+		);
+
+		this.broadcastStatus(result.userId, result.status);
+	}
+
+	private broadcastStatus(userId: string, status: PresenceStatus) {
 		this.server
 			.to(`presence:${userId}`)
 			.emit(PRESENCE_EVENTS.SEND.STATUS_CHANGE, {
@@ -61,59 +94,8 @@ export class PresenceGateway
 				status,
 			});
 	}
-	private updateGlobalCount() {
-		this.server.emit(
-			PRESENCE_EVENTS.SEND.GLOBAL_COUNT,
-			this.store.getOnlineUserCount(),
-		);
-	}
 
-	private async syncPresenceSession(
-		client: ClientSocket,
-		userId: string,
-		isFirstSession: boolean,
-	) {
-		const user = await this.prisma.user.findUnique({
-			where: { id: userId },
-			select: {
-				friendshipsA: {
-					where: { state: FriendshipState.ACCEPTED },
-					select: {
-						userBId: true,
-					},
-				},
-				friendshipsB: {
-					where: { state: FriendshipState.ACCEPTED },
-					select: {
-						userAId: true,
-					},
-				},
-			},
-		});
-		if (!user) return;
-		const friendIds = [
-			...user.friendshipsA.map((f) => f.userBId),
-			...user.friendshipsB.map((f) => f.userAId),
-		];
-
-		if (friendIds.length === 0) return;
-		if (isFirstSession) this.updateStatusForFriends(userId, 'online');
-
-		friendIds.forEach((id) => void client.join(`presence:${id}`));
-		void client.join(`user:${userId}`);
-
-		const activeFriends = friendIds.filter((id) =>
-			this.store.isUserOnline(id),
-		);
-		client.emit(PRESENCE_EVENTS.SEND.INITIAL_FRIENDS, activeFriends);
-	}
-
-	@UseGuards(WsJWTAccessGuard)
-	@SubscribeMessage(PRESENCE_EVENTS.RECEIVE.GO_INVISIBLE)
-	handleGoInvisible(@ConnectedSocket() client: UserSocket) {
-		const userId = client.data.user?.sub;
-		if (!userId) return;
-
-		this.updateStatusForFriends(userId, 'offline');
+	private broadcastOnlineCount(count: number) {
+		this.server.emit(PRESENCE_EVENTS.SEND.GLOBAL_COUNT, count);
 	}
 }
