@@ -5,7 +5,10 @@ import { type IUserService } from '@/contracts/services/user/user-service.port';
 import { InjectUserService } from '@/contracts/services/user/user-service.inject';
 import { FriendshipState } from '@prisma-generated/enums';
 import { FriendQueryDto } from '../dto/friend-query.dto';
-import { FriendRequestQueryDto } from '../dto/friend-request-query.dto';
+import {
+	FriendRequestCursorQuery,
+	FriendRequestQueryDto,
+} from '../dto/friend-request-query.dto';
 import { InjectBlockService } from '@/contracts/services/block/block-service.inject';
 import { type IBlockService } from '@/contracts/services/block/block-service.port';
 
@@ -27,6 +30,7 @@ import {
 	FriendshipBlockedByYouException,
 } from '../exceptions/friend.forbidden.exception';
 import { FriendRequestSelfAcceptException } from '../exceptions/friend.unprocessable.exception';
+import { FriendIdsQueryDto } from '../dto/friendIds-query.dto';
 
 @Injectable()
 export class FriendService {
@@ -47,13 +51,37 @@ export class FriendService {
 		const requests = data.map((f) => {
 			const friend = f.userA.id === userId ? f.userB : f.userA;
 			return {
-				friendshipId: f.id,
+				id: f.id,
 				status: f.state,
 				since: f.createdAt,
 				friend,
 			};
 		});
 		return this.pagination.create(requests, query.page, query.limit, total);
+	}
+	async findRequestsCursor(userId: string, query: FriendRequestCursorQuery) {
+		const [data, total] = await this.repo.findRequestsCursor({
+			...query,
+			userId,
+			status: FriendshipState.PENDING,
+		});
+
+		const requests = data.map((f) => {
+			const friend = f.userA.id === userId ? f.userB : f.userA;
+			return {
+				id: f.id,
+				status: f.state,
+				since: f.createdAt,
+				friend,
+			};
+		});
+
+		return this.pagination.cursor(
+			requests,
+			query.limit,
+			total,
+			(item) => item.id,
+		);
 	}
 	async sendRequest(userId: string, friendId: string) {
 		if (userId === friendId) throw new SelfFriendRequestSentException();
@@ -99,7 +127,7 @@ export class FriendService {
 		const friends = data.map((f) => {
 			const friend = f.userA.id === userId ? f.userB : f.userA;
 			return {
-				friendshipId: f.id,
+				id: f.id,
 				status: f.state,
 				since: f.updatedAt,
 				friend,
@@ -107,6 +135,25 @@ export class FriendService {
 		});
 		return this.pagination.create(friends, query.page, query.limit, total);
 	}
+	async findFriendsPageFromIds(userId: string, query: FriendIdsQueryDto) {
+		const [data, total] = await this.repo.paginateFromIds({
+			userId,
+			...query,
+		});
+
+		const friends = data.map((f) => {
+			const friend = f.userA.id === userId ? f.userB : f.userA;
+			return {
+				id: f.id,
+				status: f.state,
+				since: f.updatedAt,
+				friend,
+			};
+		});
+
+		return this.pagination.create(friends, query.page, query.limit, total);
+	}
+
 	async removeFriend(userId: string, friendId: string) {
 		if (userId === friendId) throw new SelfFriendDeleteException();
 
@@ -119,10 +166,7 @@ export class FriendService {
 	}
 
 	public removeIfExists(userId: string, friendId: string) {
-		return this.repo.delete({
-			userId,
-			friendId,
-		});
+		return this.repo.delete({ userId, friendId });
 	}
 
 	private async validateFriendship(userId: string, friendId: string) {

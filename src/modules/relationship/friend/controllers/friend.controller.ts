@@ -10,9 +10,11 @@ import {
 	Query,
 	Param,
 	UseGuards,
+	Post,
 } from '@nestjs/common';
 import { FriendService } from '../services/friend.service';
 import { FriendQueryDto } from '../dto/friend-query.dto';
+import { FriendIdsQueryDto } from '../dto/friendIds-query.dto';
 import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
 
 @Controller('friends')
@@ -28,6 +30,20 @@ export class FriendController {
 		@Query() query: FriendQueryDto,
 	) {
 		return this.service.findFriendsPage(user.sub, query);
+	}
+
+	@Post('ids')
+	@HttpCode(200)
+	@ResponseEnvelope('Friends retrieved successfully')
+	async getFriendsByIds(
+		@CurrentUser() user: JwtAccessPayload,
+		@Body() body: FriendIdsQueryDto,
+	) {
+		const friends = await this.service.findFriendsPageFromIds(
+			user.sub,
+			body,
+		);
+		return friends;
 	}
 
 	@HttpCode(204)

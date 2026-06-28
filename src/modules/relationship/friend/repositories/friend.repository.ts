@@ -7,17 +7,20 @@ import type {
 	FriendshipOrderByWithRelationInput,
 	FriendshipWhereInput,
 } from '@prisma-generated/models';
-import { FriendBaseQueryDto } from '../dto/friend-base-query.dto';
-
-export const FRIENDSHIP_ORDER_BY = ['createdAsc', 'createdDesc'] as const;
-
-export type FriendShipOrderBy = (typeof FRIENDSHIP_ORDER_BY)[number];
+import {
+	FriendBaseQueryDto,
+	FriendShipOrderBy,
+} from '../dto/friend-base-query.dto';
+import {
+	FriendIdsQueryDto,
+	FriendIdsQueryStatus,
+} from '../dto/friendIds-query.dto';
+import { FriendRequestCursorQuery } from '../dto/friend-request-query.dto';
 
 interface CreateFriendShip {
 	userId: string;
 	friendId: string;
 }
-
 type AcceptFriendShip = CreateFriendShip;
 
 interface DeleteFriendShip {
@@ -26,18 +29,27 @@ interface DeleteFriendShip {
 	status: FriendshipState;
 }
 
+type FriendShipStatusDirection =
+	| {
+			status: Extract<FriendshipState, 'PENDING'>;
+			direction: 'incoming' | 'outgoing';
+	  }
+	| {
+			status: Extract<FriendshipState, 'ACCEPTED'>;
+			direction?: never;
+	  };
+
 type PaginateFriendShips = FriendBaseQueryDto & {
 	userId: string;
-} & (
-		| {
-				status: Extract<FriendshipState, 'PENDING'>;
-				direction: 'incoming' | 'outgoing';
-		  }
-		| {
-				status: Extract<FriendshipState, 'ACCEPTED'>;
-				direction?: never;
-		  }
-	);
+} & FriendShipStatusDirection;
+
+type CursorFriendShips = FriendRequestCursorQuery & {
+	userId: string;
+} & FriendShipStatusDirection;
+
+type PaginateFriendsFromIds = FriendIdsQueryDto & {
+	userId: string;
+};
 
 @Injectable()
 export class FriendRepository {
@@ -49,7 +61,77 @@ export class FriendRepository {
 		createdDesc: { createdAt: 'desc' },
 	};
 
+	private readonly orderByCursorMapping: Record<
+		FriendShipOrderBy,
+		FriendshipOrderByWithRelationInput[]
+	> = {
+		createdAsc: [{ createdAt: 'asc' }, { id: 'asc' }],
+		createdDesc: [{ createdAt: 'desc' }, { id: 'desc' }],
+	};
+
 	constructor(private readonly prisma: PrismaService) {}
+
+	async findRequestsCursor({
+		userId,
+		limit,
+		cursor,
+		search,
+		direction,
+		status,
+		orderBy,
+	}: CursorFriendShips) {
+		const userSearchCondition: FriendshipWhereInput['userA'] = {
+			username: {
+				contains: search as string,
+				mode: 'insensitive',
+			},
+		};
+		const baseWhere: FriendshipWhereInput = {
+			state: status ?? FriendshipState.PENDING,
+			OR: [
+				{
+					userAId: userId,
+					...(search && { userB: userSearchCondition }),
+				},
+				{
+					userBId: userId,
+					...(search && { userA: userSearchCondition }),
+				},
+			],
+		};
+		const directionFilter: FriendshipWhereInput =
+			status === FriendshipState.PENDING
+				? direction === 'incoming'
+					? { senderId: { not: userId } }
+					: { senderId: userId }
+				: {};
+
+		const where: FriendshipWhereInput = {
+			...baseWhere,
+			...directionFilter,
+		};
+
+		return Promise.all([
+			this.prisma.friendship.findMany({
+				take: limit + 1,
+				...(cursor && {
+					cursor: { id: cursor },
+					skip: 1,
+				}),
+				where,
+				orderBy: this.orderByMapping[orderBy],
+				select: {
+					id: true,
+					state: true,
+					createdAt: true,
+					updatedAt: true,
+					userA: { select: UserRepository.userSelect },
+					userB: { select: UserRepository.userSelect },
+				},
+			}),
+			this.prisma.friendship.count({ where }),
+		]);
+	}
 
 	paginate(
 		{
@@ -63,29 +145,93 @@ export class FriendRepository {
 		}: PaginateFriendShips,
 		ctx?: DbContext,
 	) {
+		const statusCondition =
+			status === FriendshipState.PENDING
+				? direction === 'incoming'
+					? { not: userId }
+					: userId
+				: undefined;
+
+		const userSearchCondition: FriendshipWhereInput['userA'] = {
+			username: { contains: search as string, mode: 'insensitive' },
+		};
+
 		const where: FriendshipWhereInput = {
 			state: status,
-			senderId:
-				status === FriendshipState.PENDING
-					? direction === 'incoming'
-						? { not: userId }
-						: userId
-					: undefined,
+			senderId: statusCondition,
 			OR: [
 				{
 					userAId: userId,
 					...(search && {
-						userB: {
-							username: { contains: search, mode: 'insensitive' },
-						},
+						userB: userSearchCondition,
 					}),
 				},
 				{
 					userBId: userId,
 					...(search && {
-						userA: {
-							username: { contains: search, mode: 'insensitive' },
-						},
+						userA: userSearchCondition,
+					}),
+				},
+			],
+		};
+
+		const client = ctx?.client ?? this.prisma;
+		const skip = (page - 1) * limit;
+		return Promise.all([
+			client.friendship.findMany({
+				skip,
+				take: limit,
+				where,
+				select: {
+					id: true,
+					state: true,
+					userA: { select: UserRepository.userSelect },
+					userB: { select: UserRepository.userSelect },
+					createdAt: true,
+					updatedAt: true,
+				},
+				orderBy: this.orderByMapping[orderBy],
+			}),
+			client.friendship.count({ where }),
+		]);
+	}
+
+	paginateFromIds(
+		{
+			userId,
+			page,
+			limit,
+			orderBy,
+			search,
+			friendIds,
+			status,
+		}: PaginateFriendsFromIds,
+		ctx?: DbContext,
+	) {
+		const statusCondition =
+			status === FriendIdsQueryStatus.IN
+				? { in: friendIds }
+				: { notIn: friendIds };
+
+		const userSearchCondition: FriendshipWhereInput['userA'] = {
+			username: { contains: search as string, mode: 'insensitive' },
+		};
+
+		const where: FriendshipWhereInput = {
+			state: FriendshipState.ACCEPTED,
+			OR: [
+				{
+					userAId: userId,
+					userBId: statusCondition,
+					...(search && {
+						userB: userSearchCondition,
+					}),
+				},
+				{
+					userBId: userId,
+					userAId: statusCondition,
+					...(search && {
+						userA: userSearchCondition,
 					}),
 				},
 			],

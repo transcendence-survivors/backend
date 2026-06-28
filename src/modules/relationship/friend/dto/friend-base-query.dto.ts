@@ -2,11 +2,10 @@ import {
 	IsPaginationLimit,
 	IsPaginationPage,
 } from '@/shared/decorators/pagination.decorators';
-import { IsIn, IsOptional, IsString, MinLength } from 'class-validator';
-import {
-	FRIENDSHIP_ORDER_BY,
-	type FriendShipOrderBy,
-} from '../repositories/friend.repository';
+import { IsIn, IsOptional, IsString } from 'class-validator';
+
+const FRIENDSHIP_ORDER_BY = ['createdAsc', 'createdDesc'] as const;
+type FriendShipOrderBy = (typeof FRIENDSHIP_ORDER_BY)[number];
 
 class FriendBaseQueryDto {
 	@IsPaginationLimit({})
@@ -21,8 +20,25 @@ class FriendBaseQueryDto {
 
 	@IsOptional()
 	@IsString()
-	@MinLength(1)
 	search?: string;
 }
 
-export { FriendBaseQueryDto };
+class FriendCursorBaseQueryDto {
+	@IsPaginationLimit({})
+	limit = 20;
+
+	@IsOptional()
+	@IsString()
+	cursor?: string;
+
+	@IsOptional()
+	@IsIn(FRIENDSHIP_ORDER_BY)
+	orderBy: FriendShipOrderBy = 'createdAsc';
+
+	@IsOptional()
+	@IsString()
+	search?: string;
+}
+
+export { FriendBaseQueryDto, FriendCursorBaseQueryDto, FRIENDSHIP_ORDER_BY };
+export type { FriendShipOrderBy };

@@ -38,7 +38,7 @@ function generateUsers(
 export async function seedUsers(prisma: PrismaClient) {
 	console.log(`🌱 Seeding ${TOTAL_USERS} users...`);
 
-	const passwordHash = await bcrypt.hash('Test123!@#', 10);
+	const passwordHash = await bcrypt.hash('sENOI12s+', 10);
 	const batches = Math.ceil(TOTAL_USERS / BATCH_SIZE);
 
 	for (let i = 0; i < batches; i++) {
@@ -51,8 +51,10 @@ export async function seedUsers(prisma: PrismaClient) {
 	}
 
 	const users = await prisma.user.findMany({
-		select: { id: true },
+		select: { id: true, username: true },
 	});
+
+	console.log(`Seeding userStats for ${users.length} users`);
 	await prisma.userStats.createMany({
 		data: users.map((user) => ({
 			userId: user.id,
@@ -64,13 +66,17 @@ export async function seedUsers(prisma: PrismaClient) {
 		})),
 		skipDuplicates: true,
 	});
+
+	console.log(`Seeding authProviders for ${users.length} users`);
 	await prisma.authProvider.createMany({
 		data: users.map((u) => ({
 			userId: u.id,
 			provider: AuthProviderType.LOCAL,
 			password: passwordHash,
 		})),
+		skipDuplicates: true,
 	});
 
-	console.log('Seed completed');
+	console.log(`all done! Total users added: ${users.length}`);
+	return { users, totalAdded: users.length };
 }
