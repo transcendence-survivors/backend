@@ -1,10 +1,12 @@
 import { PrismaService } from '@/core/database/services/prisma.service';
 import { Injectable } from '@nestjs/common';
 import { CreatePostDto } from '../dto/post.dto';
+import { DbContext } from '@/core/database/uow/db-context';
+import { PostOrderByWithRelationInput } from '@prisma-generated/models';
 
-export const USER_ORDER_BY = ['date-asc', 'date-desc'] as const;
+export const POST_ORDER_BY = ['date-asc', 'date-desc'] as const;
 
-export type OrderBy = (typeof USER_ORDER_BY)[number];
+export type OrderBy = (typeof POST_ORDER_BY)[number];
 
 @Injectable()
 export class PostRepository {
@@ -21,6 +23,22 @@ export class PostRepository {
 			},
 		});
 	}
+
+	static readonly postSelect = {
+		id: true,
+		content: true,
+		authorId: true,
+		createdAt: true,
+		updatedAt: true,
+		author: {
+			select: {
+				id: true,
+				username: true,
+				displayName: true,
+				avatarUrl: true,
+			},
+		},
+	};
 
 	findById(postId: string) {
 		return this.prisma.post.findFirst({
@@ -41,5 +59,27 @@ export class PostRepository {
 				id: postId,
 			},
 		});
+	}
+
+	private readonly orderByMapping: Record<
+		OrderBy,
+		PostOrderByWithRelationInput
+	> = {
+		'date-asc': { createdAt: 'asc' },
+		'date-desc': { createdAt: 'desc' },
+	};
+
+	paginate(page: number, limit: number, orderBy?: OrderBy, ctx?: DbContext) {
+		const skip = (page - 1) * limit;
+		const client = ctx?.client ?? this.prisma;
+		return Promise.all([
+			client.post.findMany({
+				skip,
+				take: limit,
+				orderBy: orderBy ? this.orderByMapping[orderBy] : undefined,
+				select: PostRepository.postSelect,
+			}),
+			client.post.count(),
+		]);
 	}
 }

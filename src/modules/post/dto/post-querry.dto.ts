@@ -1,9 +1,10 @@
 import { IsIn, IsOptional } from 'class-validator';
-import { USER_ORDER_BY, type OrderBy } from '../repositories/post.repository';
 import {
 	IsPaginationLimit,
 	IsPaginationPage,
 } from '@/shared/decorators/pagination.decorators';
+import type { OrderBy } from '../repositories/post.repository';
+import { POST_ORDER_BY } from '../repositories/post.repository';
 
 export class PostQueryDto {
 	@IsPaginationPage()
@@ -13,6 +14,6 @@ export class PostQueryDto {
 	limit: number = 20;
 
 	@IsOptional()
-	@IsIn(USER_ORDER_BY)
+	@IsIn(POST_ORDER_BY)
 	orderBy?: OrderBy;
 }
