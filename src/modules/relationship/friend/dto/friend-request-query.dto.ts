@@ -1,14 +1,5 @@
-import { IsIn, IsOptional } from 'class-validator';
-import {
-	FriendBaseQueryDto,
-	FriendCursorBaseQueryDto,
-} from './friend-base-query.dto';
-
-class FriendRequestQueryDto extends FriendBaseQueryDto {
-	@IsOptional()
-	@IsIn(['incoming', 'outgoing'])
-	direction: 'incoming' | 'outgoing' = 'incoming';
-}
+import { IsIn, IsOptional, IsString } from 'class-validator';
+import { FriendCursorBaseQueryDto } from './friend-base-query.dto';
 
 class FriendRequestCursorQuery extends FriendCursorBaseQueryDto {
 	@IsOptional()
@@ -16,4 +7,14 @@ class FriendRequestCursorQuery extends FriendCursorBaseQueryDto {
 	direction: 'incoming' | 'outgoing' = 'incoming';
 }
 
-export { FriendRequestQueryDto, FriendRequestCursorQuery };
+class FriendRequestCountQuery {
+	@IsOptional()
+	@IsString()
+	search?: string;
+
+	@IsOptional()
+	@IsIn(['incoming', 'outgoing'])
+	direction: 'incoming' | 'outgoing' = 'incoming';
+}
+
+export { FriendRequestCursorQuery, FriendRequestCountQuery };

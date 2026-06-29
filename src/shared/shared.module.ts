@@ -4,6 +4,7 @@ import { ExceptionsFilter } from './filters/http-exception.filter';
 import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ResponseInterceptor } from './interceptors/response.interceptor';
 import { CustomValidationPipe } from './pipes/custom-validation.pipe';
+import { CursorService } from './services/cursor.service';
 
 @Global()
 @Module({
@@ -21,7 +22,8 @@ import { CustomValidationPipe } from './pipes/custom-validation.pipe';
 			useClass: ExceptionsFilter,
 		},
 		PaginationService,
+		CursorService,
 	],
-	exports: [PaginationService],
+	exports: [PaginationService, CursorService],
 })
 export class SharedModule {}

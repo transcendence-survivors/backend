@@ -16,8 +16,8 @@ import {
 import { FriendService } from '../services/friend.service';
 import { FriendRequestAddDto } from '../dto/friend-request-add.dto';
 import {
+	FriendRequestCountQuery,
 	FriendRequestCursorQuery,
-	FriendRequestQueryDto,
 } from '../dto/friend-request-query.dto';
 import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
 
@@ -29,21 +29,21 @@ export class FriendRequestController {
 	@Get()
 	@HttpCode(200)
 	@ResponseEnvelope('Friend requests retrieved successfully')
-	getPage(
-		@CurrentUser() user: JwtAccessPayload,
-		@Query() query: FriendRequestQueryDto,
-	) {
-		return this.service.findRequestsPage(user.sub, query);
-	}
-
-	@Get('cursor')
-	@HttpCode(200)
-	@ResponseEnvelope('Friend requests retrieved successfully')
 	async getCursorPage(
 		@CurrentUser() user: JwtAccessPayload,
 		@Query() query: FriendRequestCursorQuery,
 	) {
 		return this.service.findRequestsCursor(user.sub, query);
+	}
+
+	@Get('count')
+	@HttpCode(200)
+	@ResponseEnvelope('Friend requests count retrieved successfully')
+	async getCount(
+		@CurrentUser() user: JwtAccessPayload,
+		@Query() query: FriendRequestCountQuery,
+	) {
+		return this.service.countRequests(user.sub, query);
 	}
 
 	@Post()

@@ -5,15 +5,12 @@ import {
 	Body,
 	Controller,
 	Delete,
-	Get,
 	HttpCode,
-	Query,
 	Param,
 	UseGuards,
 	Post,
 } from '@nestjs/common';
 import { FriendService } from '../services/friend.service';
-import { FriendQueryDto } from '../dto/friend-query.dto';
 import { FriendIdsQueryDto } from '../dto/friendIds-query.dto';
 import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
 
@@ -22,15 +19,15 @@ import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
 export class FriendController {
 	constructor(private readonly service: FriendService) {}
 
-	@Get()
-	@HttpCode(200)
-	@ResponseEnvelope('Friends retrieved successfully')
-	async getFriends(
-		@CurrentUser() user: JwtAccessPayload,
-		@Query() query: FriendQueryDto,
-	) {
-		return this.service.findFriendsPage(user.sub, query);
-	}
+	// @Get()
+	// @HttpCode(200)
+	// @ResponseEnvelope('Friends retrieved successfully')
+	// async getFriends(
+	// 	@CurrentUser() user: JwtAccessPayload,
+	// 	@Query() query: FriendQueryDto,
+	// ) {
+	// 	return this.service.findFriendsPage(user.sub, query);
+	// }
 
 	@Post('ids')
 	@HttpCode(200)

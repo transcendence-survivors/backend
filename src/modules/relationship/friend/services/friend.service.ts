@@ -4,10 +4,9 @@ import { PaginationService } from '@/shared/services/pagination.service';
 import { type IUserService } from '@/contracts/services/user/user-service.port';
 import { InjectUserService } from '@/contracts/services/user/user-service.inject';
 import { FriendshipState } from '@prisma-generated/enums';
-import { FriendQueryDto } from '../dto/friend-query.dto';
 import {
+	FriendRequestCountQuery,
 	FriendRequestCursorQuery,
-	FriendRequestQueryDto,
 } from '../dto/friend-request-query.dto';
 import { InjectBlockService } from '@/contracts/services/block/block-service.inject';
 import { type IBlockService } from '@/contracts/services/block/block-service.port';
@@ -31,6 +30,7 @@ import {
 } from '../exceptions/friend.forbidden.exception';
 import { FriendRequestSelfAcceptException } from '../exceptions/friend.unprocessable.exception';
 import { FriendIdsQueryDto } from '../dto/friendIds-query.dto';
+import { CursorService } from '@/shared/services/cursor.service';
 
 @Injectable()
 export class FriendService {
@@ -39,28 +39,11 @@ export class FriendService {
 		@InjectBlockService() private readonly blockService: IBlockService,
 		private readonly repo: FriendRepository,
 		private readonly pagination: PaginationService,
+		private readonly cursor: CursorService,
 	) {}
 
-	async findRequestsPage(userId: string, query: FriendRequestQueryDto) {
-		const [data, total] = await this.repo.paginate({
-			userId,
-			status: FriendshipState.PENDING,
-			...query,
-		});
-
-		const requests = data.map((f) => {
-			const friend = f.userA.id === userId ? f.userB : f.userA;
-			return {
-				id: f.id,
-				status: f.state,
-				since: f.createdAt,
-				friend,
-			};
-		});
-		return this.pagination.create(requests, query.page, query.limit, total);
-	}
 	async findRequestsCursor(userId: string, query: FriendRequestCursorQuery) {
-		const [data, total] = await this.repo.findRequestsCursor({
+		const data = await this.repo.findCursor({
 			...query,
 			userId,
 			status: FriendshipState.PENDING,
@@ -75,14 +58,17 @@ export class FriendService {
 				friend,
 			};
 		});
-
-		return this.pagination.cursor(
-			requests,
-			query.limit,
-			total,
-			(item) => item.id,
-		);
+		return this.cursor.create(requests, query.limit, (item) => item.id);
 	}
+	async countRequests(userId: string, query: FriendRequestCountQuery) {
+		const count = await this.repo.count({
+			...query,
+			userId,
+			status: FriendshipState.PENDING,
+		});
+		return { count };
+	}
+
 	async sendRequest(userId: string, friendId: string) {
 		if (userId === friendId) throw new SelfFriendRequestSentException();
 
@@ -117,24 +103,6 @@ export class FriendService {
 		if (count === 0) throw new FriendRequestDoesNotExistException();
 	}
 
-	async findFriendsPage(userId: string, query: FriendQueryDto) {
-		const [data, total] = await this.repo.paginate({
-			userId,
-			status: FriendshipState.ACCEPTED,
-			...query,
-		});
-
-		const friends = data.map((f) => {
-			const friend = f.userA.id === userId ? f.userB : f.userA;
-			return {
-				id: f.id,
-				status: f.state,
-				since: f.updatedAt,
-				friend,
-			};
-		});
-		return this.pagination.create(friends, query.page, query.limit, total);
-	}
 	async findFriendsPageFromIds(userId: string, query: FriendIdsQueryDto) {
 		const [data, total] = await this.repo.paginateFromIds({
 			userId,
