@@ -5,6 +5,7 @@ import { CoreModule } from '@/core/core.module';
 import { UserModule } from './user/user.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { SharedModule } from '@/shared/shared.module';
+import { PostModule } from './post/post.module';
 import { RelationshipsModule } from './relationship/relationship.module';
 import { PresenceModule } from './presence/presence.module';
 
@@ -15,6 +16,7 @@ import { PresenceModule } from './presence/presence.module';
 		SharedModule,
 		AuthModule,
 		UserModule,
+		PostModule,
 		RelationshipsModule,
 		PresenceModule,
 	],
