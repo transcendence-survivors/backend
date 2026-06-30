@@ -3,13 +3,30 @@ import { Injectable } from '@nestjs/common';
 import { CreatePostDto } from '../dto/post.dto';
 import { DbContext } from '@/core/database/uow/db-context';
 import { PostOrderByWithRelationInput } from '@prisma-generated/models';
+import { PostQueryDto } from '../dto/post-querry.dto';
+import { UserRepository } from '@/modules/user/repositories/user.repository';
 
 export const POST_ORDER_BY = ['date-asc', 'date-desc'] as const;
-
-export type OrderBy = (typeof POST_ORDER_BY)[number];
+export type PostOrderBy = (typeof POST_ORDER_BY)[number];
 
 @Injectable()
 export class PostRepository {
+	static readonly postSelect = {
+		id: true,
+		content: true,
+		createdAt: true,
+		author: {
+			select: UserRepository.userSelect,
+		},
+	};
+	private readonly orderByCursorMapping: Record<
+		PostOrderBy,
+		PostOrderByWithRelationInput[]
+	> = {
+		'date-asc': [{ createdAt: 'asc' }, { id: 'asc' }],
+		'date-desc': [{ createdAt: 'desc' }, { id: 'desc' }],
+	};
+
 	constructor(private readonly prisma: PrismaService) {}
 	findAll() {
 		return this.prisma.post.findMany();
@@ -23,20 +40,6 @@ export class PostRepository {
 			},
 		});
 	}
-
-	static readonly postSelect = {
-		id: true,
-		content: true,
-		createdAt: true,
-		author: {
-			select: {
-				id: true,
-				username: true,
-				displayName: true,
-				avatarUrl: true,
-			},
-		},
-	};
 
 	findById(postId: string) {
 		return this.prisma.post.findFirst({
@@ -59,25 +62,23 @@ export class PostRepository {
 		});
 	}
 
-	private readonly orderByMapping: Record<
-		OrderBy,
-		PostOrderByWithRelationInput
-	> = {
-		'date-asc': { createdAt: 'asc' },
-		'date-desc': { createdAt: 'desc' },
-	};
-
-	paginate(page: number, limit: number, orderBy?: OrderBy, ctx?: DbContext) {
-		const skip = (page - 1) * limit;
+	cursor({ limit, cursor, orderBy, search }: PostQueryDto, ctx?: DbContext) {
 		const client = ctx?.client ?? this.prisma;
-		return Promise.all([
-			client.post.findMany({
-				skip,
-				take: limit,
-				orderBy: orderBy ? this.orderByMapping[orderBy] : undefined,
-				select: PostRepository.postSelect,
+		return client.post.findMany({
+			take: limit + 1,
+			where: {
+				...(search && {
+					content: {
+						contains: search,
+					},
+				}),
+			},
+			...(cursor && {
+				cursor: { id: cursor },
+				skip: 1,
 			}),
-			client.post.count(),
-		]);
+			orderBy: this.orderByCursorMapping[orderBy],
+			select: PostRepository.postSelect,
+		});
 	}
 }

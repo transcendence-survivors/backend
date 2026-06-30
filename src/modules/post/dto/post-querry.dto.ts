@@ -1,19 +1,23 @@
-import { IsIn, IsOptional } from 'class-validator';
+import { IsIn, IsOptional, IsString } from 'class-validator';
+import { IsPaginationLimit } from '@/shared/decorators/pagination.decorators';
 import {
-	IsPaginationLimit,
-	IsPaginationPage,
-} from '@/shared/decorators/pagination.decorators';
-import type { OrderBy } from '../repositories/post.repository';
-import { POST_ORDER_BY } from '../repositories/post.repository';
+	POST_ORDER_BY,
+	type PostOrderBy,
+} from '../repositories/post.repository';
 
 export class PostQueryDto {
-	@IsPaginationPage()
-	page: number = 1;
-
 	@IsPaginationLimit({})
 	limit: number = 20;
 
 	@IsOptional()
+	@IsString()
+	cursor?: string;
+
+	@IsOptional()
 	@IsIn(POST_ORDER_BY)
-	orderBy?: OrderBy;
+	orderBy: PostOrderBy = 'date-desc';
+
+	@IsOptional()
+	@IsString()
+	search?: string;
 }

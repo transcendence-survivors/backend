@@ -4,23 +4,18 @@ import { CreatePostDto } from '../dto/post.dto';
 import { PostOwnershipException } from '../exceptions/post-unauthorized.exception.';
 import { PostDoesNotExistException } from '../exceptions/post-unexisting.exception';
 import { PostQueryDto } from '../dto/post-querry.dto';
-import { PaginationService } from '@/shared/services/pagination.service';
+import { CursorService } from '@/shared/services/cursor.service';
 
 @Injectable()
 export class PostService {
 	constructor(
 		private readonly postRepository: PostRepository,
-		private readonly pagination: PaginationService,
+		private readonly cursor: CursorService,
 	) {}
 
-	async findPage(query: PostQueryDto) {
-		const { page, limit, orderBy } = query;
-		const [data, total] = await this.postRepository.paginate(
-			page,
-			limit,
-			orderBy,
-		);
-		return this.pagination.create(data, page, limit, total);
+	async findCursor(query: PostQueryDto) {
+		const data = await this.postRepository.cursor(query);
+		return this.cursor.create(data, query.limit, (post) => post.id);
 	}
 
 	findAll() {

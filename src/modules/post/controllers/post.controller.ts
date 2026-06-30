@@ -1,9 +1,9 @@
-import { BaseController } from '@/shared/base.controller';
 import {
 	Body,
 	Controller,
 	Delete,
 	Get,
+	HttpCode,
 	Param,
 	Post,
 	Query,
@@ -15,21 +15,23 @@ import { JWTAccessGuard } from '@/core/security/guards/jwt-access.guard';
 import type { JwtAccessPayload } from '@/core/security/interfaces/jwt-payload.interface';
 import { CurrentUser } from '@/core/security/decorators/current-user.decorator';
 import { PostQueryDto } from '../dto/post-querry.dto';
+import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
 
 @Controller('posts')
-export class PostController extends BaseController {
-	constructor(private readonly postService: PostService) {
-		super();
-	}
+export class PostController {
+	constructor(private readonly postService: PostService) {}
 
 	@Get()
+	@HttpCode(200)
+	@ResponseEnvelope('Post fetch successfully')
 	async getPosts(@Query() query: PostQueryDto) {
-		const res = await this.postService.findPage(query);
-		return this.ok(res, 'Users found');
+		return this.postService.findCursor(query);
 	}
 
-	@UseGuards(JWTAccessGuard)
 	@Post()
+	@HttpCode(201)
+	@UseGuards(JWTAccessGuard)
+	@ResponseEnvelope('Post created successfully')
 	writePost(
 		@Body() createPostDto: CreatePostDto,
 		@CurrentUser() user: JwtAccessPayload,
@@ -37,10 +39,14 @@ export class PostController extends BaseController {
 		return this.postService.create(user.sub, createPostDto);
 	}
 
-	@UseGuards(JWTAccessGuard)
 	@Delete(':id')
-	deletePost(@Param('id') id: string, @CurrentUser() user: JwtAccessPayload) {
-		return this.postService.delete(id, user.sub);
+	@HttpCode(204)
+	@UseGuards(JWTAccessGuard)
+	async deletePost(
+		@Param('id') id: string,
+		@CurrentUser() user: JwtAccessPayload,
+	) {
+		await this.postService.delete(id, user.sub);
 	}
 
 	//utiliser this.ok
