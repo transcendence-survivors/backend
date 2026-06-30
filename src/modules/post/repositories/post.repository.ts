@@ -27,9 +27,7 @@ export class PostRepository {
 	static readonly postSelect = {
 		id: true,
 		content: true,
-		authorId: true,
 		createdAt: true,
-		updatedAt: true,
 		author: {
 			select: {
 				id: true,

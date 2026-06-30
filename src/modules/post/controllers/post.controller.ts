@@ -22,11 +22,6 @@ export class PostController extends BaseController {
 		super();
 	}
 
-	@Get('all')
-	async getAllPosts() {
-		return this.postService.findAll();
-	}
-
 	@Get()
 	async getPosts(@Query() query: PostQueryDto) {
 		const res = await this.postService.findPage(query);
