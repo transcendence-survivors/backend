@@ -33,7 +33,7 @@ export class FriendRequestController {
 		@CurrentUser() user: JwtAccessPayload,
 		@Query() query: FriendRequestCursorQuery,
 	) {
-		return this.service.findRequestsCursor(user.sub, query);
+		return this.service.requestCursor(user.sub, query);
 	}
 
 	@Get('count')

@@ -9,25 +9,28 @@ import {
 	Param,
 	UseGuards,
 	Post,
+	Query,
+	Get,
 } from '@nestjs/common';
 import { FriendService } from '../services/friend.service';
 import { FriendIdsQueryDto } from '../dto/friendIds-query.dto';
 import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
+import { FriendQueryDto } from '../dto/friend-query.dto';
 
 @Controller('friends')
 @UseGuards(JWTAccessGuard)
 export class FriendController {
 	constructor(private readonly service: FriendService) {}
 
-	// @Get()
-	// @HttpCode(200)
-	// @ResponseEnvelope('Friends retrieved successfully')
-	// async getFriends(
-	// 	@CurrentUser() user: JwtAccessPayload,
-	// 	@Query() query: FriendQueryDto,
-	// ) {
-	// 	return this.service.findFriendsPage(user.sub, query);
-	// }
+	@Get()
+	@HttpCode(200)
+	@ResponseEnvelope('Friends retrieved successfully')
+	async getFriends(
+		@CurrentUser() user: JwtAccessPayload,
+		@Query() query: FriendQueryDto,
+	) {
+		return this.service.friendsCursor(user.sub, query);
+	}
 
 	@Post('ids')
 	@HttpCode(200)
@@ -36,10 +39,7 @@ export class FriendController {
 		@CurrentUser() user: JwtAccessPayload,
 		@Body() body: FriendIdsQueryDto,
 	) {
-		const friends = await this.service.findFriendsPageFromIds(
-			user.sub,
-			body,
-		);
+		const friends = await this.service.friendsCursorFromIds(user.sub, body);
 		return friends;
 	}
 

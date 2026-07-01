@@ -5,14 +5,14 @@ import {
 	IsEnum,
 	IsUUID,
 } from 'class-validator';
-import { FriendBaseQueryDto } from './friend-base-query.dto';
+import { FriendCursorQueryDto } from './friend-base-query.dto';
 
 enum FriendIdsQueryStatus {
 	IN = 'IN',
 	NOT_IN = 'NOT_IN',
 }
 
-class FriendIdsQueryDto extends FriendBaseQueryDto {
+class FriendIdsQueryDto extends FriendCursorQueryDto {
 	@IsArray()
 	@ArrayMinSize(1)
 	@ArrayMaxSize(10000)

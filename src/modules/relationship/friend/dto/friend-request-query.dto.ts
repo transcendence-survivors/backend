@@ -1,7 +1,7 @@
 import { IsIn, IsOptional, IsString } from 'class-validator';
-import { FriendCursorBaseQueryDto } from './friend-base-query.dto';
+import { FriendCursorQueryDto } from './friend-base-query.dto';
 
-class FriendRequestCursorQuery extends FriendCursorBaseQueryDto {
+class FriendRequestCursorQuery extends FriendCursorQueryDto {
 	@IsOptional()
 	@IsIn(['incoming', 'outgoing'])
 	direction: 'incoming' | 'outgoing' = 'incoming';

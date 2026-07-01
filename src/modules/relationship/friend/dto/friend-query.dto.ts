@@ -1,5 +1,5 @@
-import { FriendBaseQueryDto } from './friend-base-query.dto';
+import { FriendCursorQueryDto } from './friend-base-query.dto';
 
-class FriendQueryDto extends FriendBaseQueryDto {}
+class FriendQueryDto extends FriendCursorQueryDto {}
 
 export { FriendQueryDto };
