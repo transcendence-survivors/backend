@@ -28,7 +28,10 @@ import {
 	FriendshipBlockedByYouException,
 } from '../exceptions/friend.forbidden.exception';
 import { FriendRequestSelfAcceptException } from '../exceptions/friend.unprocessable.exception';
-import { FriendIdsQueryDto } from '../dto/friendIds-query.dto';
+import {
+	FriendIdsCountQueryDto,
+	FriendIdsQueryDto,
+} from '../dto/friendIds-query.dto';
 import { CursorService } from '@/shared/services/cursor.service';
 import { FriendQueryDto } from '../dto/friend-query.dto';
 
@@ -94,7 +97,7 @@ export class FriendService {
 	async removeRequest(userId: string, friendId: string) {
 		if (userId === friendId) throw new SelfFriendRequestDeleteException();
 
-		const { count } = await this.repo.deleteOnStatus({
+		const { count } = await this.repo.delete({
 			userId,
 			friendId,
 			status: FriendshipState.PENDING,
@@ -121,6 +124,15 @@ export class FriendService {
 
 		return this.cursor.create(friends, query.limit, (item) => item.id);
 	}
+	async countFriends(userId: string, search?: string) {
+		const count = await this.repo.count({
+			userId,
+			search,
+			status: FriendshipState.ACCEPTED,
+		});
+		return { count };
+	}
+
 	async friendsCursorFromIds(userId: string, query: FriendIdsQueryDto) {
 		const data = await this.repo.cursorIds({
 			...query,
@@ -138,20 +150,23 @@ export class FriendService {
 		});
 		return this.cursor.create(friends, query.limit, (item) => item.id);
 	}
+	async countFriendsFromIds(userId: string, query: FriendIdsCountQueryDto) {
+		const count = await this.repo.countIds({
+			...query,
+			userId,
+		});
+		return { count };
+	}
 
 	async removeFriend(userId: string, friendId: string) {
 		if (userId === friendId) throw new SelfFriendDeleteException();
 
-		const { count } = await this.repo.deleteOnStatus({
+		const { count } = await this.repo.delete({
 			userId,
 			friendId,
 			status: FriendshipState.ACCEPTED,
 		});
 		if (count === 0) throw new FriendDoesNotExistException();
-	}
-
-	public removeIfExists(userId: string, friendId: string) {
-		return this.repo.delete({ userId, friendId });
 	}
 
 	private async validateFriendship(userId: string, friendId: string) {
@@ -169,5 +184,9 @@ export class FriendService {
 
 		if (blocked) throw new FriendshipBlockedByUserException();
 		if (blocker) throw new FriendshipBlockedByYouException();
+	}
+
+	public removeIfExists(userId: string, friendId: string) {
+		return this.repo.delete({ userId, friendId });
 	}
 }

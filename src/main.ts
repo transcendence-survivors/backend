@@ -20,5 +20,5 @@ void (async () => {
 	appV1.useWebSocketAdapter(new SocketIoAdapter(appV1));
 	appV1.setGlobalPrefix('api/v1');
 	appV1.use(cookieParser());
-	await appV1.listen(process.env.NEST_PORT!);
+	await appV1.listen(process.env.NEST_PORT!, '0.0.0.0');
 })();

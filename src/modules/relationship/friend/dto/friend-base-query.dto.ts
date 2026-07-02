@@ -6,6 +6,8 @@ const FRIENDSHIP_ORDER_BY = [
 	'createdDesc',
 	'updatedAsc',
 	'updatedDesc',
+	'userNameAsc',
+	'userNameDesc',
 ] as const;
 type FriendShipOrderBy = (typeof FRIENDSHIP_ORDER_BY)[number];
 

@@ -89,16 +89,14 @@ export class UserRepository {
 		});
 	}
 
-	findByUsername(username: string, selectStats = false) {
-		const statsSelect = selectStats
-			? { select: this.userStatsSelect }
-			: undefined;
-
+	findByUsername(username: string) {
 		return this.prisma.user.findUnique({
 			where: { username },
 			select: {
 				...UserRepository.userSelect,
-				stats: statsSelect,
+				coverImageUrl: true,
+				bio: true,
+				birthDate: true,
 			},
 		});
 	}

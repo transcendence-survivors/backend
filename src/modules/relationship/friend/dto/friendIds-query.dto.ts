@@ -3,6 +3,8 @@ import {
 	ArrayMinSize,
 	IsArray,
 	IsEnum,
+	IsOptional,
+	IsString,
 	IsUUID,
 } from 'class-validator';
 import { FriendCursorQueryDto } from './friend-base-query.dto';
@@ -14,7 +16,7 @@ enum FriendIdsQueryStatus {
 
 class FriendIdsQueryDto extends FriendCursorQueryDto {
 	@IsArray()
-	@ArrayMinSize(1)
+	@ArrayMinSize(0)
 	@ArrayMaxSize(10000)
 	@IsUUID(undefined, { each: true })
 	friendIds!: string[];
@@ -23,4 +25,19 @@ class FriendIdsQueryDto extends FriendCursorQueryDto {
 	status!: FriendIdsQueryStatus;
 }
 
-export { FriendIdsQueryDto, FriendIdsQueryStatus };
+class FriendIdsCountQueryDto {
+	@IsOptional()
+	@IsString()
+	search?: string;
+
+	@IsArray()
+	@ArrayMinSize(0)
+	@ArrayMaxSize(10000)
+	@IsUUID(undefined, { each: true })
+	friendIds!: string[];
+
+	@IsEnum(FriendIdsQueryStatus)
+	status!: FriendIdsQueryStatus;
+}
+
+export { FriendIdsQueryDto, FriendIdsQueryStatus, FriendIdsCountQueryDto };

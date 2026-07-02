@@ -15,7 +15,7 @@ import {
 import { FriendService } from '../services/friend.service';
 import { FriendIdsQueryDto } from '../dto/friendIds-query.dto';
 import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
-import { FriendQueryDto } from '../dto/friend-query.dto';
+import { FriendCountQueryDto, FriendQueryDto } from '../dto/friend-query.dto';
 
 @Controller('friends')
 @UseGuards(JWTAccessGuard)
@@ -25,22 +25,38 @@ export class FriendController {
 	@Get()
 	@HttpCode(200)
 	@ResponseEnvelope('Friends retrieved successfully')
-	async getFriends(
-		@CurrentUser() user: JwtAccessPayload,
-		@Query() query: FriendQueryDto,
-	) {
+	get(@CurrentUser() user: JwtAccessPayload, @Query() query: FriendQueryDto) {
 		return this.service.friendsCursor(user.sub, query);
+	}
+
+	@Get('count')
+	@HttpCode(200)
+	@ResponseEnvelope('Friends count retrieved successfully')
+	count(
+		@CurrentUser() user: JwtAccessPayload,
+		@Query() { search }: FriendCountQueryDto,
+	) {
+		return this.service.countFriends(user.sub, search);
 	}
 
 	@Post('ids')
 	@HttpCode(200)
 	@ResponseEnvelope('Friends retrieved successfully')
-	async getFriendsByIds(
+	getFriendsByIds(
 		@CurrentUser() user: JwtAccessPayload,
 		@Body() body: FriendIdsQueryDto,
 	) {
-		const friends = await this.service.friendsCursorFromIds(user.sub, body);
-		return friends;
+		return this.service.friendsCursorFromIds(user.sub, body);
+	}
+
+	@Post('ids/count')
+	@HttpCode(200)
+	@ResponseEnvelope('Friends count retrieved successfully')
+	countFriendsByIds(
+		@CurrentUser() user: JwtAccessPayload,
+		@Body() body: FriendIdsQueryDto,
+	) {
+		return this.service.countFriendsFromIds(user.sub, body);
 	}
 
 	@HttpCode(204)

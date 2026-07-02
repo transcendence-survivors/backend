@@ -18,7 +18,7 @@ export class UserController {
 	@HttpCode(200)
 	@ResponseEnvelope('User found successfully')
 	findOne(@Param('username') username: string) {
-		return this.userService.getSingle({ username });
+		return this.userService.getFacadeByUsername(username);
 	}
 
 	@Get()
