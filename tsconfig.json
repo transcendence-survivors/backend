@@ -26,6 +26,6 @@
 			"@prisma-generated/*": ["./prisma/generated/prisma/*"]
 		},
 		"resolveJsonModule": true,
-		"types": ["node", "jest"]
+		"types": ["node", "jest", "multer"]
 	}
 }
