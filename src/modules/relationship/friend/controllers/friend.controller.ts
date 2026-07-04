@@ -13,9 +13,11 @@ import {
 	Get,
 } from '@nestjs/common';
 import { FriendService } from '../services/friend.service';
-import { FriendIdsQueryDto } from '../dto/friendIds-query.dto';
 import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
-import { FriendCountQueryDto, FriendQueryDto } from '../dto/friend-query.dto';
+import { FriendPaginateDto } from '../dtos/requests/friend-paginate.dto';
+import { FriendCountDto } from '../dtos/requests/friend-count.dto';
+import { FriendIdsPaginateDto } from '../dtos/requests/friend-ids-paginate.dto';
+import { FriendIdsCountDto } from '../dtos/requests/friend-ids-count.dto';
 
 @Controller('friends')
 @UseGuards(JWTAccessGuard)
@@ -25,7 +27,10 @@ export class FriendController {
 	@Get()
 	@HttpCode(200)
 	@ResponseEnvelope('Friends retrieved successfully')
-	get(@CurrentUser() user: JwtAccessPayload, @Query() query: FriendQueryDto) {
+	get(
+		@CurrentUser() user: JwtAccessPayload,
+		@Query() query: FriendPaginateDto,
+	) {
 		return this.service.friendsCursor(user.sub, query);
 	}
 
@@ -34,7 +39,7 @@ export class FriendController {
 	@ResponseEnvelope('Friends count retrieved successfully')
 	count(
 		@CurrentUser() user: JwtAccessPayload,
-		@Query() { search }: FriendCountQueryDto,
+		@Query() { search }: FriendCountDto,
 	) {
 		return this.service.countFriends(user.sub, search);
 	}
@@ -44,7 +49,7 @@ export class FriendController {
 	@ResponseEnvelope('Friends retrieved successfully')
 	getFriendsByIds(
 		@CurrentUser() user: JwtAccessPayload,
-		@Body() body: FriendIdsQueryDto,
+		@Body() body: FriendIdsPaginateDto,
 	) {
 		return this.service.friendsCursorFromIds(user.sub, body);
 	}
@@ -54,7 +59,7 @@ export class FriendController {
 	@ResponseEnvelope('Friends count retrieved successfully')
 	countFriendsByIds(
 		@CurrentUser() user: JwtAccessPayload,
-		@Body() body: FriendIdsQueryDto,
+		@Body() body: FriendIdsCountDto,
 	) {
 		return this.service.countFriendsFromIds(user.sub, body);
 	}

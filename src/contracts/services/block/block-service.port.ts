@@ -2,7 +2,7 @@ import { Block } from '@prisma-generated/client';
 
 export const BLOCK_SERVICE = Symbol('BLOCK_SERVICE');
 
-export type FindBlockById = Pick<Block, 'id' | 'blockedId'>;
+export type FindBlockById = Pick<Block, 'id'>;
 
 export interface IBlockService {
 	findBlockerBlockedById(

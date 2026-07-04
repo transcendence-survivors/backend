@@ -1,12 +1,12 @@
 import { IsIn, IsOptional, IsString } from 'class-validator';
-import { IsPaginationLimit } from '@/shared/decorators/pagination.decorators';
+import { IsCursorLimit } from '@/shared/decorators/cursor.decorators';
 import {
 	POST_ORDER_BY,
 	type PostOrderBy,
 } from '../repositories/post.repository';
 
 export class PostQueryDto {
-	@IsPaginationLimit({})
+	@IsCursorLimit({})
 	limit: number = 20;
 
 	@IsOptional()

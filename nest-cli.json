@@ -1,6 +1,14 @@
 {
 	"compilerOptions": {
 		"deleteOutDir": true,
+		"plugins": [
+			{
+				"name": "@nestjs/swagger",
+				"options": {
+					"introspectComments": true
+				}
+			}
+		],
 		"assets": [
 			{
 				"include": "core/email/locales/**/*",

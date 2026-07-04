@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import SignInDto from '@/modules/auth/dto/signin.dto';
-import UserNotFoundException from '@/modules/user/exceptions/user.not-found.exception';
 import { TokenService } from '../token/service/token.service';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
@@ -16,6 +15,7 @@ import { type IUserService } from '@/contracts/services/user/user-service.port';
 import { UnitOfWork } from '@/core/database/uow/unit-of-work';
 import SignUpDto from '@/modules/auth/dto/signup.dto';
 import { JwtRefreshPayload } from '@/core/security/interfaces/jwt-payload.interface';
+import { UserNotFoundException } from '@/modules/user/exceptions/user.not-found.exception';
 
 @Injectable()
 export class AuthService {

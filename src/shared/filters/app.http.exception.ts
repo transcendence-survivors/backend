@@ -1,16 +1,25 @@
 import { HttpException, HttpStatus } from '@nestjs/common';
 
-class AppHttpException extends HttpException {
-	private readonly key: string;
+export type ApiErrorDescription = {
+	status: HttpStatus;
+	message: string;
+	messageKey: string;
+	errors?: Record<string, unknown> | null;
+};
 
-	constructor(message: string, messageKey: string, statusCode: HttpStatus) {
-		super(message, statusCode);
-		this.key = messageKey;
+export abstract class AppHttpException extends HttpException {
+	public readonly message: string;
+	public readonly messageKey: string;
+
+	constructor(message: string, messageKey: string, status: HttpStatus) {
+		super({ message, messageKey, status }, status);
+		this.message = message;
+		this.messageKey = messageKey;
 	}
 
-	get messageKey() {
-		return this.key;
+	static describe(): ApiErrorDescription {
+		throw new Error(
+			`${this.name} must implement a static describe() method`,
+		);
 	}
 }
-
-export { AppHttpException };

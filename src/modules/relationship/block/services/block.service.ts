@@ -8,39 +8,50 @@ import {
 } from '../exceptions/block.bad.exception';
 import { BlockConflictException } from '../exceptions/block.conflict.exception';
 import { BlockNotFoundException } from '../exceptions/block.not-found.exceptions';
-import { BlockQueryDto } from '../dto/blocker-query.dto';
-import { PaginationService } from '@/shared/services/pagination.service';
 import { type IBlockService } from '@/contracts/services/block/block-service.port';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AppEvents, BlockCreatedEvent } from '@/contracts/events/internal';
+import { CursorService } from '@/shared/services/cursor.service';
+import {
+	BlockCountQueryDto,
+	BlockCursorQueryDto,
+} from '../dto/blocker-query.dto';
 
 @Injectable()
 export class BlockService implements IBlockService {
 	constructor(
 		@InjectUserService() private readonly userService: IUserService,
 		private readonly repo: BlockRepository,
-		private readonly pagination: PaginationService,
+		private readonly cursor: CursorService,
 		private readonly eventEmitter: EventEmitter2,
 	) {}
 
-	async findPage(userId: string, query: BlockQueryDto) {
-		const { page, limit, orderBy, username } = query;
-		const [data, total] = await this.repo.paginate({
-			userId,
-			page,
-			limit,
-			orderBy,
-			username,
+	async blockedCursor(userId: string, query: BlockCursorQueryDto) {
+		const result = await this.repo.blockedCursor({
+			blockerId: userId,
+			...query,
 		});
-		const blockedUsers = data.map((block) => block.blocked);
-		return this.pagination.create(blockedUsers, page, limit, total);
+
+		const blockedUsers = result.map((block) => block.blocked);
+		return this.cursor.create(blockedUsers, query.limit, (user) => user.id);
 	}
+	async blockedCount(userId: string, query: BlockCountQueryDto) {
+		const count = await this.repo.blockedCount({
+			blockerId: userId,
+			...query,
+		});
+		return { count };
+	}
+
 	async create(userId: string, blockedUserId: string) {
 		if (userId === blockedUserId) throw new SelfBlockBadException();
 
 		await this.userService.validateUserId(blockedUserId);
-		const isBlocked = await this.repo.isBlocked(userId, blockedUserId);
-		if (isBlocked) throw new BlockConflictException();
+		const exist = await this.repo.findBlockedById({
+			blockerId: userId,
+			blockedId: blockedUserId,
+		});
+		if (!exist) throw new BlockConflictException();
 
 		const block = await this.repo.save({ userId, blockedUserId });
 		this.eventEmitter.emit(
@@ -56,7 +67,7 @@ export class BlockService implements IBlockService {
 		if (count === 0) throw new BlockNotFoundException();
 	}
 
-	public findBlockerBlockedById = (userId: string, otherId: string) => {
+	findBlockerBlockedById(userId: string, otherId: string) {
 		return Promise.all([
 			this.repo.findBlockedById({
 				blockedId: otherId,
@@ -67,5 +78,5 @@ export class BlockService implements IBlockService {
 				blockerId: otherId,
 			}),
 		]);
-	};
+	}
 }

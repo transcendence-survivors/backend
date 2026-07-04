@@ -14,12 +14,11 @@ import {
 	UseGuards,
 } from '@nestjs/common';
 import { FriendService } from '../services/friend.service';
-import { FriendRequestAddDto } from '../dto/friend-request-add.dto';
-import {
-	FriendRequestCountQuery,
-	FriendRequestCursorQuery,
-} from '../dto/friend-request-query.dto';
+
 import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
+import { FriendRequestPaginateDto } from '../dtos/requests/friend-request-paginate.dto';
+import { FriendRequestCountDto } from '../dtos/requests/friend-count-paginate.dto';
+import { FriendRequestAddDto } from '../dtos/requests/friend-request-add.dto';
 
 @Controller('friends/requests')
 @UseGuards(JWTAccessGuard)
@@ -31,7 +30,7 @@ export class FriendRequestController {
 	@ResponseEnvelope('Friend requests retrieved successfully')
 	async getCursorPage(
 		@CurrentUser() user: JwtAccessPayload,
-		@Query() query: FriendRequestCursorQuery,
+		@Query() query: FriendRequestPaginateDto,
 	) {
 		return this.service.requestCursor(user.sub, query);
 	}
@@ -41,7 +40,7 @@ export class FriendRequestController {
 	@ResponseEnvelope('Friend requests count retrieved successfully')
 	async getCount(
 		@CurrentUser() user: JwtAccessPayload,
-		@Query() query: FriendRequestCountQuery,
+		@Query() query: FriendRequestCountDto,
 	) {
 		return this.service.countRequests(user.sub, query);
 	}

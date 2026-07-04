@@ -1,26 +1,29 @@
 import {
-	IsPaginationLimit,
-	IsPaginationPage,
-} from '@/shared/decorators/pagination.decorators';
-import { IsIn, IsOptional } from 'class-validator';
-import {
-	BLOCK_ORDER_BY,
-	type BlockOrderBy,
-} from '../repositories/block.repository';
+	IsCursor,
+	IsCursorLimit,
+	IsSearch,
+} from '@/shared/decorators/cursor.decorators';
+import { IsEnum, IsOptional } from 'class-validator';
+import { BlockOrderBy } from '../repositories/block.repository';
 
-class BlockQueryDto {
-	@IsPaginationLimit({})
+class BlockCursorQueryDto {
+	@IsCursorLimit({})
 	limit: number = 20;
 
-	@IsPaginationPage()
-	page: number = 1;
+	@IsCursor()
+	cursor?: string;
 
 	@IsOptional()
-	@IsIn(BLOCK_ORDER_BY)
-	orderBy: BlockOrderBy = 'createdDesc';
+	@IsEnum(BlockOrderBy)
+	orderBy: BlockOrderBy = BlockOrderBy['date-desc'];
 
-	@IsOptional()
-	username?: string;
+	@IsSearch({})
+	search?: string;
 }
 
-export { BlockQueryDto };
+class BlockCountQueryDto {
+	@IsOptional()
+	search?: string;
+}
+
+export { BlockCursorQueryDto, BlockCountQueryDto };

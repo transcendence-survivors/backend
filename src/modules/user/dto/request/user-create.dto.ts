@@ -8,10 +8,10 @@ import {
 	IsLocalePreference,
 	IsUsername,
 	IsEmail,
-} from '../user.decorators';
+} from '../../user.decorators';
 import { LocalePreference, UserGender } from '@prisma-generated/enums';
 
-class CreateUserDto {
+class UserCreateDto {
 	@IsEmail()
 	public readonly email!: string;
 	@IsUsername()
@@ -34,4 +34,4 @@ class CreateUserDto {
 	public readonly bio!: string;
 }
 
-export default CreateUserDto;
+export default UserCreateDto;

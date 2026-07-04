@@ -1,7 +1,15 @@
+import { ApiErrorFrom } from '@/shared/decorators/api-error-response.decorator';
+import { TrimLowercase } from '@/shared/decorators/trim-dto.decorators';
 import { IsAtLeast13Constraint } from '@/shared/validators/isAtLeast13';
 import { applyDecorators } from '@nestjs/common';
 import { LocalePreference, UserGender } from '@prisma-generated/enums';
 import { Type } from 'class-transformer';
+
+import { UserNotFoundException } from './exceptions/user.not-found.exception';
+import {
+	UserEmailConflictException,
+	UserUsernameConflictException,
+} from './exceptions/user.conflict.exception';
 
 import {
 	IsEmail as IsEmailValidator,
@@ -18,7 +26,7 @@ import {
 const USERNAME_REGEX = /^[a-zA-Z0-9_]+$/;
 
 export const IsEmail = () => {
-	return applyDecorators(IsEmailValidator(), MaxLength(255), MinLength(5));
+	return applyDecorators(IsEmailValidator(), MaxLength(254), TrimLowercase());
 };
 export const IsUsername = () => {
 	return applyDecorators(
@@ -69,3 +77,10 @@ export const IsPassword = () => {
 export const IsLocalePreference = () => {
 	return applyDecorators(IsEnum(LocalePreference));
 };
+
+export const ApiUserNotFoundResponse = () =>
+	ApiErrorFrom(UserNotFoundException);
+export const ApiUsernameConflictResponse = () =>
+	ApiErrorFrom(UserUsernameConflictException);
+export const ApiEmailConflictResponse = () =>
+	ApiErrorFrom(UserEmailConflictException);

@@ -14,7 +14,10 @@ import { BlockAddDto } from '../dto/block-add.dto';
 import { CurrentUser } from '@/core/security/decorators/current-user.decorator';
 import type { JwtAccessPayload } from '@/core/security/interfaces/jwt-payload.interface';
 import { BlockService } from '../services/block.service';
-import { BlockQueryDto } from '../dto/blocker-query.dto';
+import {
+	BlockCountQueryDto,
+	BlockCursorQueryDto,
+} from '../dto/blocker-query.dto';
 import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
 
 @Controller('blocks')
@@ -25,11 +28,21 @@ export class BlockController {
 	@Get()
 	@HttpCode(200)
 	@ResponseEnvelope('Successfully retrieved blocked users')
-	getAll(
+	getBlocked(
 		@CurrentUser() { sub }: JwtAccessPayload,
-		@Query() query: BlockQueryDto,
+		@Query() query: BlockCursorQueryDto,
 	) {
-		return this.service.findPage(sub, query);
+		return this.service.blockedCursor(sub, query);
+	}
+
+	@Get('count')
+	@HttpCode(200)
+	@ResponseEnvelope('Successfully retrieved blocked users count')
+	getBlockedCount(
+		@CurrentUser() { sub }: JwtAccessPayload,
+		@Query() query: BlockCountQueryDto,
+	) {
+		return this.service.blockedCount(sub, query);
 	}
 
 	@Post()

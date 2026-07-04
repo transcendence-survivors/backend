@@ -3,13 +3,8 @@ import { FriendRepository } from '../repositories/friend.repository';
 import { type IUserService } from '@/contracts/services/user/user-service.port';
 import { InjectUserService } from '@/contracts/services/user/user-service.inject';
 import { FriendshipState } from '@prisma-generated/enums';
-import {
-	FriendRequestCountQuery,
-	FriendRequestCursorQuery,
-} from '../dto/friend-request-query.dto';
 import { InjectBlockService } from '@/contracts/services/block/block-service.inject';
 import { type IBlockService } from '@/contracts/services/block/block-service.port';
-
 import {
 	SelfFriendDeleteException,
 	SelfFriendRequestDeleteException,
@@ -28,12 +23,12 @@ import {
 	FriendshipBlockedByYouException,
 } from '../exceptions/friend.forbidden.exception';
 import { FriendRequestSelfAcceptException } from '../exceptions/friend.unprocessable.exception';
-import {
-	FriendIdsCountQueryDto,
-	FriendIdsQueryDto,
-} from '../dto/friendIds-query.dto';
 import { CursorService } from '@/shared/services/cursor.service';
-import { FriendQueryDto } from '../dto/friend-query.dto';
+import { FriendRequestCountDto } from '../dtos/requests/friend-count-paginate.dto';
+import { FriendPaginateDto } from '../dtos/requests/friend-paginate.dto';
+import { FriendRequestPaginateDto } from '../dtos/requests/friend-request-paginate.dto';
+import { FriendIdsPaginateDto } from '../dtos/requests/friend-ids-paginate.dto';
+import { FriendIdsCountDto } from '../dtos/requests/friend-ids-count.dto';
 
 @Injectable()
 export class FriendService {
@@ -44,7 +39,7 @@ export class FriendService {
 		private readonly cursor: CursorService,
 	) {}
 
-	async requestCursor(userId: string, query: FriendRequestCursorQuery) {
+	async requestCursor(userId: string, query: FriendRequestPaginateDto) {
 		const data = await this.repo.cursor({
 			status: FriendshipState.PENDING,
 			...query,
@@ -62,7 +57,7 @@ export class FriendService {
 		});
 		return this.cursor.create(requests, query.limit, (item) => item.id);
 	}
-	async countRequests(userId: string, query: FriendRequestCountQuery) {
+	async countRequests(userId: string, query: FriendRequestCountDto) {
 		const count = await this.repo.count({
 			...query,
 			userId,
@@ -105,7 +100,7 @@ export class FriendService {
 		if (count === 0) throw new FriendRequestDoesNotExistException();
 	}
 
-	async friendsCursor(userId: string, query: FriendQueryDto) {
+	async friendsCursor(userId: string, query: FriendPaginateDto) {
 		const data = await this.repo.cursor({
 			...query,
 			userId,
@@ -133,7 +128,7 @@ export class FriendService {
 		return { count };
 	}
 
-	async friendsCursorFromIds(userId: string, query: FriendIdsQueryDto) {
+	async friendsCursorFromIds(userId: string, query: FriendIdsPaginateDto) {
 		const data = await this.repo.cursorIds({
 			...query,
 			userId,
@@ -150,7 +145,7 @@ export class FriendService {
 		});
 		return this.cursor.create(friends, query.limit, (item) => item.id);
 	}
-	async countFriendsFromIds(userId: string, query: FriendIdsCountQueryDto) {
+	async countFriendsFromIds(userId: string, query: FriendIdsCountDto) {
 		const count = await this.repo.countIds({
 			...query,
 			userId,
@@ -186,7 +181,8 @@ export class FriendService {
 		if (blocker) throw new FriendshipBlockedByYouException();
 	}
 
-	public removeIfExists(userId: string, friendId: string) {
-		return this.repo.delete({ userId, friendId });
+	public async removeIfExists(userId: string, friendId: string) {
+		const count = await this.repo.delete({ userId, friendId });
+		return count;
 	}
 }

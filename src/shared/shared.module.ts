@@ -1,5 +1,4 @@
 import { Global, Module } from '@nestjs/common';
-import { PaginationService } from './services/pagination.service';
 import { ExceptionsFilter } from './filters/http-exception.filter';
 import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ResponseInterceptor } from './interceptors/response.interceptor';
@@ -23,9 +22,8 @@ import { HealthController } from './health.controller';
 			provide: APP_FILTER,
 			useClass: ExceptionsFilter,
 		},
-		PaginationService,
 		CursorService,
 	],
-	exports: [PaginationService, CursorService],
+	exports: [CursorService],
 })
 export class SharedModule {}
