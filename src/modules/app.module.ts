@@ -7,6 +7,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { SharedModule } from '@/shared/shared.module';
 import { PostModule } from './post/post.module';
 import { RelationshipsModule } from './relationship/relationship.module';
+import { LikeModule } from './like/like.module';
 
 @Module({
 	imports: [
@@ -17,6 +18,7 @@ import { RelationshipsModule } from './relationship/relationship.module';
 		UserModule,
 		PostModule,
 		RelationshipsModule,
+		LikeModule,
 	],
 })
 export class AppModule {}
