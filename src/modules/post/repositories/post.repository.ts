@@ -49,6 +49,7 @@ export class PostRepository {
 			select: {
 				authorId: true,
 				id: true,
+				imageUrl: true,
 			},
 		});
 	}

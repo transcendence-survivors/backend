@@ -67,7 +67,16 @@ export class PostController extends BaseController {
 				file.mimetype,
 			);
 		}
-		return this.postService.create(user.sub, createPostDto, imageUrl);
+		try {
+			return await this.postService.create(
+				user.sub,
+				createPostDto,
+				imageUrl,
+			);
+		} catch (err) {
+			if (imageUrl) await this.storageService.delete(imageUrl);
+			throw err;
+		}
 	}
 
 	@UseGuards(JWTAccessGuard)

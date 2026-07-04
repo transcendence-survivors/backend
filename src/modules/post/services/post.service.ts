@@ -5,12 +5,14 @@ import { PostOwnershipException } from '../exceptions/post-unauthorized.exceptio
 import { PostDoesNotExistException } from '../exceptions/post-unexisting.exception';
 import { PostQueryDto } from '../dto/post-querry.dto';
 import { PaginationService } from '@/shared/services/pagination.service';
+import { StorageService } from '@/core/storage/services/storage.service';
 
 @Injectable()
 export class PostService {
 	constructor(
 		private readonly postRepository: PostRepository,
 		private readonly pagination: PaginationService,
+		private readonly storageService: StorageService,
 	) {}
 
 	async findPage(query: PostQueryDto) {
@@ -35,6 +37,9 @@ export class PostService {
 		const found = await this.postRepository.findById(postId);
 		if (!found) throw new PostDoesNotExistException();
 		if (found.authorId !== userId) throw new PostOwnershipException();
+		if (found.imageUrl) {
+			await this.storageService.delete(found.imageUrl);
+		}
 		return this.postRepository.delete(postId);
 	}
 }

@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { PutObjectCommand, type S3Client } from '@aws-sdk/client-s3';
+import {
+	PutObjectCommand,
+	DeleteObjectCommand,
+	type S3Client,
+} from '@aws-sdk/client-s3';
 import { InjectS3Client } from '../injects/s3-client.inject';
 import { InjectEnv } from '@/core/config/env/injects/env.inject';
 import { type Env } from '@/core/config/env/providers/env.provider';
@@ -24,7 +28,17 @@ export class StorageService {
 				ContentType: contentType,
 			}),
 		);
-
 		return `${this.env.minio.publicEndpoint}/${this.env.minio.bucket}/${key}`;
+	}
+
+	async delete(fileUrl: string): Promise<void> {
+		const prefix = `${this.env.minio.publicEndpoint}/${this.env.minio.bucket}/`;
+		const key = fileUrl.replace(prefix, '');
+		await this.s3.send(
+			new DeleteObjectCommand({
+				Bucket: this.env.minio.bucket,
+				Key: key,
+			}),
+		);
 	}
 }
