@@ -31,7 +31,7 @@ export class PostService {
 		return this.postRepository.create(userId, dto, imageUrl);
 	}
 
-	async delete(userId: string, postId: string) {
+	async delete(postId: string, userId: string) {
 		const found = await this.postRepository.findById(postId);
 		if (!found) throw new PostDoesNotExistException();
 		if (found.authorId !== userId) throw new PostOwnershipException();
