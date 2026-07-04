@@ -8,17 +8,26 @@ import {
 	Post,
 	Query,
 	UseGuards,
+	UseInterceptors,
+	UploadedFile,
+	BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { extname } from 'path';
 import { PostService } from '../services/post.service';
 import { CreatePostDto } from '../dto/post.dto';
 import { JWTAccessGuard } from '@/core/security/guards/jwt-access.guard';
 import type { JwtAccessPayload } from '@/core/security/interfaces/jwt-payload.interface';
 import { CurrentUser } from '@/core/security/decorators/current-user.decorator';
 import { PostQueryDto } from '../dto/post-querry.dto';
+import { StorageService } from '@/core/storage/services/storage.service';
 
 @Controller('posts')
 export class PostController extends BaseController {
-	constructor(private readonly postService: PostService) {
+	constructor(
+		private readonly postService: PostService,
+		private readonly storageService: StorageService,
+	) {
 		super();
 	}
 
@@ -30,11 +39,35 @@ export class PostController extends BaseController {
 
 	@UseGuards(JWTAccessGuard)
 	@Post()
-	writePost(
+	@UseInterceptors(
+		FileInterceptor('file', {
+			limits: { fileSize: 5 * 1024 * 1024 },
+			fileFilter: (_req, file, callback) => {
+				if (!file.mimetype.startsWith('image/')) {
+					callback(
+						new BadRequestException('File must be an image'),
+						false,
+					);
+					return;
+				}
+				callback(null, true);
+			},
+		}),
+	)
+	async writePost(
 		@Body() createPostDto: CreatePostDto,
 		@CurrentUser() user: JwtAccessPayload,
+		@UploadedFile() file: Express.Multer.File,
 	) {
-		return this.postService.create(user.sub, createPostDto);
+		let imageUrl: string | undefined;
+		if (file) {
+			imageUrl = await this.storageService.upload(
+				`posts/${user.sub}-${Date.now()}${extname(file.originalname)}`,
+				file.buffer,
+				file.mimetype,
+			);
+		}
+		return this.postService.create(user.sub, createPostDto, imageUrl);
 	}
 
 	@UseGuards(JWTAccessGuard)

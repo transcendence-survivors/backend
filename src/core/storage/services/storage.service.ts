@@ -25,6 +25,6 @@ export class StorageService {
 			}),
 		);
 
-		return `${this.env.minio.endpoint}/${this.env.minio.bucket}/${key}`;
+		return `${this.env.minio.publicEndpoint}/${this.env.minio.bucket}/${key}`;
 	}
 }

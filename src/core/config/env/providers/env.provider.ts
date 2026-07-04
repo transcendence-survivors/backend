@@ -18,6 +18,7 @@ interface Smtp {
 
 interface Minio {
 	endpoint: string;
+	publicEndpoint: string;
 	accessKey: string;
 	secretKey: string;
 	bucket: string;
@@ -54,6 +55,7 @@ export const EnvProvider: Provider<Env> = {
 
 		minio: {
 			endpoint: env.MINIO_ENDPOINT,
+			publicEndpoint: env.MINIO_PUBLIC_ENDPOINT,
 			accessKey: env.MINIO_ROOT_USER,
 			secretKey: env.MINIO_ROOT_PASSWORD,
 			bucket: env.MINIO_BUCKET,

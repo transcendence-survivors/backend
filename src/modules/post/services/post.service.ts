@@ -27,14 +27,14 @@ export class PostService {
 		return this.postRepository.findAll();
 	}
 
-	create(userId: string, dto: CreatePostDto) {
-		return this.postRepository.create(userId, dto);
+	create(userId: string, dto: CreatePostDto, imageUrl?: string) {
+		return this.postRepository.create(userId, dto, imageUrl);
 	}
 
 	async delete(userId: string, postId: string) {
 		const found = await this.postRepository.findById(postId);
-		if (!found) throw PostOwnershipException;
-		if (found.authorId === userId) throw PostDoesNotExistException;
+		if (!found) throw new PostDoesNotExistException();
+		if (found.authorId !== userId) throw new PostOwnershipException();
 		return this.postRepository.delete(postId);
 	}
 }

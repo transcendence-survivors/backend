@@ -21,6 +21,7 @@ const envSchema = z.object({
 	SMTP_FROM_NAME: z.string().min(1),
 
 	MINIO_ENDPOINT: z.url(),
+	MINIO_PUBLIC_ENDPOINT: z.url(),
 	MINIO_ROOT_USER: z.string().min(1),
 	MINIO_ROOT_PASSWORD: z.string().min(1),
 	MINIO_BUCKET: z.string().min(1),

@@ -15,11 +15,12 @@ export class PostRepository {
 		return this.prisma.post.findMany();
 	}
 
-	create(userId: string, dto: CreatePostDto) {
+	create(userId: string, dto: CreatePostDto, imageUrl?: string) {
 		return this.prisma.post.create({
 			data: {
 				authorId: userId,
 				content: dto.content,
+				imageUrl,
 			},
 		});
 	}
@@ -28,6 +29,7 @@ export class PostRepository {
 		id: true,
 		content: true,
 		createdAt: true,
+		imageUrl: true,
 		author: {
 			select: {
 				id: true,
