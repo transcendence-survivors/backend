@@ -1,12 +1,10 @@
-import { Block } from '@prisma-generated/client';
+import { BlockByIdResponse } from '@/modules/relationship/block/types/records/block-by-id-response';
 
 export const BLOCK_SERVICE = Symbol('BLOCK_SERVICE');
-
-export type FindBlockById = Pick<Block, 'id'>;
 
 export interface IBlockService {
 	findBlockerBlockedById(
 		userId: string,
 		otherId: string,
-	): Promise<[FindBlockById | null, FindBlockById | null]>;
+	): Promise<[BlockByIdResponse | null, BlockByIdResponse | null]>;
 }

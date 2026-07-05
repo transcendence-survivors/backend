@@ -4,6 +4,7 @@ import { BlockRepository } from './repositories/block.repository';
 import { BlockService } from './services/block.service';
 import { UserModule } from '@/modules/user/user.module';
 import { BLOCK_SERVICE } from '@/contracts/services/block/block-service.port';
+import { BlockMapper } from './mappers/block.mapper';
 
 @Module({
 	imports: [UserModule],
@@ -15,6 +16,7 @@ import { BLOCK_SERVICE } from '@/contracts/services/block/block-service.port';
 			provide: BLOCK_SERVICE,
 			useExisting: BlockService,
 		},
+		BlockMapper,
 	],
 	exports: [BLOCK_SERVICE],
 })
