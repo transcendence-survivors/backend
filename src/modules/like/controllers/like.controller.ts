@@ -13,13 +13,13 @@ import { JWTAccessGuard } from '@/core/security/guards/jwt-access.guard';
 import { CurrentUser } from '@/core/security/decorators/current-user.decorator';
 import type { JwtAccessPayload } from '@/core/security/interfaces/jwt-payload.interface';
 
+@UseGuards(JWTAccessGuard)
 @Controller('likes')
 export class LikeController extends BaseController {
 	constructor(private readonly likeService: LikeService) {
 		super();
 	}
 
-	@UseGuards(JWTAccessGuard)
 	@Post(':postId')
 	addLike(
 		@Param('postId') postId: string,
@@ -28,7 +28,6 @@ export class LikeController extends BaseController {
 		return this.likeService.addLike(postId, user.sub);
 	}
 
-	@UseGuards(JWTAccessGuard)
 	@Delete(':postId')
 	deleteLike(
 		@Param('postId') postId: string,
@@ -37,7 +36,6 @@ export class LikeController extends BaseController {
 		return this.likeService.deleteLike(postId, user.sub);
 	}
 
-	@UseGuards(JWTAccessGuard)
 	@Get(':postId')
 	async getLikeInfo(
 		@Param('postId') postId: string,
