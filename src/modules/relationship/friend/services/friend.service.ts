@@ -9,26 +9,31 @@ import {
 	SelfFriendDeleteException,
 	SelfFriendRequestDeleteException,
 	SelfFriendRequestSentException,
-} from '../exceptions/friend.bad.exception';
+} from '../exceptions/friend-bad.exception';
 import {
 	FriendDoesNotExistException,
 	FriendRequestDoesNotExistException,
-} from '../exceptions/friend.not-found.exception';
+} from '../exceptions/friend-not-found.exception';
 import {
 	FriendAlreadyExistsException,
 	FriendRequestAlreadySentException,
-} from '../exceptions/friend.conflict.exception';
+} from '../exceptions/friend-conflict.exception';
 import {
 	FriendshipBlockedByUserException,
 	FriendshipBlockedByYouException,
-} from '../exceptions/friend.forbidden.exception';
-import { FriendRequestSelfAcceptException } from '../exceptions/friend.unprocessable.exception';
+} from '../exceptions/friend-forbidden.exception';
+import { FriendRequestSelfAcceptException } from '../exceptions/friend-unprocessable.exception';
 import { CursorService } from '@/shared/services/cursor.service';
 import { FriendRequestCountDto } from '../dtos/requests/friend-count-paginate.dto';
 import { FriendPaginateDto } from '../dtos/requests/friend-paginate.dto';
 import { FriendRequestPaginateDto } from '../dtos/requests/friend-request-paginate.dto';
 import { FriendIdsPaginateDto } from '../dtos/requests/friend-ids-paginate.dto';
 import { FriendIdsCountDto } from '../dtos/requests/friend-ids-count.dto';
+import { FriendShipListItemParams } from '../types/params/friendship-list-item.params';
+import { FriendShipListItem } from '../types/records/friendship-list-item.type';
+import { FriendshipMapper } from '../mappers/friendship.mapper';
+import { FriendshipPaginatedResponseDto } from '../dtos/responses/friend-paginated-response.dto';
+import { FriendshipCountResponseDto } from '../dtos/responses/friendship-count-response.dto';
 
 @Injectable()
 export class FriendService {
@@ -37,33 +42,54 @@ export class FriendService {
 		@InjectBlockService() private readonly blockService: IBlockService,
 		private readonly repo: FriendRepository,
 		private readonly cursor: CursorService,
+		private readonly mapper: FriendshipMapper,
 	) {}
 
-	async requestCursor(userId: string, query: FriendRequestPaginateDto) {
+	private toFriendShipListItem(
+		friends: FriendShipListItemParams[],
+		userId: string,
+	): FriendShipListItem[] {
+		return friends.map((f) => ({
+			id: f.id,
+			status: f.state,
+			since:
+				f.state === FriendshipState.ACCEPTED
+					? f.updatedAt
+					: f.createdAt,
+			friend: f.userA.id === userId ? f.userB : f.userA,
+		}));
+	}
+
+	async paginateRequest(
+		userId: string,
+		{ direction, limit, orderBy, search, cursor }: FriendRequestPaginateDto,
+	): Promise<FriendshipPaginatedResponseDto> {
 		const data = await this.repo.cursor({
 			status: FriendshipState.PENDING,
-			...query,
+			direction,
+			limit,
+			orderBy,
+			search,
+			cursor,
 			userId,
 		});
 
-		const requests = data.map((f) => {
-			const friend = f.userA.id === userId ? f.userB : f.userA;
-			return {
-				id: f.id,
-				status: f.state,
-				since: f.createdAt,
-				friend,
-			};
-		});
-		return this.cursor.create(requests, query.limit, (item) => item.id);
+		const requests = this.toFriendShipListItem(data, userId);
+		const dtos = this.mapper.toListItemDtoList(requests);
+		const result = this.cursor.create(dtos, limit, (item) => item.id);
+		return this.mapper.toPaginatedListDto(result);
 	}
-	async countRequests(userId: string, query: FriendRequestCountDto) {
+	async countRequests(
+		userId: string,
+		{ direction, search }: FriendRequestCountDto,
+	): Promise<FriendshipCountResponseDto> {
 		const count = await this.repo.count({
-			...query,
 			userId,
+			direction,
+			search,
 			status: FriendshipState.PENDING,
 		});
-		return { count };
+		return this.mapper.toCountDto(count);
 	}
 
 	async sendRequest(userId: string, friendId: string) {
@@ -73,10 +99,11 @@ export class FriendService {
 		await this.validateBlock(userId, friendId);
 		await this.validateFriendship(userId, friendId);
 
-		return this.repo.save({ userId, friendId });
+		const result = await this.repo.save({ userId, friendId });
+		return this.mapper.toFriendRequestCreatedDto(result);
 	}
 
-	async acceptRequest(userId: string, friendId: string) {
+	async acceptRequest(userId: string, friendId: string): Promise<void> {
 		if (userId === friendId) throw new FriendRequestSelfAcceptException();
 
 		const friendship = await this.repo.findFriendShip(userId, friendId);
@@ -87,9 +114,9 @@ export class FriendService {
 		if (friendship.state === FriendshipState.ACCEPTED)
 			throw new FriendAlreadyExistsException();
 
-		return this.repo.accept({ userId, friendId });
+		await this.repo.accept({ userId, friendId });
 	}
-	async removeRequest(userId: string, friendId: string) {
+	async removeRequest(userId: string, friendId: string): Promise<void> {
 		if (userId === friendId) throw new SelfFriendRequestDeleteException();
 
 		const { count } = await this.repo.delete({
@@ -100,60 +127,74 @@ export class FriendService {
 		if (count === 0) throw new FriendRequestDoesNotExistException();
 	}
 
-	async friendsCursor(userId: string, query: FriendPaginateDto) {
+	async paginateFriends(
+		userId: string,
+		{ limit, orderBy, search, cursor }: FriendPaginateDto,
+	): Promise<FriendshipPaginatedResponseDto> {
 		const data = await this.repo.cursor({
-			...query,
+			limit,
+			orderBy,
+			search,
+			cursor,
 			userId,
 			status: FriendshipState.ACCEPTED,
 		});
 
-		const friends = data.map((f) => {
-			const friend = f.userA.id === userId ? f.userB : f.userA;
-			return {
-				id: f.id,
-				status: f.state,
-				since: f.updatedAt,
-				friend,
-			};
-		});
-
-		return this.cursor.create(friends, query.limit, (item) => item.id);
+		const friends = this.toFriendShipListItem(data, userId);
+		return this.cursor.create(friends, limit, (item) => item.id);
 	}
-	async countFriends(userId: string, search?: string) {
+	async countFriends(
+		userId: string,
+		search?: string,
+	): Promise<FriendshipCountResponseDto> {
 		const count = await this.repo.count({
 			userId,
 			search,
 			status: FriendshipState.ACCEPTED,
 		});
-		return { count };
+		return this.mapper.toCountDto(count);
 	}
 
-	async friendsCursorFromIds(userId: string, query: FriendIdsPaginateDto) {
+	async friendsCursorFromIds(
+		userId: string,
+		{
+			friendIds,
+			limit,
+			orderBy,
+			search,
+			cursor,
+			status,
+		}: FriendIdsPaginateDto,
+	): Promise<FriendshipPaginatedResponseDto> {
 		const data = await this.repo.cursorIds({
-			...query,
+			friendIds,
+			limit,
+			orderBy,
+			search,
+			cursor,
+			status,
 			userId,
 		});
 
-		const friends = data.map((f) => {
-			const friend = f.userA.id === userId ? f.userB : f.userA;
-			return {
-				id: f.id,
-				status: f.state,
-				since: f.updatedAt,
-				friend,
-			};
-		});
-		return this.cursor.create(friends, query.limit, (item) => item.id);
+		const friends = this.toFriendShipListItem(data, userId);
+		const dtos = this.mapper.toListItemDtoList(friends);
+		const result = this.cursor.create(dtos, limit, (item) => item.id);
+		return this.mapper.toPaginatedListDto(result);
 	}
-	async countFriendsFromIds(userId: string, query: FriendIdsCountDto) {
+	async countFriendsFromIds(
+		userId: string,
+		{ friendIds, search, status }: FriendIdsCountDto,
+	) {
 		const count = await this.repo.countIds({
-			...query,
+			friendIds,
+			search,
+			status,
 			userId,
 		});
-		return { count };
+		return this.mapper.toCountDto(count);
 	}
 
-	async removeFriend(userId: string, friendId: string) {
+	async removeFriend(userId: string, friendId: string): Promise<void> {
 		if (userId === friendId) throw new SelfFriendDeleteException();
 
 		const { count } = await this.repo.delete({
@@ -164,7 +205,10 @@ export class FriendService {
 		if (count === 0) throw new FriendDoesNotExistException();
 	}
 
-	private async validateFriendship(userId: string, friendId: string) {
+	private async validateFriendship(
+		userId: string,
+		friendId: string,
+	): Promise<void> {
 		const friendship = await this.repo.findFriendShip(userId, friendId);
 
 		if (friendship?.state === FriendshipState.PENDING)
@@ -173,7 +217,10 @@ export class FriendService {
 			throw new FriendAlreadyExistsException();
 	}
 
-	private async validateBlock(userId: string, friendId: string) {
+	private async validateBlock(
+		userId: string,
+		friendId: string,
+	): Promise<void> {
 		const [blocker, blocked] =
 			await this.blockService.findBlockerBlockedById(userId, friendId);
 
@@ -181,8 +228,11 @@ export class FriendService {
 		if (blocker) throw new FriendshipBlockedByYouException();
 	}
 
-	public async removeIfExists(userId: string, friendId: string) {
-		const count = await this.repo.delete({ userId, friendId });
-		return count;
+	public async removeIfExists(
+		userId: string,
+		friendId: string,
+	): Promise<number> {
+		const res = await this.repo.delete({ userId, friendId });
+		return res.count;
 	}
 }

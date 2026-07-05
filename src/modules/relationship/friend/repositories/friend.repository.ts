@@ -4,6 +4,7 @@ import { Injectable } from '@nestjs/common';
 import { FriendshipState } from '@prisma-generated/client';
 import type {
 	FriendshipOrderByWithRelationInput,
+	FriendshipSelect,
 	FriendshipWhereInput,
 } from '@prisma-generated/models';
 import { FriendShipOrderByEnum } from '../types/enums/friend-order-by.enum';
@@ -17,20 +18,25 @@ import { FriendIdsCountParams } from '../types/params/friend-ids-count.params';
 import { FriendRequestCreateParams } from '../types/params/friend-request-create.params';
 import { FriendRequestAcceptParams } from '../types/params/friend-request-accept.params';
 import { FriendShipDeleteParams } from '../types/params/friendship-delete.params';
+import { FriendShipBaseSelect } from '../types/records/friendship-base-select.type';
+import { FriendShipListItemSelect } from '../types/records/friendship-list-item-select.type';
+import { FriendRequestCreated } from '../types/records/friend-request-created.type';
+import { FriendShipFind } from '../types/records/friendship-find';
 
 @Injectable()
 export class FriendRepository {
 	private static readonly select = {
 		id: true,
 		state: true,
+
 		userA: { select: UserRepository.userSelect },
 		userB: { select: UserRepository.userSelect },
-	};
+	} satisfies Record<
+		keyof FriendShipBaseSelect,
+		FriendshipSelect[keyof FriendShipBaseSelect]
+	>;
 
-	private readonly orderBy: Record<
-		FriendShipOrderByEnum,
-		FriendshipOrderByWithRelationInput[]
-	> = {
+	private readonly orderBy = {
 		'created-asc': [{ createdAt: 'asc' }, { id: 'asc' }],
 		'created-desc': [{ createdAt: 'desc' }, { id: 'desc' }],
 		'updated-asc': [{ updatedAt: 'asc' }, { id: 'asc' }],
@@ -55,7 +61,10 @@ export class FriendRepository {
 			{ userB: { displayName: 'desc' } },
 			{ id: 'desc' },
 		],
-	};
+	} satisfies Record<
+		FriendShipOrderByEnum,
+		FriendshipOrderByWithRelationInput[]
+	>;
 
 	constructor(private readonly prisma: PrismaService) {}
 
@@ -192,7 +201,7 @@ export class FriendRepository {
 		orderBy,
 		cursor,
 		...direction
-	}: FriendShipsPaginateParams) {
+	}: FriendShipsPaginateParams): Promise<FriendShipListItemSelect[]> {
 		return this.prisma.friendship.findMany({
 			...this.pagination(limit, cursor),
 			where: this.listWhere(userId, search, direction),
@@ -200,12 +209,19 @@ export class FriendRepository {
 				...FriendRepository.select,
 				createdAt: true,
 				updatedAt: true,
-			},
+			} satisfies Record<
+				keyof FriendShipListItemSelect,
+				FriendshipSelect[keyof FriendShipListItemSelect]
+			>,
 			orderBy: this.orderBy[orderBy],
 		});
 	}
 
-	count({ userId, search, ...direction }: FriendshipsCountParams) {
+	count({
+		userId,
+		search,
+		...direction
+	}: FriendshipsCountParams): Promise<number> {
 		return this.prisma.friendship.count({
 			where: this.listWhere(userId, search, direction),
 		});
@@ -219,25 +235,37 @@ export class FriendRepository {
 		friendIds,
 		cursor,
 		status,
-	}: FriendIdsPaginateParams) {
+	}: FriendIdsPaginateParams): Promise<FriendShipListItemSelect[]> {
 		return this.prisma.friendship.findMany({
 			...this.pagination(limit, cursor),
 			where: this.idsWhere(userId, search, friendIds, status),
 			select: {
 				...FriendRepository.select,
 				updatedAt: true,
-			},
+				createdAt: true,
+			} satisfies Record<
+				keyof FriendShipListItemSelect,
+				FriendshipSelect[keyof FriendShipListItemSelect]
+			>,
 			orderBy: this.orderBy[orderBy],
 		});
 	}
 
-	countIds({ userId, search, friendIds, status }: FriendIdsCountParams) {
+	countIds({
+		userId,
+		search,
+		friendIds,
+		status,
+	}: FriendIdsCountParams): Promise<number> {
 		return this.prisma.friendship.count({
 			where: this.idsWhere(userId, search, friendIds, status),
 		});
 	}
 
-	save({ userId, friendId }: FriendRequestCreateParams) {
+	save({
+		userId,
+		friendId,
+	}: FriendRequestCreateParams): Promise<FriendRequestCreated> {
 		return this.prisma.friendship.create({
 			data: {
 				userAId: userId,
@@ -246,8 +274,12 @@ export class FriendRepository {
 				state: FriendshipState.PENDING,
 			},
 			select: {
-				id: true,
-			},
+				...FriendRepository.select,
+				createdAt: true,
+			} satisfies Record<
+				keyof FriendRequestCreated,
+				FriendshipSelect[keyof FriendRequestCreated]
+			>,
 		});
 	}
 
@@ -261,6 +293,7 @@ export class FriendRepository {
 			data: {
 				state: FriendshipState.ACCEPTED,
 			},
+			limit: 1,
 		});
 	}
 
@@ -270,17 +303,24 @@ export class FriendRepository {
 				...(status && { state: status }),
 				...this.pairCondition(userId, friendId),
 			},
+			limit: 1,
 		});
 	}
 
-	findFriendShip(userId: string, friendId: string) {
+	findFriendShip(
+		userId: string,
+		friendId: string,
+	): Promise<FriendShipFind | null> {
 		return this.prisma.friendship.findFirst({
 			where: this.pairCondition(userId, friendId),
 			select: {
 				id: true,
 				state: true,
 				senderId: true,
-			},
+			} satisfies Record<
+				keyof FriendShipFind,
+				FriendshipSelect[keyof FriendShipFind]
+			>,
 		});
 	}
 }

@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Expose, Type } from 'class-transformer';
+import { Exclude, Expose, Type } from 'class-transformer';
 
+@Exclude()
 export class CursorPaginationMetaDto {
 	@ApiProperty()
 	@Expose()
@@ -11,6 +12,7 @@ export class CursorPaginationMetaDto {
 	nextCursor!: string | null;
 }
 
+@Exclude()
 export class CursorPaginationResultDto<T> {
 	data!: T[];
 

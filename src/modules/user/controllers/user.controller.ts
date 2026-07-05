@@ -21,7 +21,10 @@ export class UserController {
 	@Get()
 	@HttpCode(200)
 	@ApiSuccessResponse(UserPaginatedListResponseDto)
-	@ApiValidationErrorResponse()
+	@ApiValidationErrorResponse({
+		limit: ['limit must be a number'],
+		orderBy: ['orderBy must be a valid enum value'],
+	})
 	@ResponseEnvelope('Users listed successfully')
 	list(
 		@Query() query: UserPaginateDto,
@@ -32,7 +35,9 @@ export class UserController {
 	@Get('count')
 	@HttpCode(200)
 	@ApiSuccessResponse(UserCountResponseDto)
-	@ApiValidationErrorResponse()
+	@ApiValidationErrorResponse({
+		search: ['search must be a string'],
+	})
 	@ResponseEnvelope('Users count retrieved successfully')
 	count(@Query() query: UserPaginateDto): Promise<UserCountResponseDto> {
 		return this.userService.countUsers(query);

@@ -10,13 +10,17 @@ import { CursorPaginationResult } from '@/shared/services/cursor.service';
 
 @Injectable()
 export class UserMapper {
+	private toListItemDto(user: UserListItem): UserListItemResponseDto {
+		return plainToInstance(UserListItemResponseDto, user, {
+			excludeExtraneousValues: true,
+		});
+	}
+
 	toCountDto(count: number): UserCountResponseDto {
 		return plainToInstance(
 			UserCountResponseDto,
 			{ count },
-			{
-				excludeExtraneousValues: true,
-			},
+			{ excludeExtraneousValues: true },
 		);
 	}
 
@@ -24,12 +28,6 @@ export class UserMapper {
 		paginationUsers: CursorPaginationResult<UserListItemResponseDto>,
 	): UserPaginatedListResponseDto {
 		return plainToInstance(UserPaginatedListResponseDto, paginationUsers, {
-			excludeExtraneousValues: true,
-		});
-	}
-
-	toListItemDto(user: UserListItem): UserListItemResponseDto {
-		return plainToInstance(UserListItemResponseDto, user, {
 			excludeExtraneousValues: true,
 		});
 	}

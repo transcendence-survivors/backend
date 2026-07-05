@@ -6,10 +6,16 @@ import { FriendService } from './services/friend.service';
 import { FriendRepository } from './repositories/friend.repository';
 import { BlockModule } from '../block/block.module';
 import { FriendListener } from './listeners/friend.listener';
+import { FriendshipMapper } from './mappers/friendship.mapper';
 
 @Module({
 	imports: [UserModule, BlockModule],
 	controllers: [FriendController, FriendRequestController],
-	providers: [FriendService, FriendRepository, FriendListener],
+	providers: [
+		FriendService,
+		FriendRepository,
+		FriendListener,
+		FriendshipMapper,
+	],
 })
 export class FriendModule {}
