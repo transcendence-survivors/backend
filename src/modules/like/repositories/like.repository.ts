@@ -32,4 +32,15 @@ export class LikeRepository {
 			},
 		});
 	}
+
+	isLiked(postId: string, userId: string) {
+		return this.prisma.like.findUnique({
+			where: {
+				userId_postId: {
+					userId,
+					postId,
+				},
+			},
+		});
+	}
 }
