@@ -1,5 +1,4 @@
 import { Injectable } from '@nestjs/common';
-import UserCreateDto from '../dto/request/user-create.dto';
 import { UserRepository } from '../repositories/user.repository';
 import {
 	UserEmailConflictException,
@@ -9,14 +8,15 @@ import { IUserService } from '@/contracts/services/user/user-service.port';
 import { DbContext } from '@/core/database/uow/db-context';
 import { CursorService } from '@/shared/services/cursor.service';
 import { UserMapper } from '../mappers/user.mapper';
-import { UserPaginateDto } from '../dto/request/user-paginate.dto';
-import { UserPaginatedListResponseDto } from '../dto/response/user-paginated-response.dto';
-import { UserProfileResponseDto } from '../dto/response/user-profile.dto';
-import { UserCountResponseDto } from '../dto/response/user-count-response.dto';
-import { UserTokenData } from '../types/records/user-token-data.type';
+import { UserPaginateDto } from '../dtos/requests/user-paginate.dto';
+import { UserPaginatedListResponseDto } from '../dtos/responses/user-paginated-response.dto';
+import { UserProfileResponseDto } from '../dtos/responses/user-profile.dto';
+import { UserCountResponseDto } from '../dtos/responses/user-count-response.dto';
+import { UserTokenData } from '@/contracts/types/user/user-token-data.type';
 import { UserLocalePreference } from '../types/records/user-locale-preference.type';
 import { UserCreated } from '../types/records/user-created.type';
 import { UserNotFoundException } from '../exceptions/user.not-found.exception';
+import { UserCreateParams } from '@/contracts/types/user/user-create.params';
 
 @Injectable()
 export class UserService implements IUserService {
@@ -40,8 +40,8 @@ export class UserService implements IUserService {
 		if (!user) throw new UserNotFoundException();
 		return user;
 	}
-	public async createUser(
-		input: UserCreateDto,
+	public async createUserOrThrow(
+		input: UserCreateParams,
 		ctx?: DbContext,
 	): Promise<UserCreated> {
 		const existing = await this.repo.findByEmailOrUsername(
@@ -54,7 +54,7 @@ export class UserService implements IUserService {
 			throw new UserUsernameConflictException();
 		return this.repo.save(
 			{
-				birthDate: input.dateOfBirth,
+				birthDate: input.birthDate,
 				email: input.email,
 				username: input.username,
 				displayName: input.displayName,

@@ -1,198 +1,34 @@
 import { PrismaService } from '@/core/database/services/prisma.service';
-import { UserRepository } from '@/modules/user/repositories/user.repository';
+import { UserQueryHelper } from '@/modules/user/user.public-api';
 import { Injectable } from '@nestjs/common';
 import { FriendshipState } from '@prisma-generated/client';
-import type {
-	FriendshipOrderByWithRelationInput,
-	FriendshipSelect,
-	FriendshipWhereInput,
-} from '@prisma-generated/models';
-import { FriendShipOrderByEnum } from '../types/enums/friend-order-by.enum';
-import { FriendIdsStatus } from '../types/enums/friend-ids-status.enum';
-import { FriendShipStatusDirectionParams } from '../types/params/friendship-status-direction.params';
-import { FriendRequestDirection } from '../types/enums/friend-request-directions.enum';
-import { FriendShipsPaginateParams } from '../types/params/friendship-paginate.params';
-import { FriendshipsCountParams } from '../types/params/friendship-count.params';
-import { FriendIdsPaginateParams } from '../types/params/friend-ids-paginate-params';
-import { FriendIdsCountParams } from '../types/params/friend-ids-count.params';
-import { FriendRequestCreateParams } from '../types/params/friend-request-create.params';
-import { FriendRequestAcceptParams } from '../types/params/friend-request-accept.params';
-import { FriendShipDeleteParams } from '../types/params/friendship-delete.params';
-import { FriendShipBaseSelect } from '../types/records/friendship-base-select.type';
-import { FriendShipListItemSelect } from '../types/records/friendship-list-item-select.type';
-import { FriendRequestCreated } from '../types/records/friend-request-created.type';
-import { FriendShipFind } from '../types/records/friendship-find';
+import { FriendQueryHelper } from './friend-query.helper';
+import type { FriendshipSelect } from '@prisma-generated/models';
+import type { FriendShipsPaginateParams } from '../types/params/friendship-paginate.params';
+import type { FriendshipsCountParams } from '../types/params/friendship-count.params';
+import type { FriendIdsPaginateParams } from '../types/params/friend-ids-paginate-params';
+import type { FriendIdsCountParams } from '../types/params/friend-ids-count.params';
+import type { FriendRequestCreateParams } from '../types/params/friend-request-create.params';
+import type { FriendRequestAcceptParams } from '../types/params/friend-request-accept.params';
+import type { FriendShipDeleteParams } from '../types/params/friendship-delete.params';
+import type { FriendShipBaseSelect } from '../types/records/friendship-base-select.type';
+import type { FriendShipListItemSelect } from '../types/records/friendship-list-item-select.type';
+import type { FriendRequestCreated } from '../types/records/friend-request-created.type';
+import type { FriendShipFind } from '../types/records/friendship-find';
 
 @Injectable()
 export class FriendRepository {
 	private static readonly select = {
 		id: true,
 		state: true,
-
-		userA: { select: UserRepository.userSelect },
-		userB: { select: UserRepository.userSelect },
+		userA: { select: UserQueryHelper.userSelect },
+		userB: { select: UserQueryHelper.userSelect },
 	} satisfies Record<
 		keyof FriendShipBaseSelect,
 		FriendshipSelect[keyof FriendShipBaseSelect]
 	>;
 
-	private readonly orderBy = {
-		'created-asc': [{ createdAt: 'asc' }, { id: 'asc' }],
-		'created-desc': [{ createdAt: 'desc' }, { id: 'desc' }],
-		'updated-asc': [{ updatedAt: 'asc' }, { id: 'asc' }],
-		'updated-desc': [{ updatedAt: 'desc' }, { id: 'desc' }],
-		'username-asc': [
-			{ userA: { username: 'asc' } },
-			{ userB: { username: 'asc' } },
-			{ id: 'asc' },
-		],
-		'username-desc': [
-			{ userA: { username: 'desc' } },
-			{ userB: { username: 'desc' } },
-			{ id: 'desc' },
-		],
-		'displayName-asc': [
-			{ userA: { displayName: 'asc' } },
-			{ userB: { displayName: 'asc' } },
-			{ id: 'asc' },
-		],
-		'displayName-desc': [
-			{ userA: { displayName: 'desc' } },
-			{ userB: { displayName: 'desc' } },
-			{ id: 'desc' },
-		],
-	} satisfies Record<
-		FriendShipOrderByEnum,
-		FriendshipOrderByWithRelationInput[]
-	>;
-
 	constructor(private readonly prisma: PrismaService) {}
-
-	private pagination(limit: number, cursor?: string) {
-		return {
-			take: limit + 1,
-			...(cursor && {
-				cursor: { id: cursor },
-				skip: 1,
-			}),
-		};
-	}
-	private pairCondition(
-		userId: string,
-		friendId: string,
-	): FriendshipWhereInput {
-		return {
-			OR: [
-				{ userAId: userId, userBId: friendId },
-				{ userAId: friendId, userBId: userId },
-			],
-		};
-	}
-
-	private userSearch(search: string): FriendshipWhereInput['userA'] {
-		if (search.startsWith('@')) {
-			return {
-				username: {
-					contains: search.slice(1),
-					mode: 'insensitive',
-				},
-			};
-		}
-		return {
-			OR: [
-				{
-					username: {
-						contains: search,
-						mode: 'insensitive',
-					},
-				},
-				{
-					displayName: {
-						contains: search,
-						mode: 'insensitive',
-					},
-				},
-			],
-		};
-	}
-
-	private participantCondition(
-		userId: string,
-		search?: string,
-	): FriendshipWhereInput {
-		return {
-			OR: [
-				{
-					userAId: userId,
-					...(search && {
-						userB: {
-							...this.userSearch(search),
-						},
-					}),
-				},
-				{
-					userBId: userId,
-					...(search && {
-						userA: {
-							...this.userSearch(search),
-						},
-					}),
-				},
-			],
-		};
-	}
-	private statusCondition(
-		userId: string,
-		{ status, direction }: FriendShipStatusDirectionParams,
-	): FriendshipWhereInput {
-		if (status === FriendshipState.ACCEPTED) {
-			return { state: FriendshipState.ACCEPTED };
-		}
-
-		return {
-			state: FriendshipState.PENDING,
-			senderId:
-				direction === FriendRequestDirection.incoming
-					? { not: userId }
-					: userId,
-		};
-	}
-
-	private idsWhere(
-		userId: string,
-		search: string | undefined,
-		friendIds: string[],
-		status: FriendIdsStatus,
-	): FriendshipWhereInput {
-		const idsCondition =
-			status === FriendIdsStatus.IN
-				? { in: friendIds }
-				: { notIn: friendIds };
-
-		return {
-			state: FriendshipState.ACCEPTED,
-			AND: [
-				this.participantCondition(userId, search),
-				{
-					OR: [
-						{ userAId: userId, userBId: idsCondition },
-						{ userBId: userId, userAId: idsCondition },
-					],
-				},
-			],
-		};
-	}
-
-	private listWhere(
-		userId: string,
-		search: string | undefined,
-		direction: FriendShipStatusDirectionParams,
-	): FriendshipWhereInput {
-		return {
-			...this.participantCondition(userId, search),
-			...this.statusCondition(userId, direction),
-		};
-	}
 
 	cursor({
 		userId,
@@ -203,8 +39,8 @@ export class FriendRepository {
 		...direction
 	}: FriendShipsPaginateParams): Promise<FriendShipListItemSelect[]> {
 		return this.prisma.friendship.findMany({
-			...this.pagination(limit, cursor),
-			where: this.listWhere(userId, search, direction),
+			...FriendQueryHelper.pagination(limit, cursor),
+			where: FriendQueryHelper.listWhere(userId, search, direction),
 			select: {
 				...FriendRepository.select,
 				createdAt: true,
@@ -213,7 +49,7 @@ export class FriendRepository {
 				keyof FriendShipListItemSelect,
 				FriendshipSelect[keyof FriendShipListItemSelect]
 			>,
-			orderBy: this.orderBy[orderBy],
+			orderBy: FriendQueryHelper.orderBy[orderBy],
 		});
 	}
 
@@ -223,7 +59,7 @@ export class FriendRepository {
 		...direction
 	}: FriendshipsCountParams): Promise<number> {
 		return this.prisma.friendship.count({
-			where: this.listWhere(userId, search, direction),
+			where: FriendQueryHelper.listWhere(userId, search, direction),
 		});
 	}
 
@@ -237,8 +73,13 @@ export class FriendRepository {
 		status,
 	}: FriendIdsPaginateParams): Promise<FriendShipListItemSelect[]> {
 		return this.prisma.friendship.findMany({
-			...this.pagination(limit, cursor),
-			where: this.idsWhere(userId, search, friendIds, status),
+			...FriendQueryHelper.pagination(limit, cursor),
+			where: FriendQueryHelper.idsWhere(
+				userId,
+				search,
+				friendIds,
+				status,
+			),
 			select: {
 				...FriendRepository.select,
 				updatedAt: true,
@@ -247,7 +88,7 @@ export class FriendRepository {
 				keyof FriendShipListItemSelect,
 				FriendshipSelect[keyof FriendShipListItemSelect]
 			>,
-			orderBy: this.orderBy[orderBy],
+			orderBy: FriendQueryHelper.orderBy[orderBy],
 		});
 	}
 
@@ -258,7 +99,12 @@ export class FriendRepository {
 		status,
 	}: FriendIdsCountParams): Promise<number> {
 		return this.prisma.friendship.count({
-			where: this.idsWhere(userId, search, friendIds, status),
+			where: FriendQueryHelper.idsWhere(
+				userId,
+				search,
+				friendIds,
+				status,
+			),
 		});
 	}
 
@@ -288,7 +134,7 @@ export class FriendRepository {
 			where: {
 				state: FriendshipState.PENDING,
 				senderId: friendId,
-				...this.pairCondition(userId, friendId),
+				...FriendQueryHelper.pairCondition(userId, friendId),
 			},
 			data: {
 				state: FriendshipState.ACCEPTED,
@@ -301,7 +147,7 @@ export class FriendRepository {
 		return this.prisma.friendship.deleteMany({
 			where: {
 				...(status && { state: status }),
-				...this.pairCondition(userId, friendId),
+				...FriendQueryHelper.pairCondition(userId, friendId),
 			},
 			limit: 1,
 		});
@@ -312,7 +158,7 @@ export class FriendRepository {
 		friendId: string,
 	): Promise<FriendShipFind | null> {
 		return this.prisma.friendship.findFirst({
-			where: this.pairCondition(userId, friendId),
+			where: FriendQueryHelper.pairCondition(userId, friendId),
 			select: {
 				id: true,
 				state: true,

@@ -1,3 +1,3 @@
-import { FriendShipListItemResponseDto } from './friendship-list-item-response.do';
+import { FriendShipListItemResponseDto } from './friendship-list-item-response.dto';
 
 export class FriendRequestCreatedResponseDto extends FriendShipListItemResponseDto {}

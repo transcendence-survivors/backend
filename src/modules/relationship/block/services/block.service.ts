@@ -12,13 +12,13 @@ import { type IBlockService } from '@/contracts/services/block/block-service.por
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { AppEvents, BlockCreatedEvent } from '@/contracts/events/internal';
 import { CursorService } from '@/shared/services/cursor.service';
-import { BlockPaginateDto } from '../dto/requests/block-paginate.dto';
+import { BlockPaginateDto } from '../dtos/requests/block-paginate.dto';
 import { BlockMapper } from '../mappers/block.mapper';
-import { BlockPaginatedResponseDto } from '../dto/responses/block-paginated-response.dto';
-import { BlockCreatedResponseDto } from '../dto/responses/block-created-response.dto';
+import { BlockPaginatedResponseDto } from '../dtos/responses/block-paginated-response.dto';
+import { BlockCreatedResponseDto } from '../dtos/responses/block-created-response.dto';
 import { BlockByIdResponse } from '../types/records/block-by-id-response';
-import { BlockCountResponseDto } from '../dto/responses/block-count-response.dto';
-import { BlockCountDto } from '../dto/requests/block-count.dto';
+import { BlockCountResponseDto } from '../dtos/responses/block-count-response.dto';
+import { BlockCountDto } from '../dtos/requests/block-count.dto';
 
 @Injectable()
 export class BlockService implements IBlockService {

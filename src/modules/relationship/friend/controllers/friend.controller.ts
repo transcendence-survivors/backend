@@ -25,7 +25,10 @@ import { ApiSuccessResponse } from '@/shared/decorators/api-success-response.dec
 import {
 	ApiFriendNotFoundResponse,
 	ApiSelfFriendDeleteResponse,
-} from '../friend.decorators';
+} from '../decorators/friend-api-errors.decorator';
+import { ApiQueryDto } from '@/shared/decorators/api-query-dto.decorator';
+import { ApiBodyDto } from '@/shared/decorators/api-body-dto.decorator';
+import { ApiNoContentResponse, ApiParam } from '@nestjs/swagger';
 
 @Controller('friends')
 @UseGuards(JWTAccessGuard)
@@ -34,6 +37,7 @@ export class FriendController {
 
 	@Get()
 	@HttpCode(200)
+	@ApiQueryDto(FriendPaginateDto)
 	@ApiSuccessResponse(FriendshipPaginatedResponseDto)
 	@ApiValidationErrorResponse({
 		limit: ['limit must be a number'],
@@ -50,6 +54,7 @@ export class FriendController {
 
 	@Get('count')
 	@HttpCode(200)
+	@ApiQueryDto(FriendCountDto)
 	@ApiSuccessResponse(FriendshipCountResponseDto)
 	@ApiValidationErrorResponse({
 		search: ['search must be a string'],
@@ -64,6 +69,7 @@ export class FriendController {
 
 	@Post('ids')
 	@HttpCode(200)
+	@ApiBodyDto(FriendIdsPaginateDto)
 	@ApiSuccessResponse(FriendshipPaginatedResponseDto)
 	@ApiValidationErrorResponse({
 		friendIds: ['friendIds must be an array of strings'],
@@ -81,6 +87,7 @@ export class FriendController {
 
 	@Post('ids/count')
 	@HttpCode(200)
+	@ApiBodyDto(FriendIdsCountDto)
 	@ApiSuccessResponse(FriendshipCountResponseDto)
 	@ApiValidationErrorResponse({
 		friendIds: ['friendIds must be an array of strings'],
@@ -95,6 +102,16 @@ export class FriendController {
 
 	@Delete(':friendId')
 	@HttpCode(204)
+	@ApiParam({
+		name: 'friendId',
+		description: 'The UUID of the user to remove from friends',
+		example: '123e4567-e89b-12d3-a456-426614174000',
+		type: String,
+		format: 'uuid',
+	})
+	@ApiNoContentResponse({
+		description: 'Friend removed successfully',
+	})
 	@ApiSelfFriendDeleteResponse()
 	@ApiFriendNotFoundResponse()
 	async remove(

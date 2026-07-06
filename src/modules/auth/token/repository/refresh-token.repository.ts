@@ -1,41 +1,45 @@
 import { PrismaService } from '@/core/database/services/prisma.service';
 import { DbContext } from '@/core/database/uow/db-context';
 import { Injectable } from '@nestjs/common';
-
-interface RefreshTokenSave {
-	hashedToken: string;
-	expireInMs: number;
-	userId: string;
-	meta?: {
-		userAgent: string;
-		ip: string;
-		deviceId: string;
-	};
-}
+import type { RefreshTokenSelect } from '@prisma-generated/models';
+import { msFromNow } from '@/shared/utils/date.util';
+import { RefreshTokenCreateParams } from '../types/params/refresh-token-create.params';
+import { RefreshTokenId } from '../types/records/refresh-token-id.type';
+import { RefreshTokenStatus } from '../types/records/refresh-token-status.type';
 
 @Injectable()
 export class RefreshTokenRepository {
-	constructor(private prisma: PrismaService) {}
+	private static readonly idSelect = {
+		id: true,
+	} satisfies Record<
+		keyof RefreshTokenId,
+		RefreshTokenSelect[keyof RefreshTokenId]
+	>;
+
+	constructor(private readonly prisma: PrismaService) {}
 
 	save(
-		{ hashedToken, expireInMs, userId, meta }: RefreshTokenSave,
+		{ hashedToken, expireInMs, userId, meta }: RefreshTokenCreateParams,
 		ctx?: DbContext,
-	) {
-		const expirationDate = new Date(Date.now() + expireInMs);
+	): Promise<RefreshTokenId> {
 		return (ctx?.client ?? this.prisma).refreshToken.create({
 			data: {
 				hashToken: hashedToken,
-				expiredAt: expirationDate,
+				expiredAt: msFromNow(expireInMs),
 				userId,
 				...meta,
 			},
 			select: {
-				id: true,
+				...RefreshTokenRepository.idSelect,
 			},
 		});
 	}
 
-	get(hashToken: string, userId: string, ctx?: DbContext) {
+	get(
+		hashToken: string,
+		userId: string,
+		ctx?: DbContext,
+	): Promise<RefreshTokenStatus | null> {
 		return (ctx?.client ?? this.prisma).refreshToken.findUnique({
 			where: {
 				hashToken,
@@ -44,11 +48,14 @@ export class RefreshTokenRepository {
 			select: {
 				expiredAt: true,
 				isRevoked: true,
-			},
+			} satisfies Record<
+				keyof RefreshTokenStatus,
+				RefreshTokenSelect[keyof RefreshTokenStatus]
+			>,
 		});
 	}
 
-	revoke(hashToken: string, ctx?: DbContext) {
+	revoke(hashToken: string, ctx?: DbContext): Promise<RefreshTokenId> {
 		return (ctx?.client ?? this.prisma).refreshToken.update({
 			where: {
 				hashToken,
@@ -56,9 +63,7 @@ export class RefreshTokenRepository {
 			data: {
 				isRevoked: true,
 			},
-			select: {
-				id: true,
-			},
+			select: RefreshTokenRepository.idSelect,
 		});
 	}
 

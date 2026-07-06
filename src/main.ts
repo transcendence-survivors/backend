@@ -29,8 +29,10 @@ void (async () => {
 			.setDescription('API documentation')
 			.setVersion('1.0')
 			.build(),
+		{
+			deepScanRoutes: true,
+		},
 	);
 	SwaggerModule.setup('docs', appV1, document);
-
 	await appV1.listen(process.env.NEST_PORT!, '0.0.0.0');
 })();

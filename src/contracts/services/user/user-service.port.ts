@@ -1,13 +1,16 @@
 import { DbContext } from '@/core/database/uow/db-context';
-import UserCreateDto from '@/modules/user/dto/request/user-create.dto';
 import { UserCreated } from '@/modules/user/types/records/user-created.type';
 import { UserLocalePreference } from '@/modules/user/types/records/user-locale-preference.type';
-import { UserTokenData } from '@/modules/user/types/records/user-token-data.type';
+import { UserTokenData } from '@/contracts/types/user/user-token-data.type';
+import { UserCreateParams } from '@/contracts/types/user/user-create.params';
 
 export const USER_SERVICE = Symbol('USER_SERVICE');
 
 export interface IUserService {
-	createUser(input: UserCreateDto, ctx?: DbContext): Promise<UserCreated>;
+	createUserOrThrow(
+		input: UserCreateParams,
+		ctx?: DbContext,
+	): Promise<UserCreated>;
 
 	getTokenData(
 		userId: string,

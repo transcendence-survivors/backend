@@ -28,5 +28,34 @@ export const ApiErrorResponse = (description: ApiErrorDescription) =>
 		}),
 	);
 
+export const ApiGroupedErrorResponse = (
+	exceptions: Array<typeof AppHttpException>,
+) => {
+	const schemas = exceptions.map((e) => e.describe());
+
+	return applyDecorators(
+		ApiExtraModels(ApiErrorResponseDto),
+		ApiResponse({
+			status: schemas[0].status,
+			schema: {
+				oneOf: schemas.map((s) => ({
+					allOf: [
+						{ $ref: getSchemaPath(ApiErrorResponseDto) },
+						{
+							example: {
+								status: 'error',
+								code: s.status,
+								message: s.message,
+								messageKey: s.messageKey,
+								errors: s.errors ?? null,
+							},
+						},
+					],
+				})),
+			},
+		}),
+	);
+};
+
 export const ApiErrorFrom = (exceptionCtor: typeof AppHttpException) =>
 	ApiErrorResponse(exceptionCtor.describe());

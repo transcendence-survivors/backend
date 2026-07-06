@@ -4,7 +4,7 @@ import { CreatePostDto } from '../dto/post.dto';
 import { DbContext } from '@/core/database/uow/db-context';
 import { PostOrderByWithRelationInput } from '@prisma-generated/models';
 import { PostQueryDto } from '../dto/post-querry.dto';
-import { UserRepository } from '@/modules/user/repositories/user.repository';
+import { UserQueryHelper } from '@/modules/user/user.public-api';
 
 export const POST_ORDER_BY = ['date-asc', 'date-desc'] as const;
 export type PostOrderBy = (typeof POST_ORDER_BY)[number];
@@ -16,7 +16,7 @@ export class PostRepository {
 		content: true,
 		createdAt: true,
 		author: {
-			select: UserRepository.userSelect,
+			select: UserQueryHelper.userSelect,
 		},
 	};
 	private readonly orderByCursorMapping: Record<

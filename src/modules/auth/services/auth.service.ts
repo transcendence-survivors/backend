@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import SignInDto from '@/modules/auth/dto/signin.dto';
+import { AuthSignInDto } from '../dtos/requests/auth-signin.dto';
+import { AuthSignUpDto } from '../dtos/requests/auth-signup.dto';
+import { AuthForgotPasswordDto } from '../dtos/requests/auth-forgot-password.dto';
+import { AuthResetPasswordDto } from '../dtos/requests/auth-reset-password.dto';
 import { TokenService } from '../token/service/token.service';
-import { ForgotPasswordDto } from '../dto/forgot-password.dto';
-import { ResetPasswordDto } from '../dto/reset-password.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
 	AppEvents,
@@ -13,9 +14,13 @@ import { LocalAuthProviderService } from '../auth-provider/services/local-auth.s
 import { InjectUserService } from '@/contracts/services/user/user-service.inject';
 import { type IUserService } from '@/contracts/services/user/user-service.port';
 import { UnitOfWork } from '@/core/database/uow/unit-of-work';
-import SignUpDto from '@/modules/auth/dto/signup.dto';
 import { JwtRefreshPayload } from '@/core/security/interfaces/jwt-payload.interface';
-import { UserNotFoundException } from '@/modules/user/exceptions/user.not-found.exception';
+import { AuthMapper } from '../mappers/auth.mapper';
+import { AuthSignIn } from '../types/records/auth-signin.type';
+import { AuthSignUp } from '../types/records/auth-signup.type';
+import { AuthRefresh } from '../types/records/auth-refresh.type';
+import { AuthRefreshException } from '../exceptions/auth-refresh-exception';
+import { AuthLoginException } from '../exceptions/auth-login-exception.exceptions';
 
 @Injectable()
 export class AuthService {
@@ -25,18 +30,24 @@ export class AuthService {
 		private readonly localAuth: LocalAuthProviderService,
 		private readonly tokenService: TokenService,
 		private readonly eventEmitter: EventEmitter2,
+		private readonly authMapper: AuthMapper,
 	) {}
 
-	async signInLocale(dto: SignInDto) {
-		const provider = await this.localAuth.validate(
-			dto.usernameOrEmail,
-			dto.password,
+	async logout(user: JwtRefreshPayload): Promise<void> {
+		await this.tokenService.logout(user);
+	}
+
+	async signInLocale({
+		password,
+		usernameOrEmail,
+	}: AuthSignInDto): Promise<AuthSignIn> {
+		const authUser = await this.localAuth.validate(
+			usernameOrEmail,
+			password,
 		);
 
-		const user = await this.userService.getTokenData(provider.userId);
-		if (!user) {
-			throw new UserNotFoundException();
-		}
+		const user = await this.userService.getTokenData(authUser.id);
+		if (!user) throw new AuthLoginException();
 
 		const { accessToken, refreshToken } = await this.tokenService.buildJWT({
 			sub: user.id,
@@ -44,14 +55,33 @@ export class AuthService {
 			email: user.email,
 			role: user.role,
 		});
-		return { accessToken, refreshToken, user };
+		const dto = this.authMapper.toUserResponse(user);
+		return {
+			accessToken,
+			refreshToken,
+			user: dto,
+		};
 	}
 
-	async signUpLocale(dto: SignUpDto) {
-		const { password, ...userData } = dto;
-
+	async signUpLocale({
+		password,
+		...userData
+	}: AuthSignUpDto): Promise<AuthSignUp> {
 		const user = await this.uow.run(async (ctx) => {
-			const user = await this.userService.createUser(userData, ctx);
+			const user = await this.userService.createUserOrThrow(
+				{
+					bio: userData.bio,
+					birthDate: userData.dateOfBirth,
+					displayName: userData.displayName,
+					email: userData.email,
+					firstName: userData.firstName,
+					gender: userData.gender,
+					lastName: userData.lastName,
+					localePreference: userData.localePreference,
+					username: userData.username,
+				},
+				ctx,
+			);
 			await this.localAuth.create(user.id, password, ctx);
 			return user;
 		});
@@ -74,28 +104,38 @@ export class AuthService {
 			email: userData.email,
 			role: user.role,
 		});
-		return { accessToken, refreshToken, user };
+
+		const dto = this.authMapper.toUserResponse(user);
+		return {
+			accessToken,
+			refreshToken,
+			user: dto,
+		};
 	}
 
-	async refresh(user: JwtRefreshPayload) {
+	async refresh(user: JwtRefreshPayload): Promise<AuthRefresh> {
 		await this.tokenService.validateRefresh(user);
+
 		const userData = await this.userService.getTokenData(user.sub);
-		if (!userData) {
-			throw new UserNotFoundException();
-		}
-		return this.tokenService.generateAccess({
+		if (!userData) throw new AuthRefreshException();
+
+		const accessToken = await this.tokenService.generateAccess({
 			sub: userData.id,
-			...userData,
+			email: userData.email,
+			username: userData.username,
+			role: userData.role,
 		});
+
+		return { accessToken };
 	}
 
-	async forgotPassword(dto: ForgotPasswordDto) {
+	async forgotPassword(dto: AuthForgotPasswordDto): Promise<void> {
 		const user = await this.userService.getLocalPreferenceByEmail(
 			dto.email,
 		);
-		if (!user) throw new UserNotFoundException();
-		const token = await this.tokenService.createPasswordReset(user.id);
+		if (!user) return;
 
+		const token = await this.tokenService.createPasswordReset(user.id);
 		this.eventEmitter.emit(
 			AppEvents.PASSWORD_RESET_REQUESTED,
 			new PasswordResetRequestedEvent(
@@ -106,7 +146,7 @@ export class AuthService {
 		);
 	}
 
-	async resetPassword(dto: ResetPasswordDto) {
+	async resetPassword(dto: AuthResetPasswordDto): Promise<void> {
 		const { id, userId } = await this.tokenService.getValidPasswordReset(
 			dto.token,
 		);

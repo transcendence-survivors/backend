@@ -1,4 +1,5 @@
 import { applyDecorators } from '@nestjs/common';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
 	IsInt,
@@ -30,7 +31,12 @@ const IsCursor = () => {
 };
 
 const IsSearch = ({ max = 100 }: { max?: number }) => {
-	return applyDecorators(IsOptional(), IsString(), MaxLength(max));
+	return applyDecorators(
+		IsOptional(),
+		IsString(),
+		MaxLength(max),
+		ApiPropertyOptional({ maxLength: max }),
+	);
 };
 
 export { IsCursorLimit, IsCursor, IsSearch };

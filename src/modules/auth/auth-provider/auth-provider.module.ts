@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { LocalAuthProviderService } from './services/local-auth.services';
-import { AuthProviderRepository } from './repositories/provider.repository';
+import { AuthProviderRepository } from './repositories/auth-provider.repository';
 
 @Module({
 	providers: [LocalAuthProviderService, AuthProviderRepository],

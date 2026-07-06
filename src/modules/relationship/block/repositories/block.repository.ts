@@ -1,36 +1,22 @@
 import { PrismaService } from '@/core/database/services/prisma.service';
 import { DbContext } from '@/core/database/uow/db-context';
 import { Injectable } from '@nestjs/common';
-import { UserRepository } from '@/modules/user/repositories/user.repository';
-import {
-	BlockSelect,
-	BlockWhereInput,
-	type BlockOrderByWithRelationInput,
-} from '@prisma-generated/models';
-import { BlockOrderByEnum } from '../types/enums/block-order-by.enum';
-import { BlocksPaginateParams } from '../types/params/block-cursor-params';
-import { BlockByIdsParams } from '../types/params/block-id.params';
-import { BlockCreateParams } from '../types/params/block-create.params';
-import { BlockDeleteParams } from '../types/params/block-delete.params';
-import { BlockListItemSelect } from '../types/records/block-list-item-select';
-import { BlockCountParams } from '../types/params/block-count.params';
-import { BlockByIdResponse } from '../types/records/block-by-id-response';
+import { UserQueryHelper } from '@/modules/user/user.public-api';
+import { BlockSelect } from '@prisma-generated/models';
+import type { BlocksPaginateParams } from '../types/params/block-cursor-params';
+import type { BlockByIdsParams } from '../types/params/block-id.params';
+import type { BlockCreateParams } from '../types/params/block-create.params';
+import type { BlockDeleteParams } from '../types/params/block-delete.params';
+import type { BlockListItemSelect } from '../types/records/block-list-item-select';
+import type { BlockCountParams } from '../types/params/block-count.params';
+import type { BlockByIdResponse } from '../types/records/block-by-id-response';
+import { BlockQueryHelper } from './block-query.helper';
 
 @Injectable()
 export class BlockRepository {
-	private readonly orderBy: Record<
-		BlockOrderByEnum,
-		BlockOrderByWithRelationInput
-	> = {
-		'date-asc': { createdAt: 'asc' },
-		'date-desc': { createdAt: 'desc' },
-		'username-asc': { blocked: { username: 'asc' } },
-		'username-desc': { blocked: { username: 'desc' } },
-	};
-
 	private static readonly select = {
 		blocked: {
-			select: UserRepository.userSelect,
+			select: UserQueryHelper.userSelect,
 		},
 	} satisfies Record<
 		keyof BlockListItemSelect,
@@ -39,45 +25,21 @@ export class BlockRepository {
 
 	constructor(private readonly prisma: PrismaService) {}
 
-	private pagination(limit: number, cursor?: string) {
-		return {
-			take: limit + 1,
-			...(cursor && {
-				cursor: { id: cursor },
-				skip: 1,
-			}),
-		};
-	}
-	private userSearch(search: string): BlockWhereInput['blocked'] {
-		return UserRepository.searchWhere(search);
-	}
-
-	private listWhere(blockerId: string, search?: string): BlockWhereInput {
-		return {
-			blockerId,
-			...(search && {
-				blocked: {
-					...this.userSearch(search),
-				},
-			}),
-		};
-	}
-
 	cursor(
 		{ blockerId, cursor, limit, orderBy, search }: BlocksPaginateParams,
 		ctx?: DbContext,
 	): Promise<BlockListItemSelect[]> {
 		const client = ctx?.client ?? this.prisma;
 		return client.block.findMany({
-			...this.pagination(limit, cursor),
-			where: this.listWhere(blockerId, search),
+			...BlockQueryHelper.pagination(limit, cursor),
+			where: BlockQueryHelper.listWhere(blockerId, search),
 			select: {
 				...BlockRepository.select,
 			} satisfies Record<
 				keyof BlockListItemSelect,
 				BlockSelect[keyof BlockListItemSelect]
 			>,
-			orderBy: this.orderBy[orderBy],
+			orderBy: BlockQueryHelper.orderBy[orderBy],
 		});
 	}
 
@@ -87,7 +49,7 @@ export class BlockRepository {
 	): Promise<number> {
 		const client = ctx?.client ?? this.prisma;
 		return client.block.count({
-			where: this.listWhere(blockerId, search),
+			where: BlockQueryHelper.listWhere(blockerId, search),
 		});
 	}
 

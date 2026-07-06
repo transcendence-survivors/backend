@@ -2,17 +2,18 @@ import { Controller, Get, Param, HttpCode, Query } from '@nestjs/common';
 import { UserService } from '../services/user.service';
 import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
 import { ApiSuccessResponse } from '@/shared/decorators/api-success-response.decorator';
-import { UserPaginateDto } from '../dto/request/user-paginate.dto';
-import { UserProfileResponseDto } from '../dto/response/user-profile.dto';
-import { UserPaginatedListResponseDto } from '../dto/response/user-paginated-response.dto';
-import { UserCountResponseDto } from '../dto/response/user-count-response.dto';
+import { UserPaginateDto } from '../dtos/requests/user-paginate.dto';
+import { UserProfileResponseDto } from '../dtos/responses/user-profile.dto';
+import { UserPaginatedListResponseDto } from '../dtos/responses/user-paginated-response.dto';
+import { UserCountResponseDto } from '../dtos/responses/user-count-response.dto';
 import {
 	ApiUserNotFoundResponse,
 	ApiUsernameConflictResponse,
 	ApiEmailConflictResponse,
-} from '../user.decorators';
+} from '../decorators/user-api-errors.decorator';
 import { ApiValidationErrorResponse } from '@/shared/decorators/api-validation-error-response.decorator';
-import { ApiParam } from '@nestjs/swagger';
+import { ApiNoContentResponse, ApiParam } from '@nestjs/swagger';
+import { ApiQueryDto } from '@/shared/decorators/api-query-dto.decorator';
 
 @Controller('users')
 export class UserController {
@@ -20,6 +21,7 @@ export class UserController {
 
 	@Get()
 	@HttpCode(200)
+	@ApiQueryDto(UserPaginateDto)
 	@ApiSuccessResponse(UserPaginatedListResponseDto)
 	@ApiValidationErrorResponse({
 		limit: ['limit must be a number'],
@@ -34,6 +36,7 @@ export class UserController {
 
 	@Get('count')
 	@HttpCode(200)
+	@ApiQueryDto(UserPaginateDto)
 	@ApiSuccessResponse(UserCountResponseDto)
 	@ApiValidationErrorResponse({
 		search: ['search must be a string'],
@@ -45,6 +48,12 @@ export class UserController {
 
 	@Get('check-username/:username')
 	@HttpCode(204)
+	@ApiParam({
+		name: 'username',
+		description: 'The username to check for availability',
+		example: 'johndoe',
+		type: String,
+	})
 	@ApiUsernameConflictResponse()
 	checkUsername(@Param('username') username: string): Promise<void> {
 		return this.userService.checkUsernameAvailability(username);
@@ -52,6 +61,16 @@ export class UserController {
 
 	@Get('check-email/:email')
 	@HttpCode(204)
+	@ApiParam({
+		name: 'email',
+		description: 'The email to check for availability',
+		example: 'johndoe@example.com',
+		type: String,
+		format: 'email',
+	})
+	@ApiNoContentResponse({
+		description: 'Email is available',
+	})
 	@ApiEmailConflictResponse()
 	checkEmail(@Param('email') email: string): Promise<void> {
 		return this.userService.checkEmailAvailability(email);

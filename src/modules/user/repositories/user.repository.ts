@@ -1,95 +1,26 @@
 import { PrismaService } from '@/core/database/services/prisma.service';
 import { Injectable } from '@nestjs/common';
-import {
-	UserOrderByWithRelationInput,
-	UserWhereInput,
-} from '@prisma-generated/internal/prismaNamespaceBrowser';
 import { DbContext } from '@/core/database/uow/db-context';
-import { UsersCountParams } from '../types/params/user-count.params';
-import { UserListItem } from '../types/records/user-list-item.type';
-import { UserProfileRecord } from '../types/records/user-profile.type';
-import { UsersCursorParams } from '../types/params/user-cursor.params';
-import { UserCreateParams } from '../types/params/user-create.params';
-import { UserCreated } from '../types/records/user-created.type';
-import { UserLocalePreference } from '../types/records/user-locale-preference.type';
-import { UserTokenData } from '../types/records/user-token-data.type';
-import { UserEmailUsername } from '../types/records/user-email-username.type';
-import { UserEmailOrUsernameParams } from '../types/params/user-email-or-username.params';
-import { UserOrderByEnum } from '../types/enums/user-order-by.enum';
+import { UserQueryHelper } from './user-query.helper';
+import type { UsersCountParams } from '../types/params/user-count.params';
+import type { UserListItem } from '../types/records/user-list-item.type';
+import type { UserProfileRecord } from '../types/records/user-profile.type';
+import type { UsersCursorParams } from '../types/params/user-cursor.params';
+import type { UserCreated } from '../types/records/user-created.type';
+import type { UserLocalePreference } from '../types/records/user-locale-preference.type';
+import type { UserEmailUsername } from '../types/records/user-email-username.type';
+import type { UserEmailOrUsernameParams } from '../types/params/user-email-or-username.params';
+import type { UserSelect } from '@prisma-generated/models';
+import type { UserTokenData } from '@/contracts/types/user/user-token-data.type';
+import { UserCreateParams } from '@/contracts/types/user/user-create.params';
 
 @Injectable()
 export class UserRepository {
-	public static readonly userSelect = {
-		id: true,
-		username: true,
-		displayName: true,
-		avatarUrl: true,
-	} satisfies Record<keyof UserListItem, true>;
-
-	public static searchWhere(search: string): UserWhereInput {
-		const query = search.trim();
-		if (!query) {
-			return {};
-		}
-
-		if (query.startsWith('@')) {
-			return {
-				username: {
-					contains: query.slice(1),
-					mode: 'insensitive',
-				},
-			};
-		}
-		return {
-			OR: [
-				{
-					username: {
-						contains: query,
-						mode: 'insensitive',
-					},
-				},
-				{
-					displayName: {
-						contains: query,
-						mode: 'insensitive',
-					},
-				},
-			],
-		};
-	}
-
-	public static notBlockedWhere(userId: string): UserWhereInput {
-		return {
-			NOT: {
-				OR: [
-					{ blocksGiven: { some: { blockedId: userId } } },
-					{ blocksReceived: { some: { blockerId: userId } } },
-				],
-			},
-		};
-	}
-
-	private readonly orderBy: Record<
-		UserOrderByEnum,
-		UserOrderByWithRelationInput
-	> = {
-		'date-asc': { createdAt: 'asc' },
-		'date-desc': { createdAt: 'desc' },
-		'username-asc': { username: 'asc' },
-		'username-desc': { username: 'desc' },
-	};
+	private static readonly select = {
+		...UserQueryHelper.userSelect,
+	} satisfies Record<keyof UserListItem, UserSelect[keyof UserListItem]>;
 
 	constructor(private readonly prisma: PrismaService) {}
-
-	private pagination(limit: number, cursor?: string) {
-		return {
-			take: limit + 1,
-			...(cursor && {
-				cursor: { id: cursor },
-				skip: 1,
-			}),
-		};
-	}
 
 	cursor(
 		{ limit, cursor, search, orderBy, userId }: UsersCursorParams,
@@ -97,15 +28,18 @@ export class UserRepository {
 	): Promise<UserListItem[]> {
 		const client = ctx?.client ?? this.prisma;
 		return client.user.findMany({
-			...this.pagination(limit, cursor),
+			...UserQueryHelper.pagination(limit, cursor),
 			where: {
-				...(search && UserRepository.searchWhere(search)),
-				...(userId && UserRepository.notBlockedWhere(userId)),
+				...(search && UserQueryHelper.searchWhere(search)),
+				...(userId && UserQueryHelper.notBlockedWhere(userId)),
 			},
-			orderBy: this.orderBy[orderBy],
+			orderBy: UserQueryHelper.orderBy[orderBy],
 			select: {
-				...UserRepository.userSelect,
-			} satisfies Record<keyof UserListItem, true>,
+				...UserRepository.select,
+			} satisfies Record<
+				keyof UserListItem,
+				UserSelect[keyof UserListItem]
+			>,
 		});
 	}
 
@@ -116,8 +50,8 @@ export class UserRepository {
 		const client = ctx?.client ?? this.prisma;
 		return client.user.count({
 			where: {
-				...(search && UserRepository.searchWhere(search)),
-				...(userId && UserRepository.notBlockedWhere(userId)),
+				...(search && UserQueryHelper.searchWhere(search)),
+				...(userId && UserQueryHelper.notBlockedWhere(userId)),
 			},
 		});
 	}
@@ -126,10 +60,13 @@ export class UserRepository {
 		return this.prisma.user.findUnique({
 			where: { username },
 			select: {
-				...UserRepository.userSelect,
+				...UserRepository.select,
 				coverImageUrl: true,
 				bio: true,
-			} satisfies Record<keyof UserProfileRecord, true>,
+			} satisfies Record<
+				keyof UserProfileRecord,
+				UserSelect[keyof UserProfileRecord]
+			>,
 		});
 	}
 
@@ -148,7 +85,10 @@ export class UserRepository {
 			select: {
 				email: true,
 				username: true,
-			} satisfies Record<keyof UserEmailUsername, true>,
+			} satisfies Record<
+				keyof UserEmailUsername,
+				UserSelect[keyof UserEmailUsername]
+			>,
 		});
 	}
 
@@ -169,12 +109,16 @@ export class UserRepository {
 				},
 			},
 			select: {
-				...UserRepository.userSelect,
+				...UserRepository.select,
 				email: true,
 				role: true,
-			},
+			} satisfies Record<
+				keyof UserCreated,
+				UserSelect[keyof UserCreated]
+			>,
 		});
 	}
+
 	getTokenData(
 		userId: string,
 		ctx?: DbContext,
@@ -186,9 +130,13 @@ export class UserRepository {
 				username: true,
 				email: true,
 				role: true,
-			},
+			} satisfies Record<
+				keyof UserTokenData,
+				UserSelect[keyof UserTokenData]
+			>,
 		});
 	}
+
 	getLocalPreferenceByEmail(
 		email: string,
 		ctx?: DbContext,

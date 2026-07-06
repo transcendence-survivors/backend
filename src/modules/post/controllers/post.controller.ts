@@ -16,6 +16,7 @@ import type { JwtAccessPayload } from '@/core/security/interfaces/jwt-payload.in
 import { CurrentUser } from '@/core/security/decorators/current-user.decorator';
 import { PostQueryDto } from '../dto/post-querry.dto';
 import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
+import { ApiNoContentResponse } from '@nestjs/swagger';
 
 @Controller('posts')
 export class PostController {
@@ -39,9 +40,10 @@ export class PostController {
 		return this.postService.create(user.sub, createPostDto);
 	}
 
+	@UseGuards(JWTAccessGuard)
 	@Delete(':id')
 	@HttpCode(204)
-	@UseGuards(JWTAccessGuard)
+	@ApiNoContentResponse({ description: 'Post deleted successfully' })
 	async deletePost(
 		@Param('id') id: string,
 		@CurrentUser() user: JwtAccessPayload,

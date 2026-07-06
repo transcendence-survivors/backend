@@ -21,7 +21,10 @@ import { FriendRequestCountDto } from '../dtos/requests/friend-count-paginate.dt
 import { FriendRequestAddDto } from '../dtos/requests/friend-request-add.dto';
 import { FriendshipPaginatedResponseDto } from '../dtos/responses/friend-paginated-response.dto';
 import { FriendshipCountResponseDto } from '../dtos/responses/friendship-count-response.dto';
-import { ApiSuccessResponse } from '@/shared/decorators/api-success-response.decorator';
+import {
+	ApiCreatedSuccessResponse,
+	ApiSuccessResponse,
+} from '@/shared/decorators/api-success-response.decorator';
 import { FriendRequestCreatedResponseDto } from '../dtos/responses/friend-request-created.dto';
 import { ApiValidationErrorResponse } from '@/shared/decorators/api-validation-error-response.decorator';
 import {
@@ -33,7 +36,10 @@ import {
 	ApiFriendshipBlockedByYouResponse,
 	ApiSelfFriendRequestDeleteResponse,
 	ApiSelfFriendRequestSentResponse,
-} from '../friend.decorators';
+} from '../decorators/friend-api-errors.decorator';
+import { ApiQueryDto } from '@/shared/decorators/api-query-dto.decorator';
+import { ApiBodyDto } from '@/shared/decorators/api-body-dto.decorator';
+import { ApiNoContentResponse, ApiParam } from '@nestjs/swagger';
 
 @Controller('friends/requests')
 @UseGuards(JWTAccessGuard)
@@ -42,6 +48,7 @@ export class FriendRequestController {
 
 	@Get()
 	@HttpCode(200)
+	@ApiQueryDto(FriendRequestPaginateDto)
 	@ApiSuccessResponse(FriendshipPaginatedResponseDto)
 	@ApiValidationErrorResponse({
 		limit: ['limit must be a number'],
@@ -58,6 +65,7 @@ export class FriendRequestController {
 
 	@Get('count')
 	@HttpCode(200)
+	@ApiQueryDto(FriendRequestCountDto)
 	@ApiSuccessResponse(FriendshipCountResponseDto)
 	@ApiValidationErrorResponse({
 		direction: ['direction must be either "incoming" or "outgoing"'],
@@ -72,7 +80,8 @@ export class FriendRequestController {
 
 	@Post()
 	@HttpCode(201)
-	@ApiSuccessResponse(FriendRequestCreatedResponseDto)
+	@ApiBodyDto(FriendRequestAddDto)
+	@ApiCreatedSuccessResponse(FriendRequestCreatedResponseDto)
 	@ApiValidationErrorResponse({ friendId: ['friendId must be a string'] })
 	@ApiSelfFriendRequestSentResponse()
 	@ApiFriendshipBlockedByUserResponse()
@@ -89,6 +98,19 @@ export class FriendRequestController {
 
 	@Patch(':friendId')
 	@HttpCode(204)
+	@ApiParam({
+		name: 'friendId',
+		description: 'The UUID of the user to accept the friend request from',
+		example: '123e4567-e89b-12d3-a456-426614174000',
+		type: String,
+		format: 'uuid',
+	})
+	@ApiNoContentResponse({
+		description: 'Friend request accepted successfully',
+	})
+	@ApiSelfFriendRequestSentResponse()
+	@ApiFriendshipBlockedByUserResponse()
+	@ApiFriendshipBlockedByYouResponse()
 	@ApiFriendRequestSelfAcceptResponse()
 	@ApiFriendRequestNotFoundResponse()
 	@ApiFriendAlreadyExistsResponse()
@@ -102,6 +124,16 @@ export class FriendRequestController {
 
 	@Delete(':friendId')
 	@HttpCode(204)
+	@ApiParam({
+		name: 'friendId',
+		description: 'The UUID of the user to delete the friend request for',
+		example: '123e4567-e89b-12d3-a456-426614174000',
+		type: String,
+		format: 'uuid',
+	})
+	@ApiNoContentResponse({
+		description: 'Friend request deleted successfully',
+	})
 	@ApiSelfFriendRequestDeleteResponse()
 	@ApiFriendRequestNotFoundResponse()
 	async delete(
