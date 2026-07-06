@@ -59,6 +59,10 @@ export class PostController extends BaseController {
 		@CurrentUser() user: JwtAccessPayload,
 		@UploadedFile() file: Express.Multer.File,
 	) {
+		if (!createPostDto.content && !file)
+			throw new BadRequestException(
+				'Post must have content length or an image',
+			);
 		let imageUrl: string | undefined;
 		if (file) {
 			imageUrl = await this.storageService.upload(
