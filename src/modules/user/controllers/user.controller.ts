@@ -14,11 +14,13 @@ import {
 import { ApiValidationErrorResponse } from '@/shared/decorators/api-validation-error-response.decorator';
 import { ApiNoContentResponse, ApiParam } from '@nestjs/swagger';
 import { ApiQueryDto } from '@/shared/decorators/api-query-dto.decorator';
+import { SearchThrottle } from '@/core/rate-limit/decorators/throttle-presets.decorator';
 
 @Controller('users')
 export class UserController {
 	constructor(private readonly userService: UserService) {}
 
+	@SearchThrottle()
 	@Get()
 	@HttpCode(200)
 	@ApiQueryDto(UserPaginateDto)
@@ -34,6 +36,7 @@ export class UserController {
 		return this.userService.listUsers(query);
 	}
 
+	@SearchThrottle()
 	@Get('count')
 	@HttpCode(200)
 	@ApiQueryDto(UserPaginateDto)

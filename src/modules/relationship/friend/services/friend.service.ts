@@ -181,6 +181,7 @@ export class FriendService {
 		const result = this.cursor.create(dtos, limit, (item) => item.id);
 		return this.mapper.toPaginatedListDto(result);
 	}
+
 	async countFriendsFromIds(
 		userId: string,
 		{ friendIds, search, status }: FriendIdsCountDto,

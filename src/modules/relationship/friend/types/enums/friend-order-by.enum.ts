@@ -5,6 +5,6 @@ export enum FriendShipOrderByEnum {
 	'updated-desc' = 'updated-desc',
 	'username-asc' = 'username-asc',
 	'username-desc' = 'username-desc',
-	'displayName-asc' = 'displayName-asc',
-	'displayName-desc' = 'displayName-desc',
+	'displayname-asc' = 'displayname-asc',
+	'displayname-desc' = 'displayname-desc',
 }

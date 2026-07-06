@@ -4,6 +4,7 @@ import { DatabaseModule } from './database/database.module';
 import { ConfigModule } from '@nestjs/config';
 import { SecurityModule } from './security/security.module';
 import { WebsocketModule } from './websocket/websocket.module';
+import { RateLimitModule } from './rate-limit/rate-limit.module';
 
 @Global()
 @Module({
@@ -13,6 +14,7 @@ import { WebsocketModule } from './websocket/websocket.module';
 		ConfigModule,
 		SecurityModule,
 		WebsocketModule,
+		RateLimitModule,
 	],
 	exports: [
 		EmailModule,
@@ -20,6 +22,7 @@ import { WebsocketModule } from './websocket/websocket.module';
 		ConfigModule,
 		WebsocketModule,
 		SecurityModule,
+		RateLimitModule,
 	],
 })
 export class CoreModule {}

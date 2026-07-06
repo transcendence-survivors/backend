@@ -25,12 +25,12 @@ export class FriendQueryHelper {
 			{ userB: { username: 'desc' } },
 			{ id: 'desc' },
 		],
-		'displayName-asc': [
+		'displayname-asc': [
 			{ userA: { displayName: 'asc' } },
 			{ userB: { displayName: 'asc' } },
 			{ id: 'asc' },
 		],
-		'displayName-desc': [
+		'displayname-desc': [
 			{ userA: { displayName: 'desc' } },
 			{ userB: { displayName: 'desc' } },
 			{ id: 'desc' },

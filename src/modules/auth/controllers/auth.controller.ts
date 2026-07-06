@@ -35,6 +35,11 @@ import { TokenRevokedException } from '../token/exceptions/token-revoked.excepti
 import { TokenExpiredException } from '../token/exceptions/token-expired.exception';
 import { AuthProviderCredentialsException } from '../auth-provider/exceptions/auth-provider-credentials.exception';
 import { AuthLoginException } from '../exceptions/auth-login-exception.exceptions';
+import {
+	AuthThrottle,
+	StrictAuthThrottle,
+	TokenRefreshThrottle,
+} from '@/core/rate-limit/decorators/throttle-presets.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -46,6 +51,7 @@ export class AuthController {
 		@InjectEnv() private readonly env: Env,
 	) {}
 
+	@AuthThrottle()
 	@Post('login')
 	@HttpCode(200)
 	@ApiBodyDto(AuthSignInDto)
@@ -70,6 +76,7 @@ export class AuthController {
 		return user;
 	}
 
+	@AuthThrottle()
 	@Post('register')
 	@HttpCode(201)
 	@ApiBodyDto(AuthSignUpDto)
@@ -98,6 +105,7 @@ export class AuthController {
 		return user;
 	}
 
+	@TokenRefreshThrottle()
 	@UseGuards(JWTRefreshGuard)
 	@Post('refresh')
 	@HttpCode(204)
@@ -134,6 +142,7 @@ export class AuthController {
 		res.clearCookie(this.ACCESS_TOKEN);
 	}
 
+	@StrictAuthThrottle()
 	@Post('forgot-password')
 	@HttpCode(204)
 	@ApiBodyDto(AuthForgotPasswordDto)
@@ -145,6 +154,7 @@ export class AuthController {
 		await this.authService.forgotPassword(dto);
 	}
 
+	@StrictAuthThrottle()
 	@Post('reset-password')
 	@HttpCode(204)
 	@ApiBodyDto(AuthResetPasswordDto)

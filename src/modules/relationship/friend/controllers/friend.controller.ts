@@ -29,12 +29,14 @@ import {
 import { ApiQueryDto } from '@/shared/decorators/api-query-dto.decorator';
 import { ApiBodyDto } from '@/shared/decorators/api-body-dto.decorator';
 import { ApiNoContentResponse, ApiParam } from '@nestjs/swagger';
+import { RelationshipSearchThrottle } from '@/core/rate-limit/decorators/throttle-presets.decorator';
 
 @Controller('friends')
 @UseGuards(JWTAccessGuard)
 export class FriendController {
 	constructor(private readonly service: FriendService) {}
 
+	@RelationshipSearchThrottle()
 	@Get()
 	@HttpCode(200)
 	@ApiQueryDto(FriendPaginateDto)
@@ -52,6 +54,7 @@ export class FriendController {
 		return this.service.paginateFriends(user.sub, query);
 	}
 
+	@RelationshipSearchThrottle()
 	@Get('count')
 	@HttpCode(200)
 	@ApiQueryDto(FriendCountDto)
@@ -67,6 +70,7 @@ export class FriendController {
 		return this.service.countFriends(user.sub, search);
 	}
 
+	@RelationshipSearchThrottle()
 	@Post('ids')
 	@HttpCode(200)
 	@ApiBodyDto(FriendIdsPaginateDto)
@@ -85,6 +89,7 @@ export class FriendController {
 		return this.service.friendsCursorFromIds(user.sub, body);
 	}
 
+	@RelationshipSearchThrottle()
 	@Post('ids/count')
 	@HttpCode(200)
 	@ApiBodyDto(FriendIdsCountDto)

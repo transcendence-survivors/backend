@@ -36,12 +36,14 @@ import {
 } from '@nestjs/swagger';
 import { ApiQueryDto } from '@/shared/decorators/api-query-dto.decorator';
 import { ApiBodyDto } from '@/shared/decorators/api-body-dto.decorator';
+import { RelationshipSearchThrottle } from '@/core/rate-limit/decorators/throttle-presets.decorator';
 
 @Controller('blocks')
 @UseGuards(JWTAccessGuard)
 export class BlockController {
 	constructor(private readonly service: BlockService) {}
 
+	@RelationshipSearchThrottle()
 	@Get()
 	@HttpCode(200)
 	@ApiQueryDto(BlockPaginateDto)
@@ -59,6 +61,7 @@ export class BlockController {
 		return this.service.blockCursor(sub, query);
 	}
 
+	@RelationshipSearchThrottle()
 	@Get('count')
 	@HttpCode(200)
 	@ApiQueryDto(BlockCountDto)

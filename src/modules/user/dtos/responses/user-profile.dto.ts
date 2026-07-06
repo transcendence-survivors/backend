@@ -1,40 +1,16 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Expose } from 'class-transformer';
-import { UserGender } from '@prisma-generated/enums';
 import { UserListItemResponseDto } from './user-list-item-response.dto';
 
 export class UserProfileResponseDto extends UserListItemResponseDto {
 	@ApiProperty({
-		example: 'johndoe@example.com',
-		description: "The user's email address",
+		description: "The URL of the user's cover image",
+		example: 'https://example.com/cover.jpg',
 		type: String,
+		nullable: true,
 	})
 	@Expose()
-	email!: string;
-
-	@ApiProperty({
-		description: "The user's gender",
-		enum: UserGender,
-		example: UserGender.MALE,
-	})
-	@Expose()
-	gender!: UserGender;
-
-	@ApiProperty({
-		description: "The user's first name",
-		example: 'John',
-		type: String,
-	})
-	@Expose()
-	firstName!: string;
-
-	@ApiProperty({
-		description: "The user's last name",
-		example: 'Doe',
-		type: String,
-	})
-	@Expose()
-	lastName!: string;
+	coverImageUrl!: string | null;
 
 	@ApiProperty({
 		description: "The user's bio",
