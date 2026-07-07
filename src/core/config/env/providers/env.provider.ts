@@ -16,6 +16,14 @@ interface Smtp {
 	nameFrom: string;
 }
 
+interface Minio {
+	endpoint: string;
+	publicEndpoint: string;
+	accessKey: string;
+	secretKey: string;
+	bucket: string;
+}
+
 type PasswordResetToken = Omit<Token, 'secret'>;
 
 export interface Env {
@@ -23,6 +31,7 @@ export interface Env {
 	refreshToken: Token;
 	passwordResetToken: PasswordResetToken;
 	smtp: Smtp;
+	minio: Minio;
 
 	frontEndUrl: string;
 	databaseUrl: string;
@@ -42,6 +51,14 @@ export const EnvProvider: Provider<Env> = {
 			pass: env.SMTP_PASS,
 			emailFrom: env.SMTP_FROM_EMAIL,
 			nameFrom: env.SMTP_FROM_NAME,
+		},
+
+		minio: {
+			endpoint: env.MINIO_ENDPOINT,
+			publicEndpoint: env.MINIO_PUBLIC_ENDPOINT,
+			accessKey: env.MINIO_ROOT_USER,
+			secretKey: env.MINIO_ROOT_PASSWORD,
+			bucket: env.MINIO_BUCKET,
 		},
 
 		accessToken: {

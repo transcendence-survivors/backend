@@ -15,6 +15,7 @@ export class PostRepository {
 		id: true,
 		content: true,
 		createdAt: true,
+		imageUrl: true,
 		author: {
 			select: UserQueryHelper.userSelect,
 		},
@@ -32,11 +33,12 @@ export class PostRepository {
 		return this.prisma.post.findMany();
 	}
 
-	create(userId: string, dto: CreatePostDto) {
+	create(userId: string, dto: CreatePostDto, imageUrl?: string) {
 		return this.prisma.post.create({
 			data: {
 				authorId: userId,
 				content: dto.content,
+				imageUrl,
 			},
 		});
 	}
@@ -46,10 +48,10 @@ export class PostRepository {
 			where: {
 				id: postId,
 			},
-
 			select: {
 				authorId: true,
 				id: true,
+				imageUrl: true,
 			},
 		});
 	}

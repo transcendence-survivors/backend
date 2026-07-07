@@ -8,6 +8,7 @@ import { SharedModule } from '@/shared/shared.module';
 import { PostModule } from './post/post.module';
 import { RelationshipsModule } from './relationship/relationship.module';
 import { PresenceModule } from './presence/presence.module';
+import { LikeModule } from './like/like.module';
 
 @Module({
 	imports: [
@@ -19,6 +20,7 @@ import { PresenceModule } from './presence/presence.module';
 		PostModule,
 		RelationshipsModule,
 		PresenceModule,
+		LikeModule,
 	],
 })
 export class AppModule {}

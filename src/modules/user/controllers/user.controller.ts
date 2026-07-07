@@ -1,4 +1,15 @@
-import { Controller, Get, Param, HttpCode, Query } from '@nestjs/common';
+import {
+	Controller,
+	Get,
+	Param,
+	HttpCode,
+	Query,
+	UseGuards,
+	Post,
+	UseInterceptors,
+	BadRequestException,
+	UploadedFile,
+} from '@nestjs/common';
 import { UserService } from '../services/user.service';
 import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
 import { ApiSuccessResponse } from '@/shared/decorators/api-success-response.decorator';
@@ -16,9 +27,50 @@ import { ApiNoContentResponse, ApiParam } from '@nestjs/swagger';
 import { ApiQueryDto } from '@/shared/decorators/api-query-dto.decorator';
 import { SearchThrottle } from '@/core/rate-limit/decorators/throttle-presets.decorator';
 
+import { FileInterceptor } from '@nestjs/platform-express';
+import { extname } from 'path';
+import { JWTAccessGuard } from '@/core/security/guards/jwt-access.guard';
+import type { JwtAccessPayload } from '@/core/security/interfaces/jwt-payload.interface';
+import { CurrentUser } from '@/core/security/decorators/current-user.decorator';
+import { StorageService } from '@/core/storage/services/storage.service';
+
 @Controller('users')
 export class UserController {
-	constructor(private readonly userService: UserService) {}
+	constructor(
+		private readonly userService: UserService,
+		private readonly storageService: StorageService,
+	) {}
+
+	@UseGuards(JWTAccessGuard)
+	@Post('me/avatar')
+	@UseInterceptors(
+		FileInterceptor('file', {
+			limits: { fileSize: 5 * 1024 * 1024 },
+			fileFilter: (_req, file, callback) => {
+				if (!file.mimetype.startsWith('image/')) {
+					callback(
+						new BadRequestException('File must be an image'),
+						false,
+					);
+					return;
+				}
+				callback(null, true);
+			},
+		}),
+	)
+	@ResponseEnvelope('Avatar uploaded successfully')
+	async uploadAvatar(
+		@UploadedFile() file: Express.Multer.File,
+		@CurrentUser() user: JwtAccessPayload,
+	) {
+		const key = `avatars/${user.sub}-${Date.now()}${extname(file.originalname)}`;
+		const url = await this.storageService.upload(
+			key,
+			file.buffer,
+			file.mimetype,
+		);
+		return { url };
+	}
 
 	@SearchThrottle()
 	@Get()

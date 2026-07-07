@@ -8,7 +8,12 @@ import {
 	Post,
 	Query,
 	UseGuards,
+	UseInterceptors,
+	UploadedFile,
+	BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { extname } from 'path';
 import { PostService } from '../services/post.service';
 import { CreatePostDto } from '../dto/post.dto';
 import { JWTAccessGuard } from '@/core/security/guards/jwt-access.guard';
@@ -17,10 +22,14 @@ import { CurrentUser } from '@/core/security/decorators/current-user.decorator';
 import { PostQueryDto } from '../dto/post-querry.dto';
 import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
 import { ApiNoContentResponse } from '@nestjs/swagger';
+import { StorageService } from '@/core/storage/services/storage.service';
 
 @Controller('posts')
 export class PostController {
-	constructor(private readonly postService: PostService) {}
+	constructor(
+		private readonly postService: PostService,
+		private readonly storageService: StorageService,
+	) {}
 
 	@Get()
 	@HttpCode(200)
@@ -29,15 +38,52 @@ export class PostController {
 		return this.postService.findCursor(query);
 	}
 
+	@UseGuards(JWTAccessGuard)
 	@Post()
 	@HttpCode(201)
-	@UseGuards(JWTAccessGuard)
 	@ResponseEnvelope('Post created successfully')
-	writePost(
+	@UseInterceptors(
+		FileInterceptor('file', {
+			limits: { fileSize: 10 * 1024 * 1024 },
+			fileFilter: (_req, file, callback) => {
+				if (!file.mimetype.startsWith('image/')) {
+					callback(
+						new BadRequestException('File must be an image'),
+						false,
+					);
+					return;
+				}
+				callback(null, true);
+			},
+		}),
+	)
+	async writePost(
 		@Body() createPostDto: CreatePostDto,
 		@CurrentUser() user: JwtAccessPayload,
+		@UploadedFile() file: Express.Multer.File,
 	) {
-		return this.postService.create(user.sub, createPostDto);
+		if (!createPostDto.content && !file)
+			throw new BadRequestException(
+				'Post must have content length or an image',
+			);
+		let imageUrl: string | undefined;
+		if (file) {
+			imageUrl = await this.storageService.upload(
+				`posts/${user.sub}-${Date.now()}${extname(file.originalname)}`,
+				file.buffer,
+				file.mimetype,
+			);
+		}
+		try {
+			return await this.postService.create(
+				user.sub,
+				createPostDto,
+				imageUrl,
+			);
+		} catch (err) {
+			if (imageUrl) await this.storageService.delete(imageUrl);
+			throw err;
+		}
 	}
 
 	@UseGuards(JWTAccessGuard)
@@ -50,12 +96,4 @@ export class PostController {
 	) {
 		await this.postService.delete(id, user.sub);
 	}
-
-	//utiliser this.ok
-
-	//@CurrentUser()user: JwtAccessPayloadParams
-	//faire une liste de post que je recupere
-	//minimum 1 caractere pour le dto
-	//verifier que l'utilisateur est connecte quand il envoie une requete
-	//se base sur la route refresh et la strategie des tokens pour comprendre
 }

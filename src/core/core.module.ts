@@ -5,6 +5,7 @@ import { ConfigModule } from '@nestjs/config';
 import { SecurityModule } from './security/security.module';
 import { WebsocketModule } from './websocket/websocket.module';
 import { RateLimitModule } from './rate-limit/rate-limit.module';
+import { StorageModule } from './storage/storage.module';
 
 @Global()
 @Module({
@@ -15,6 +16,7 @@ import { RateLimitModule } from './rate-limit/rate-limit.module';
 		SecurityModule,
 		WebsocketModule,
 		RateLimitModule,
+		StorageModule,
 	],
 	exports: [
 		EmailModule,
@@ -23,6 +25,7 @@ import { RateLimitModule } from './rate-limit/rate-limit.module';
 		WebsocketModule,
 		SecurityModule,
 		RateLimitModule,
+		StorageModule,
 	],
 })
 export class CoreModule {}
