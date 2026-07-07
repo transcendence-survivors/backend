@@ -41,7 +41,6 @@ export class PostController {
 	@UseGuards(JWTAccessGuard)
 	@Post()
 	@HttpCode(201)
-	@ResponseEnvelope('Post created successfully')
 	@UseInterceptors(
 		FileInterceptor('file', {
 			limits: { fileSize: 10 * 1024 * 1024 },
@@ -57,15 +56,14 @@ export class PostController {
 			},
 		}),
 	)
+	@ResponseEnvelope('Post created successfully')
 	async writePost(
-		@Body() createPostDto: CreatePostDto,
+		@Body() { content }: CreatePostDto,
 		@CurrentUser() user: JwtAccessPayload,
 		@UploadedFile() file: Express.Multer.File,
 	) {
-		if (!createPostDto.content && !file)
-			throw new BadRequestException(
-				'Post must have content length or an image',
-			);
+		if (!content && !file)
+			throw new BadRequestException('Post must have content or an image');
 		let imageUrl: string | undefined;
 		if (file) {
 			imageUrl = await this.storageService.upload(
@@ -77,7 +75,7 @@ export class PostController {
 		try {
 			return await this.postService.create(
 				user.sub,
-				createPostDto,
+				{ content },
 				imageUrl,
 			);
 		} catch (err) {

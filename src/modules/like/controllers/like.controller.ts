@@ -1,6 +1,4 @@
-import { BaseController } from '@/shared/base.controller';
 import {
-	Body,
 	Controller,
 	Delete,
 	Get,
@@ -12,15 +10,15 @@ import { LikeService } from '../services/like.service';
 import { JWTAccessGuard } from '@/core/security/guards/jwt-access.guard';
 import { CurrentUser } from '@/core/security/decorators/current-user.decorator';
 import type { JwtAccessPayload } from '@/core/security/interfaces/jwt-payload.interface';
+import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
 
 @UseGuards(JWTAccessGuard)
 @Controller('likes')
-export class LikeController extends BaseController {
-	constructor(private readonly likeService: LikeService) {
-		super();
-	}
+export class LikeController {
+	constructor(private readonly likeService: LikeService) {}
 
 	@Post(':postId')
+	@ResponseEnvelope('post liked successfully')
 	addLike(
 		@Param('postId') postId: string,
 		@CurrentUser() user: JwtAccessPayload,
@@ -29,6 +27,7 @@ export class LikeController extends BaseController {
 	}
 
 	@Delete(':postId')
+	@ResponseEnvelope('post unliked successfully')
 	deleteLike(
 		@Param('postId') postId: string,
 		@CurrentUser() user: JwtAccessPayload,
@@ -36,6 +35,7 @@ export class LikeController extends BaseController {
 		return this.likeService.deleteLike(postId, user.sub);
 	}
 
+	@ResponseEnvelope('like info retrieved successfully')
 	@Get(':postId')
 	async getLikeInfo(
 		@Param('postId') postId: string,
