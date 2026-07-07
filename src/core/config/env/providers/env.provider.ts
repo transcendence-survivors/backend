@@ -16,12 +16,18 @@ interface Smtp {
 	nameFrom: string;
 }
 
+export interface MinioBucket {
+	avatar: string;
+	postImage: string;
+	postVideo: string;
+}
+
 interface Minio {
 	endpoint: string;
 	publicEndpoint: string;
 	accessKey: string;
 	secretKey: string;
-	bucket: string;
+	buckets: MinioBucket;
 }
 
 type PasswordResetToken = Omit<Token, 'secret'>;
@@ -58,7 +64,11 @@ export const EnvProvider: Provider<Env> = {
 			publicEndpoint: env.MINIO_PUBLIC_ENDPOINT,
 			accessKey: env.MINIO_ROOT_USER,
 			secretKey: env.MINIO_ROOT_PASSWORD,
-			bucket: env.MINIO_BUCKET,
+			buckets: {
+				avatar: env.MINIO_BUCKET_AVATARS,
+				postImage: env.MINIO_BUCKET_POST_IMAGES,
+				postVideo: env.MINIO_BUCKET_POST_VIDEOS,
+			},
 		},
 
 		accessToken: {

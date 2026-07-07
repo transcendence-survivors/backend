@@ -12,5 +12,4 @@ interface FriendShipAcceptedDirection {
 }
 
 export type FriendShipStatusDirectionParams =
-	| FriendShipPendingDirection
-	| FriendShipAcceptedDirection;
+	FriendShipPendingDirection | FriendShipAcceptedDirection;

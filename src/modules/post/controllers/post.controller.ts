@@ -66,11 +66,12 @@ export class PostController {
 			throw new BadRequestException('Post must have content or an image');
 		let imageUrl: string | undefined;
 		if (file) {
-			imageUrl = await this.storageService.upload(
-				`posts/${user.sub}-${Date.now()}${extname(file.originalname)}`,
-				file.buffer,
-				file.mimetype,
-			);
+			imageUrl = await this.storageService.upload({
+				fileName: `posts/${user.sub}-${Date.now()}${extname(file.originalname)}`,
+				contentType: file.mimetype,
+				body: file.buffer,
+				bucket: 'post-image',
+			});
 		}
 		try {
 			return await this.postService.create(

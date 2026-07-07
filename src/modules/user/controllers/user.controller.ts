@@ -64,11 +64,12 @@ export class UserController {
 		@CurrentUser() user: JwtAccessPayload,
 	) {
 		const key = `avatars/${user.sub}-${Date.now()}${extname(file.originalname)}`;
-		const url = await this.storageService.upload(
-			key,
-			file.buffer,
-			file.mimetype,
-		);
+		const url = await this.storageService.upload({
+			fileName: key,
+			body: file.buffer,
+			contentType: file.mimetype,
+			bucket: 'avatar',
+		});
 		return { url };
 	}
 
