@@ -6,18 +6,33 @@ import { PostDoesNotExistException } from '../exceptions/post-unexisting.excepti
 import { PostQueryDto } from '../dto/post-querry.dto';
 import { StorageService } from '@/core/storage/services/storage.service';
 import { CursorService } from '@/shared/services/cursor.service';
+import { LikeRepository } from '@/modules/like/repositories/like.repository';
 
 @Injectable()
 export class PostService {
 	constructor(
 		private readonly postRepository: PostRepository,
+		private readonly likeRepository: LikeRepository,
 		private readonly cursor: CursorService,
 		private readonly storageService: StorageService,
 	) {}
 
-	async findCursor(query: PostQueryDto) {
-		const data = await this.postRepository.cursor(query);
-		return this.cursor.create(data, query.limit, (post) => post.id);
+	async findCursor(query: PostQueryDto, userId?: string) {
+		const posts = await this.postRepository.cursor(query);
+		const ids = posts.map((p) => p.id);
+
+		const likedIds = userId
+			? await this.likeRepository.findLikedPostIds(userId, ids)
+			: [];
+		const likedSet = new Set(likedIds);
+
+		const enriched = posts.map((p) => ({
+			...p,
+			likeCount: p._count.likes,
+			isLiked: likedSet.has(p.id),
+		}));
+
+		return this.cursor.create(enriched, query.limit, (post) => post.id);
 	}
 
 	findAll() {

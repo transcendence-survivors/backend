@@ -5,6 +5,7 @@ import { DbContext } from '@/core/database/uow/db-context';
 import { PostOrderByWithRelationInput } from '@prisma-generated/models';
 import { PostQueryDto } from '../dto/post-querry.dto';
 import { UserQueryHelper } from '@/modules/user/user.public-api';
+import type { PostSelect } from '@prisma-generated/models';
 
 export const POST_ORDER_BY = ['date-asc', 'date-desc'] as const;
 export type PostOrderBy = (typeof POST_ORDER_BY)[number];
@@ -19,7 +20,8 @@ export class PostRepository {
 		author: {
 			select: UserQueryHelper.userSelect,
 		},
-	};
+		_count: { select: { likes: true } },
+	} satisfies PostSelect;
 	private readonly orderByCursorMapping: Record<
 		PostOrderBy,
 		PostOrderByWithRelationInput[]

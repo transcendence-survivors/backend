@@ -23,6 +23,7 @@ import { PostQueryDto } from '../dto/post-querry.dto';
 import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
 import { ApiNoContentResponse } from '@nestjs/swagger';
 import { StorageService } from '@/core/storage/services/storage.service';
+import { JWTOptionalAccessGuard } from '@/core/security/guards/jwt-optional-access-guard';
 
 @Controller('posts')
 export class PostController {
@@ -31,11 +32,15 @@ export class PostController {
 		private readonly storageService: StorageService,
 	) {}
 
+	@UseGuards(JWTOptionalAccessGuard)
 	@Get()
 	@HttpCode(200)
 	@ResponseEnvelope('Post fetch successfully')
-	async getPosts(@Query() query: PostQueryDto) {
-		return this.postService.findCursor(query);
+	async getPosts(
+		@Query() query: PostQueryDto,
+		@CurrentUser() user: JwtAccessPayload | null,
+	) {
+		return this.postService.findCursor(query, user?.sub);
 	}
 
 	@UseGuards(JWTAccessGuard)

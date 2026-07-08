@@ -5,6 +5,15 @@ import { Injectable } from '@nestjs/common';
 export class LikeRepository {
 	constructor(private readonly prisma: PrismaService) {}
 
+	findLikedPostIds(userId: string, postIds: string[]) {
+		return this.prisma.like
+			.findMany({
+				where: { userId, postId: { in: postIds } },
+				select: { postId: true },
+			})
+			.then((rows) => rows.map((r) => r.postId));
+	}
+
 	addLike(postId: string, userId: string) {
 		return this.prisma.like.create({
 			data: {
