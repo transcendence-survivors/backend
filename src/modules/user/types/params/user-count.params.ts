@@ -1,6 +1,5 @@
-interface UsersCountParams {
-	userId?: string;
-	search?: string;
-}
+import { UserFeedParams } from './user-feed.params';
 
-export type { UsersCountParams };
+export type UsersCountParams = {
+	search?: string;
+} & UserFeedParams;

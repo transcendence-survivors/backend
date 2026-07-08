@@ -15,6 +15,8 @@ import { BlockQueryHelper } from './block-query.helper';
 @Injectable()
 export class BlockRepository {
 	private static readonly select = {
+		id: true,
+		createdAt: true,
 		blocked: {
 			select: UserQueryHelper.userSelect,
 		},

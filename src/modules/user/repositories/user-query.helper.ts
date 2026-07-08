@@ -3,7 +3,8 @@ import {
 	UserWhereInput,
 } from '@prisma-generated/internal/prismaNamespaceBrowser';
 import { UserOrderByEnum } from '../types/enums/user-order-by.enum';
-import { UserListItem } from '../types/records/user-list-item.type';
+import { UserListItem } from '../../../contracts/types/user/user-list-item.type';
+import { FriendshipState } from '@prisma-generated/enums';
 
 export class UserQueryHelper {
 	public static readonly userSelect = {
@@ -74,5 +75,46 @@ export class UserQueryHelper {
 				],
 			},
 		};
+	}
+
+	public static friendsWhere(userId: string): UserWhereInput {
+		return {
+			...UserQueryHelper.notBlockedWhere(userId),
+			OR: [
+				{
+					friendshipsA: {
+						some: {
+							userBId: userId,
+							state: FriendshipState.ACCEPTED,
+						},
+					},
+				},
+				{
+					friendshipsB: {
+						some: {
+							userAId: userId,
+							state: FriendshipState.ACCEPTED,
+						},
+					},
+				},
+			],
+		};
+	}
+
+	public static notFriendsWhere(userId: string): UserWhereInput {
+		return {
+			...UserQueryHelper.notBlockedWhere(userId),
+			AND: [
+				{ id: { not: userId } },
+				{ friendshipsA: { none: { userBId: userId } } },
+				{ friendshipsB: { none: { userAId: userId } } },
+			],
+		};
+	}
+
+	public static feedWhere(userId: string, feed: boolean): UserWhereInput {
+		return feed
+			? UserQueryHelper.friendsWhere(userId)
+			: UserQueryHelper.notFriendsWhere(userId);
 	}
 }

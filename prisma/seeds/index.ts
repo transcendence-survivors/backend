@@ -6,36 +6,49 @@ import {
 	seedReceiveFriendRequests,
 	seedSendFriendRequests,
 } from './friends';
+import { seedBlocksBlocked, seedBlocksBlocker } from './blocks';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
 
 const main = async () => {
 	const { totalAdded, users } = await seedUsers(prisma);
-	const oneThird = Math.floor(users.length / 3);
+	const oneFifth = Math.floor(users.length / 5);
 
 	const user = users[0];
 	console.log(`Seeding friendships for user: ${user.id} (${user.username})`);
 
-	const firstThirdUsers = users.slice(1, oneThird);
-	const secondThirdUsers = users.slice(oneThird, oneThird * 2);
-	const lastThirdUsers = users.slice(oneThird * 2);
+	const firstFifthUsers = users.slice(1, oneFifth);
+	const secondFifthUsers = users.slice(oneFifth, oneFifth * 2);
+	const thirdFifthUsers = users.slice(oneFifth * 2, oneFifth * 3);
+	const fourthFifthUsers = users.slice(oneFifth * 3, oneFifth * 4);
+	const lastFifthUsers = users.slice(oneFifth * 4);
 
 	await Promise.all([
 		seedSendFriendRequests(
 			prisma,
 			user.id,
-			secondThirdUsers.map((u) => u.id),
+			firstFifthUsers.map((u) => u.id),
 		),
 		seedReceiveFriendRequests(
 			prisma,
 			user.id,
-			firstThirdUsers.map((u) => u.id),
+			secondFifthUsers.map((u) => u.id),
 		),
 		seedAddFriends(
 			prisma,
 			user.id,
-			lastThirdUsers.map((u) => u.id),
+			thirdFifthUsers.map((u) => u.id),
+		),
+		seedBlocksBlocker(
+			prisma,
+			user.id,
+			fourthFifthUsers.map((u) => u.id),
+		),
+		seedBlocksBlocked(
+			prisma,
+			user.id,
+			lastFifthUsers.map((u) => u.id),
 		),
 	]);
 

@@ -1,4 +1,4 @@
-export type UserEmailOrUsernameParams = {
+export interface UserEmailOrUsernameParams {
 	email?: string;
 	username?: string;
-};
+}

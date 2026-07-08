@@ -17,6 +17,8 @@ import { UserLocalePreference } from '../types/records/user-locale-preference.ty
 import { UserCreated } from '../types/records/user-created.type';
 import { UserNotFoundException } from '../exceptions/user.not-found.exception';
 import { UserCreateParams } from '@/contracts/types/user/user-create.params';
+import { UsersCursorParams } from '../types/params/user-cursor.params';
+import { UsersCountParams } from '../types/params/user-count.params';
 
 @Injectable()
 export class UserService implements IUserService {
@@ -77,12 +79,14 @@ export class UserService implements IUserService {
 
 	async listUsers(
 		dto: UserPaginateDto,
+		feedParams?: UsersCursorParams['feedParams'],
 	): Promise<UserPaginatedListResponseDto> {
 		const users = await this.repo.cursor({
 			limit: dto.limit,
 			cursor: dto.cursor,
 			search: dto.search,
 			orderBy: dto.orderBy,
+			feedParams,
 		});
 
 		const dtos = this.mapper.toListItemDtoList(users);
@@ -90,9 +94,13 @@ export class UserService implements IUserService {
 		return this.mapper.toPaginatedListDto(result);
 	}
 
-	async countUsers(dto: UserPaginateDto): Promise<UserCountResponseDto> {
+	async countUsers(
+		dto: UserPaginateDto,
+		feedParams?: UsersCountParams['feedParams'],
+	): Promise<UserCountResponseDto> {
 		const count = await this.repo.cursorCount({
 			search: dto.search,
+			feedParams,
 		});
 		return this.mapper.toCountDto(count);
 	}

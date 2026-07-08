@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { DbContext } from '@/core/database/uow/db-context';
 import { UserQueryHelper } from './user-query.helper';
 import type { UsersCountParams } from '../types/params/user-count.params';
-import type { UserListItem } from '../types/records/user-list-item.type';
+import type { UserListItem } from '../../../contracts/types/user/user-list-item.type';
 import type { UserProfileRecord } from '../types/records/user-profile.type';
 import type { UsersCursorParams } from '../types/params/user-cursor.params';
 import type { UserCreated } from '../types/records/user-created.type';
@@ -22,16 +22,21 @@ export class UserRepository {
 
 	constructor(private readonly prisma: PrismaService) {}
 
-	cursor(
-		{ limit, cursor, search, orderBy, userId }: UsersCursorParams,
+	async cursor(
+		{ limit, cursor, search, orderBy, feedParams }: UsersCursorParams,
 		ctx?: DbContext,
 	): Promise<UserListItem[]> {
 		const client = ctx?.client ?? this.prisma;
+
 		return client.user.findMany({
 			...UserQueryHelper.pagination(limit, cursor),
 			where: {
 				...(search && UserQueryHelper.searchWhere(search)),
-				...(userId && UserQueryHelper.notBlockedWhere(userId)),
+				...(feedParams &&
+					UserQueryHelper.feedWhere(
+						feedParams.userId,
+						feedParams.feed,
+					)),
 			},
 			orderBy: UserQueryHelper.orderBy[orderBy],
 			select: {
@@ -44,14 +49,18 @@ export class UserRepository {
 	}
 
 	cursorCount(
-		{ search, userId }: UsersCountParams,
+		{ search, feedParams }: UsersCountParams,
 		ctx?: DbContext,
 	): Promise<number> {
 		const client = ctx?.client ?? this.prisma;
 		return client.user.count({
 			where: {
 				...(search && UserQueryHelper.searchWhere(search)),
-				...(userId && UserQueryHelper.notBlockedWhere(userId)),
+				...(feedParams &&
+					UserQueryHelper.feedWhere(
+						feedParams.userId,
+						feedParams.feed,
+					)),
 			},
 		});
 	}

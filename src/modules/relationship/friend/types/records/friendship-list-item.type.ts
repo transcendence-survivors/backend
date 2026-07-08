@@ -1,4 +1,4 @@
-import { UserListItem } from '@/modules/user/types/records/user-list-item.type';
+import { UserListItem } from '@/contracts/types/user/user-list-item.type';
 import { FriendshipState } from '@prisma-generated/enums';
 
 export interface FriendShipListItem {

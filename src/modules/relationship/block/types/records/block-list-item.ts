@@ -1,3 +1,7 @@
-import { UserListItem } from '@/modules/user/types/records/user-list-item.type';
+import { UserListItem } from '@/contracts/types/user/user-list-item.type';
 
-export type BlockedListItem = UserListItem;
+export type BlockedListItem = {
+	id: string;
+	since: Date;
+	blocked: UserListItem;
+};

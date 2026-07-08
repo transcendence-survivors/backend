@@ -19,6 +19,8 @@ import { BlockCreatedResponseDto } from '../dtos/responses/block-created-respons
 import { BlockByIdResponse } from '../types/records/block-by-id-response';
 import { BlockCountResponseDto } from '../dtos/responses/block-count-response.dto';
 import { BlockCountDto } from '../dtos/requests/block-count.dto';
+import { BlockListItemSelect } from '../types/records/block-list-item-select';
+import { BlockedListItem } from '../types/records/block-list-item';
 
 @Injectable()
 export class BlockService implements IBlockService {
@@ -29,6 +31,19 @@ export class BlockService implements IBlockService {
 		private readonly eventEmitter: EventEmitter2,
 		private readonly mapper: BlockMapper,
 	) {}
+
+	private toListItem(block: BlockListItemSelect): BlockedListItem {
+		return {
+			id: block.id,
+			since: block.createdAt,
+			blocked: {
+				id: block.blocked.id,
+				username: block.blocked.username,
+				displayName: block.blocked.displayName,
+				avatarUrl: block.blocked.avatarUrl,
+			},
+		};
+	}
 
 	async blockCursor(
 		blockerId: string,
@@ -42,7 +57,7 @@ export class BlockService implements IBlockService {
 			orderBy,
 		});
 
-		const blockedUsers = data.map((block) => block.blocked);
+		const blockedUsers = data.map((block) => this.toListItem(block));
 		const dtos = this.mapper.toListDto(blockedUsers);
 		const result = this.cursor.create(dtos, limit, (user) => user.id);
 		return this.mapper.toPaginatedDto(result);
@@ -69,7 +84,7 @@ export class BlockService implements IBlockService {
 			blockerId,
 			blockedId,
 		});
-		if (!exist) throw new BlockConflictException();
+		if (exist) throw new BlockConflictException();
 
 		const block = await this.repo.save({ blockerId, blockedId });
 		this.eventEmitter.emit(
@@ -77,7 +92,8 @@ export class BlockService implements IBlockService {
 			new BlockCreatedEvent(blockerId, blockedId),
 		);
 
-		return this.mapper.toCreatedDto(block.blocked);
+		const blockedUser = this.toListItem(block);
+		return this.mapper.toCreatedDto(blockedUser);
 	}
 	async remove(blockerId: string, blockedId: string): Promise<void> {
 		if (blockerId === blockedId) throw new SelfUnblockBadException();

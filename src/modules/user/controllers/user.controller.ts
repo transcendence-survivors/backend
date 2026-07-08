@@ -41,38 +41,6 @@ export class UserController {
 		private readonly storageService: StorageService,
 	) {}
 
-	@UseGuards(JWTAccessGuard)
-	@Post('me/avatar')
-	@UseInterceptors(
-		FileInterceptor('file', {
-			limits: { fileSize: 5 * 1024 * 1024 },
-			fileFilter: (_req, file, callback) => {
-				if (!file.mimetype.startsWith('image/')) {
-					callback(
-						new BadRequestException('File must be an image'),
-						false,
-					);
-					return;
-				}
-				callback(null, true);
-			},
-		}),
-	)
-	@ResponseEnvelope('Avatar uploaded successfully')
-	async uploadAvatar(
-		@UploadedFile() file: Express.Multer.File,
-		@CurrentUser() user: JwtAccessPayload,
-	) {
-		const key = `avatars/${user.sub}-${Date.now()}${extname(file.originalname)}`;
-		const url = await this.storageService.upload({
-			fileName: key,
-			body: file.buffer,
-			contentType: file.mimetype,
-			bucket: 'avatar',
-		});
-		return { url };
-	}
-
 	@SearchThrottle()
 	@Get()
 	@HttpCode(200)
@@ -146,5 +114,37 @@ export class UserController {
 		@Param('username') username: string,
 	): Promise<UserProfileResponseDto> {
 		return this.userService.getProfile(username);
+	}
+
+	@UseGuards(JWTAccessGuard)
+	@Post('me/avatar')
+	@UseInterceptors(
+		FileInterceptor('file', {
+			limits: { fileSize: 5 * 1024 * 1024 },
+			fileFilter: (_req, file, callback) => {
+				if (!file.mimetype.startsWith('image/')) {
+					callback(
+						new BadRequestException('File must be an image'),
+						false,
+					);
+					return;
+				}
+				callback(null, true);
+			},
+		}),
+	)
+	@ResponseEnvelope('Avatar uploaded successfully')
+	async uploadAvatar(
+		@UploadedFile() file: Express.Multer.File,
+		@CurrentUser() user: JwtAccessPayload,
+	) {
+		const key = `avatars/${user.sub}-${Date.now()}${extname(file.originalname)}`;
+		const url = await this.storageService.upload({
+			fileName: key,
+			body: file.buffer,
+			contentType: file.mimetype,
+			bucket: 'avatar',
+		});
+		return { url };
 	}
 }
