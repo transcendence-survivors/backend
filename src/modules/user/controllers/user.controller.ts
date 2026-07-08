@@ -33,6 +33,7 @@ import { JWTAccessGuard } from '@/core/security/guards/jwt-access.guard';
 import type { JwtAccessPayload } from '@/core/security/interfaces/jwt-payload.interface';
 import { CurrentUser } from '@/core/security/decorators/current-user.decorator';
 import { StorageService } from '@/core/storage/services/storage.service';
+import { UserCountDto } from '../dtos/requests/user-count.dto';
 
 @Controller('users')
 export class UserController {
@@ -60,13 +61,13 @@ export class UserController {
 	@SearchThrottle()
 	@Get('count')
 	@HttpCode(200)
-	@ApiQueryDto(UserPaginateDto)
+	@ApiQueryDto(UserCountDto)
 	@ApiSuccessResponse(UserCountResponseDto)
 	@ApiValidationErrorResponse({
 		search: ['search must be a string'],
 	})
 	@ResponseEnvelope('Users count retrieved successfully')
-	count(@Query() query: UserPaginateDto): Promise<UserCountResponseDto> {
+	count(@Query() query: UserCountDto): Promise<UserCountResponseDto> {
 		return this.userService.countUsers(query);
 	}
 
@@ -100,7 +101,7 @@ export class UserController {
 		return this.userService.checkEmailAvailability(email);
 	}
 
-	@Get(':username')
+	@Get('profile/:username')
 	@HttpCode(200)
 	@ApiParam({
 		name: 'username',

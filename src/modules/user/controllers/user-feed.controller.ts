@@ -3,7 +3,6 @@ import { Controller, Get, HttpCode, Query, UseGuards } from '@nestjs/common';
 import { UserService } from '../services/user.service';
 import { ApiQueryDto } from '@/shared/decorators/api-query-dto.decorator';
 import { ApiSuccessResponse } from '@/shared/decorators/api-success-response.decorator';
-import { UserPaginateDto } from '../dtos/requests/user-paginate.dto';
 import { UserPaginatedListResponseDto } from '../dtos/responses/user-paginated-response.dto';
 import { ApiValidationErrorResponse } from '@/shared/decorators/api-validation-error-response.decorator';
 import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
@@ -11,77 +10,44 @@ import { CurrentUser } from '@/core/security/decorators/current-user.decorator';
 import type { JwtAccessPayload } from '@/core/security/interfaces/jwt-payload.interface';
 import { SearchThrottle } from '@/core/rate-limit/decorators/throttle-presets.decorator';
 import { UserCountResponseDto } from '../dtos/responses/user-count-response.dto';
+import { UserFeedPaginateDto } from '../dtos/requests/user-feed-paginate.dto';
+import { UserFeedCountDto } from '../dtos/requests/user-feed-count.dto';
 
 @UseGuards(JWTAccessGuard)
 @Controller('users/feed')
 export class UserFeedController {
 	constructor(private readonly userService: UserService) {}
 
-	@UseGuards(JWTAccessGuard)
+	@SearchThrottle()
 	@Get()
 	@HttpCode(200)
-	@ApiQueryDto(UserPaginateDto)
+	@ApiQueryDto(UserFeedPaginateDto)
 	@ApiSuccessResponse(UserPaginatedListResponseDto)
 	@ApiValidationErrorResponse({
 		limit: ['limit must be a number'],
 		orderBy: ['orderBy must be a valid enum value'],
 	})
 	@ResponseEnvelope('Users listed successfully')
-	listFeed(
+	list(
 		@CurrentUser() { sub: userId }: JwtAccessPayload,
-		@Query() query: UserPaginateDto,
+		@Query() query: UserFeedPaginateDto,
 	): Promise<UserPaginatedListResponseDto> {
-		return this.userService.listUsers(query, { userId, feed: true });
+		return this.userService.listUsers(query, { userId, feed: query.feed });
 	}
 
-	@SearchThrottle()
-	@UseGuards(JWTAccessGuard)
-	@Get('not/count')
+	@Get('count')
 	@HttpCode(200)
-	@ApiQueryDto(UserPaginateDto)
+	@ApiQueryDto(UserFeedCountDto)
 	@ApiSuccessResponse(UserCountResponseDto)
 	@ApiValidationErrorResponse({
 		search: ['search must be a string'],
+		feed: ['feed must be a valid enum value'],
 	})
 	@ResponseEnvelope('Users count retrieved successfully')
-	countFeed(
+	count(
 		@CurrentUser() { sub: userId }: JwtAccessPayload,
-		@Query() query: UserPaginateDto,
+		@Query() query: UserFeedCountDto,
 	): Promise<UserCountResponseDto> {
-		return this.userService.countUsers(query, { userId, feed: true });
-	}
-
-	@UseGuards(JWTAccessGuard)
-	@Get('not')
-	@HttpCode(200)
-	@ApiQueryDto(UserPaginateDto)
-	@ApiSuccessResponse(UserPaginatedListResponseDto)
-	@ApiValidationErrorResponse({
-		limit: ['limit must be a number'],
-		orderBy: ['orderBy must be a valid enum value'],
-	})
-	@ResponseEnvelope('Users listed successfully')
-	listNotFeed(
-		@CurrentUser() { sub: userId }: JwtAccessPayload,
-		@Query() query: UserPaginateDto,
-	): Promise<UserPaginatedListResponseDto> {
-		return this.userService.listUsers(query, { userId, feed: false });
-	}
-
-	@SearchThrottle()
-	@UseGuards(JWTAccessGuard)
-	@Get('not/count')
-	@HttpCode(200)
-	@ApiQueryDto(UserPaginateDto)
-	@ApiSuccessResponse(UserCountResponseDto)
-	@ApiValidationErrorResponse({
-		search: ['search must be a string'],
-	})
-	@ResponseEnvelope('Users count retrieved successfully')
-	countNotFeed(
-		@CurrentUser() { sub: userId }: JwtAccessPayload,
-		@Query() query: UserPaginateDto,
-	): Promise<UserCountResponseDto> {
-		return this.userService.countUsers(query, { userId, feed: false });
+		return this.userService.countUsers(query, { userId, feed: query.feed });
 	}
 }

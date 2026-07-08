@@ -25,7 +25,6 @@ import {
 	ApiCreatedSuccessResponse,
 	ApiSuccessResponse,
 } from '@/shared/decorators/api-success-response.decorator';
-import { FriendRequestCreatedResponseDto } from '../dtos/responses/friend-request-created.dto';
 import { ApiValidationErrorResponse } from '@/shared/decorators/api-validation-error-response.decorator';
 import {
 	ApiFriendAlreadyExistsResponse,
@@ -41,6 +40,7 @@ import { ApiQueryDto } from '@/shared/decorators/api-query-dto.decorator';
 import { ApiBodyDto } from '@/shared/decorators/api-body-dto.decorator';
 import { ApiNoContentResponse, ApiParam } from '@nestjs/swagger';
 import { RelationshipSearchThrottle } from '@/core/rate-limit/decorators/throttle-presets.decorator';
+import { FriendShipListItemResponseDto } from '../dtos/responses/friendship-list-item-response.dto';
 
 @Controller('friends/requests')
 @UseGuards(JWTAccessGuard)
@@ -84,7 +84,7 @@ export class FriendRequestController {
 	@Post()
 	@HttpCode(201)
 	@ApiBodyDto(FriendRequestAddDto)
-	@ApiCreatedSuccessResponse(FriendRequestCreatedResponseDto)
+	@ApiCreatedSuccessResponse(FriendShipListItemResponseDto)
 	@ApiValidationErrorResponse({ friendId: ['friendId must be a string'] })
 	@ApiSelfFriendRequestSentResponse()
 	@ApiFriendshipBlockedByUserResponse()
@@ -95,7 +95,7 @@ export class FriendRequestController {
 	send(
 		@CurrentUser() user: JwtAccessPayload,
 		@Body() body: FriendRequestAddDto,
-	): Promise<FriendRequestCreatedResponseDto> {
+	): Promise<FriendShipListItemResponseDto> {
 		return this.service.sendRequest(user.sub, body.friendId);
 	}
 

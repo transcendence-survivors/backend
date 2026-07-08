@@ -26,11 +26,11 @@ export class UserPaginateDto {
 	@ApiPropertyOptional({
 		description: 'The order in which to sort the results',
 		enum: UserOrderByEnum,
-		example: UserOrderByEnum['date-desc'],
+		example: UserOrderByEnum['created-desc'],
 	})
 	@IsOptional()
 	@IsEnum(UserOrderByEnum)
-	orderBy: UserOrderByEnum = UserOrderByEnum['date-desc'];
+	orderBy: UserOrderByEnum = UserOrderByEnum['created-desc'];
 
 	@IsOptional()
 	@IsSearch({})

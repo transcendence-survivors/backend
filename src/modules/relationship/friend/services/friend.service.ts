@@ -34,6 +34,8 @@ import { FriendShipListItem } from '../types/records/friendship-list-item.type';
 import { FriendshipMapper } from '../mappers/friendship.mapper';
 import { FriendshipPaginatedResponseDto } from '../dtos/responses/friend-paginated-response.dto';
 import { FriendshipCountResponseDto } from '../dtos/responses/friendship-count-response.dto';
+import { FriendShipListItemResponseDto } from '../dtos/responses/friendship-list-item-response.dto';
+import { UnitOfWork } from '@/core/database/uow/unit-of-work';
 
 @Injectable()
 export class FriendService {
@@ -43,6 +45,7 @@ export class FriendService {
 		private readonly repo: FriendRepository,
 		private readonly cursor: CursorService,
 		private readonly mapper: FriendshipMapper,
+		private readonly uow: UnitOfWork,
 	) {}
 
 	private toFriendShipListItem(
@@ -92,15 +95,38 @@ export class FriendService {
 		return this.mapper.toCountDto(count);
 	}
 
-	async sendRequest(userId: string, friendId: string) {
+	async sendRequest(
+		userId: string,
+		friendId: string,
+	): Promise<FriendShipListItemResponseDto> {
 		if (userId === friendId) throw new SelfFriendRequestSentException();
 
 		await this.userService.validateUserId(friendId);
 		await this.validateBlock(userId, friendId);
-		await this.validateFriendship(userId, friendId);
 
-		const result = await this.repo.save({ userId, friendId });
-		return this.mapper.toFriendRequestCreatedDto(result);
+		const result = await this.uow.run(async (ctx) => {
+			const friendship = await this.repo.findFriendShip(userId, friendId);
+
+			if (friendship?.state === FriendshipState.ACCEPTED) {
+				throw new FriendAlreadyExistsException();
+			}
+			if (friendship?.state === FriendshipState.PENDING) {
+				if (friendship.senderId === userId) {
+					throw new FriendRequestAlreadySentException();
+				}
+				await this.repo.accept({ userId, friendId }, ctx);
+				const result = await this.repo.findFriendShipDetail(
+					userId,
+					friendId,
+					ctx,
+				);
+				if (!result) throw new FriendRequestDoesNotExistException();
+				return result;
+			}
+			return await this.repo.save({ userId, friendId }, ctx);
+		});
+		const [listItem] = this.toFriendShipListItem([result], userId);
+		return this.mapper.toListItemDto(listItem);
 	}
 
 	async acceptRequest(userId: string, friendId: string): Promise<void> {
@@ -204,18 +230,6 @@ export class FriendService {
 			status: FriendshipState.ACCEPTED,
 		});
 		if (count === 0) throw new FriendDoesNotExistException();
-	}
-
-	private async validateFriendship(
-		userId: string,
-		friendId: string,
-	): Promise<void> {
-		const friendship = await this.repo.findFriendShip(userId, friendId);
-
-		if (friendship?.state === FriendshipState.PENDING)
-			throw new FriendRequestAlreadySentException();
-		if (friendship?.state === FriendshipState.ACCEPTED)
-			throw new FriendAlreadyExistsException();
 	}
 
 	private async validateBlock(

@@ -5,12 +5,10 @@ import { FriendShipListItemResponseDto } from '../dtos/responses/friendship-list
 import { FriendShipListItem } from '../types/records/friendship-list-item.type';
 import { CursorPaginationResult } from '@/shared/services/cursor.service';
 import { FriendshipPaginatedResponseDto } from '../dtos/responses/friend-paginated-response.dto';
-import { FriendRequestCreated } from '../types/records/friend-request-created.type';
-import { FriendRequestCreatedResponseDto } from '../dtos/responses/friend-request-created.dto';
 
 @Injectable()
 export class FriendshipMapper {
-	private toListItemDto(
+	toListItemDto(
 		friendship: FriendShipListItem,
 	): FriendShipListItemResponseDto {
 		return plainToInstance(FriendShipListItemResponseDto, friendship, {
@@ -40,13 +38,5 @@ export class FriendshipMapper {
 		users: FriendShipListItem[],
 	): FriendShipListItemResponseDto[] {
 		return users.map((u) => this.toListItemDto(u));
-	}
-
-	toFriendRequestCreatedDto(
-		friendship: FriendRequestCreated,
-	): FriendRequestCreatedResponseDto {
-		return plainToInstance(FriendRequestCreatedResponseDto, friendship, {
-			excludeExtraneousValues: true,
-		});
 	}
 }

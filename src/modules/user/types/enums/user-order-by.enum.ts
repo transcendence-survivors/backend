@@ -1,6 +1,6 @@
 export enum UserOrderByEnum {
-	'date-asc' = 'date-asc',
-	'date-desc' = 'date-desc',
+	'created-asc' = 'created-asc',
+	'created-desc' = 'created-desc',
 	'username-asc' = 'username-asc',
 	'username-desc' = 'username-desc',
 }

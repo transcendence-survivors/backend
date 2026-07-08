@@ -13,8 +13,8 @@ import type { FriendRequestAcceptParams } from '../types/params/friend-request-a
 import type { FriendShipDeleteParams } from '../types/params/friendship-delete.params';
 import type { FriendShipBaseSelect } from '../types/records/friendship-base-select.type';
 import type { FriendShipListItemSelect } from '../types/records/friendship-list-item-select.type';
-import type { FriendRequestCreated } from '../types/records/friend-request-created.type';
 import type { FriendShipFind } from '../types/records/friendship-find';
+import { DbContext } from '@/core/database/uow/db-context';
 
 @Injectable()
 export class FriendRepository {
@@ -108,11 +108,12 @@ export class FriendRepository {
 		});
 	}
 
-	save({
-		userId,
-		friendId,
-	}: FriendRequestCreateParams): Promise<FriendRequestCreated> {
-		return this.prisma.friendship.create({
+	save(
+		{ userId, friendId }: FriendRequestCreateParams,
+		ctx?: DbContext,
+	): Promise<FriendShipListItemSelect> {
+		const client = ctx?.client ?? this.prisma;
+		return client.friendship.create({
 			data: {
 				userAId: userId,
 				userBId: friendId,
@@ -122,15 +123,17 @@ export class FriendRepository {
 			select: {
 				...FriendRepository.select,
 				createdAt: true,
+				updatedAt: true,
 			} satisfies Record<
-				keyof FriendRequestCreated,
-				FriendshipSelect[keyof FriendRequestCreated]
+				keyof FriendShipListItemSelect,
+				FriendshipSelect[keyof FriendShipListItemSelect]
 			>,
 		});
 	}
 
-	accept({ userId, friendId }: FriendRequestAcceptParams) {
-		return this.prisma.friendship.updateMany({
+	accept({ userId, friendId }: FriendRequestAcceptParams, ctx?: DbContext) {
+		const client = ctx?.client ?? this.prisma;
+		return client.friendship.updateMany({
 			where: {
 				state: FriendshipState.PENDING,
 				senderId: friendId,
@@ -166,6 +169,25 @@ export class FriendRepository {
 			} satisfies Record<
 				keyof FriendShipFind,
 				FriendshipSelect[keyof FriendShipFind]
+			>,
+		});
+	}
+
+	findFriendShipDetail(
+		userId: string,
+		friendId: string,
+		ctx?: DbContext,
+	): Promise<FriendShipListItemSelect | null> {
+		const client = ctx?.client ?? this.prisma;
+		return client.friendship.findFirst({
+			where: FriendQueryHelper.pairCondition(userId, friendId),
+			select: {
+				...FriendRepository.select,
+				createdAt: true,
+				updatedAt: true,
+			} satisfies Record<
+				keyof FriendShipListItemSelect,
+				FriendshipSelect[keyof FriendShipListItemSelect]
 			>,
 		});
 	}

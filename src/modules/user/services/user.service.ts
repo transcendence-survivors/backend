@@ -19,6 +19,7 @@ import { UserNotFoundException } from '../exceptions/user.not-found.exception';
 import { UserCreateParams } from '@/contracts/types/user/user-create.params';
 import { UsersCursorParams } from '../types/params/user-cursor.params';
 import { UsersCountParams } from '../types/params/user-count.params';
+import { UserCountDto } from '../dtos/requests/user-count.dto';
 
 @Injectable()
 export class UserService implements IUserService {
@@ -95,7 +96,7 @@ export class UserService implements IUserService {
 	}
 
 	async countUsers(
-		dto: UserPaginateDto,
+		dto: UserCountDto,
 		feedParams?: UsersCountParams['feedParams'],
 	): Promise<UserCountResponseDto> {
 		const count = await this.repo.cursorCount({
