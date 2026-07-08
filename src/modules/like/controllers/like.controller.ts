@@ -35,8 +35,8 @@ export class LikeController {
 		return this.likeService.deleteLike(postId, user.sub);
 	}
 
-	@ResponseEnvelope('like info retrieved successfully')
 	@Get(':postId')
+	@ResponseEnvelope('like info retrieved successfully')
 	async getLikeInfo(
 		@Param('postId') postId: string,
 		@CurrentUser() user: JwtAccessPayload,
