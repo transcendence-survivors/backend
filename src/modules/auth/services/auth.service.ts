@@ -46,7 +46,7 @@ export class AuthService {
 			password,
 		);
 
-		const user = await this.userService.getTokenData(authUser.id);
+		const user = await this.userService.getAuthData(authUser.id);
 		if (!user) throw new AuthLoginException();
 
 		const { accessToken, refreshToken } = await this.tokenService.buildJWT({
@@ -116,7 +116,7 @@ export class AuthService {
 	async refresh(user: JwtRefreshPayload): Promise<AuthRefresh> {
 		await this.tokenService.validateRefresh(user);
 
-		const userData = await this.userService.getTokenData(user.sub);
+		const userData = await this.userService.getAuthData(user.sub);
 		if (!userData) throw new AuthRefreshException();
 
 		const accessToken = await this.tokenService.generateAccess({

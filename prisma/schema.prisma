@@ -14,6 +14,12 @@ enum UserRole {
     SUPER_ADMIN
 }
 
+enum PresencePreferedStatus {
+    ONLINE
+    INVISIBLE
+    DO_NOT_DISTURB
+}
+
 enum FriendshipState {
     PENDING
     ACCEPTED
@@ -59,8 +65,10 @@ model User {
     location      String?
     website       String?
 
-    localePreference LocalePreference @default(EN)
-    role             UserRole         @default(USER)
+    localePreference       LocalePreference       @default(EN)
+    role                   UserRole               @default(USER)
+    preferedPresenceStatus PresencePreferedStatus @default(ONLINE)
+    lastActiveAt           DateTime               @default(now())
 
     stats UserStats? @relation
 

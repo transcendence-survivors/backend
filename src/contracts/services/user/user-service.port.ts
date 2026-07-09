@@ -1,7 +1,7 @@
 import { DbContext } from '@/core/database/uow/db-context';
 import { UserCreated } from '@/modules/user/types/records/user-created.type';
 import { UserLocalePreference } from '@/modules/user/types/records/user-locale-preference.type';
-import { UserTokenData } from '@/contracts/types/user/user-token-data.type';
+import { AuhtUserData } from '@/contracts/types/user/user-token-data.type';
 import { UserCreateParams } from '@/contracts/types/user/user-create.params';
 
 export const USER_SERVICE = Symbol('USER_SERVICE');
@@ -12,10 +12,7 @@ export interface IUserService {
 		ctx?: DbContext,
 	): Promise<UserCreated>;
 
-	getTokenData(
-		userId: string,
-		ctx?: DbContext,
-	): Promise<UserTokenData | null>;
+	getAuthData(userId: string, ctx?: DbContext): Promise<AuhtUserData | null>;
 
 	getLocalPreferenceByEmail(
 		email: string,

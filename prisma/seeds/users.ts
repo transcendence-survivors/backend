@@ -11,7 +11,10 @@ const BATCH_SIZE = 5000;
 
 function generateUsers(
 	count: number,
-): Omit<User, 'id' | 'createdAt' | 'updatedAt'>[] {
+): Omit<
+	User,
+	'id' | 'createdAt' | 'updatedAt' | 'preferedPresenceStatus' | 'lastActiveAt'
+>[] {
 	return Array.from({ length: count }, () => {
 		const firstName = fake.name.first();
 		const lastName = fake.name.last();

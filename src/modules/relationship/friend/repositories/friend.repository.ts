@@ -191,4 +191,21 @@ export class FriendRepository {
 			>,
 		});
 	}
+
+	getAllFriendsIds(
+		userId: string,
+		ctx?: DbContext,
+	): Promise<{ userAId: string; userBId: string }[]> {
+		const client = ctx?.client ?? this.prisma;
+		return client.friendship.findMany({
+			where: {
+				state: FriendshipState.ACCEPTED,
+				OR: [{ userAId: userId }, { userBId: userId }],
+			},
+			select: {
+				userAId: true,
+				userBId: true,
+			},
+		});
+	}
 }

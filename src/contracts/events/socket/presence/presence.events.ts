@@ -10,7 +10,9 @@ const PRESENCE_EVENTS = {
 	SEND: {
 		GLOBAL_COUNT: `${PRESENCE_PREFIX}global_online_count`,
 		STATUS_CHANGE: `${PRESENCE_PREFIX}friend_status_change`,
+		CONNECTED: `${PRESENCE_PREFIX}friend_connected`,
 		INITIAL_FRIENDS: `${PRESENCE_PREFIX}initial_online_friends`,
+		INITIAL_STATUS: `${PRESENCE_PREFIX}initial_status`,
 	},
 } as const;
 

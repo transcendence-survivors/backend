@@ -11,7 +11,7 @@ import type { UserLocalePreference } from '../types/records/user-locale-preferen
 import type { UserEmailUsername } from '../types/records/user-email-username.type';
 import type { UserEmailOrUsernameParams } from '../types/params/user-email-or-username.params';
 import type { UserSelect } from '@prisma-generated/models';
-import type { UserTokenData } from '@/contracts/types/user/user-token-data.type';
+import type { AuhtUserData } from '@/contracts/types/user/user-token-data.type';
 import { UserCreateParams } from '@/contracts/types/user/user-create.params';
 
 @Injectable()
@@ -128,20 +128,16 @@ export class UserRepository {
 		});
 	}
 
-	getTokenData(
-		userId: string,
-		ctx?: DbContext,
-	): Promise<UserTokenData | null> {
+	getAuthData(userId: string, ctx?: DbContext): Promise<AuhtUserData | null> {
 		return (ctx?.client ?? this.prisma).user.findUnique({
 			where: { id: userId },
 			select: {
-				id: true,
-				username: true,
+				...UserQueryHelper.userSelect,
 				email: true,
 				role: true,
 			} satisfies Record<
-				keyof UserTokenData,
-				UserSelect[keyof UserTokenData]
+				keyof AuhtUserData,
+				UserSelect[keyof AuhtUserData]
 			>,
 		});
 	}

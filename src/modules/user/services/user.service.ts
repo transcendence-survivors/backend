@@ -12,7 +12,7 @@ import { UserPaginateDto } from '../dtos/requests/user-paginate.dto';
 import { UserPaginatedListResponseDto } from '../dtos/responses/user-paginated-response.dto';
 import { UserProfileResponseDto } from '../dtos/responses/user-profile.dto';
 import { UserCountResponseDto } from '../dtos/responses/user-count-response.dto';
-import { UserTokenData } from '@/contracts/types/user/user-token-data.type';
+import { AuhtUserData } from '@/contracts/types/user/user-token-data.type';
 import { UserLocalePreference } from '../types/records/user-locale-preference.type';
 import { UserCreated } from '../types/records/user-created.type';
 import { UserNotFoundException } from '../exceptions/user.not-found.exception';
@@ -29,11 +29,11 @@ export class UserService implements IUserService {
 		private readonly mapper: UserMapper,
 	) {}
 
-	public getTokenData(
+	public getAuthData(
 		userId: string,
 		ctx?: DbContext,
-	): Promise<UserTokenData | null> {
-		return this.repo.getTokenData(userId, ctx);
+	): Promise<AuhtUserData | null> {
+		return this.repo.getAuthData(userId, ctx);
 	}
 	public async getLocalPreferenceByEmail(
 		email: string,

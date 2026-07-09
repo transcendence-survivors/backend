@@ -14,10 +14,19 @@ import {
 	type UserSocket,
 } from '@/core/websocket/interface/ws-socket.inteface';
 
-import { PresenceStatus } from '../intefaces/presence.interface';
 import { UseGuards } from '@nestjs/common';
-import { PRESENCE_EVENTS } from '@/contracts/events/socket/presence.events';
+import { PRESENCE_EVENTS } from '@/contracts/events/socket/presence/presence.events';
 import { WsJWTAccessGuard } from '@/core/security/guards/jwt-access.guard';
+import { PresenceStatusEnum } from '../types/enums/presence-status.enum';
+import { PresencePreferedStatus } from '@prisma-generated/enums';
+import { PresenceUpdatedEvent } from '@/contracts/events/socket/presence/presence-updated-friend.event';
+import { PresenceCountEvent } from '@/contracts/events/socket/presence/presence-count.event';
+import { PresenceInitialFriendEvent } from '@/contracts/events/socket/presence/presence-initial-friend.event';
+import { UserListItem } from '@/modules/user/user.public-api';
+import { PresenceConnectedEvent } from '@/contracts/events/socket/presence/presence-connected.event';
+import { OnEvent } from '@nestjs/event-emitter/dist/decorators/on-event.decorator';
+import { AppEvents } from '@/contracts/events/internal';
+import { PresenceWentOfflineEvent } from '@/contracts/events/internal/presence-went-offline';
 
 @WebSocketGateway()
 export class PresenceGateway
@@ -33,66 +42,118 @@ export class PresenceGateway
 		if (!userId) return;
 
 		const result = await this.presenceService.connect(userId, client.id);
+
 		for (const room of result.rooms) {
 			await client.join(room);
 		}
-		client.emit(PRESENCE_EVENTS.SEND.INITIAL_FRIENDS, result.activeFriends);
+		client.emit(
+			PRESENCE_EVENTS.SEND.INITIAL_FRIENDS,
+			result.activeFriends.map(
+				(friend) =>
+					new PresenceInitialFriendEvent(friend.id, friend.status),
+			),
+		);
+		client.emit(
+			PRESENCE_EVENTS.SEND.INITIAL_STATUS,
+			new PresenceInitialFriendEvent(result.user.id, result.status),
+		);
 
-		if (result.statusChanged)
-			this.broadcastStatus(result.userId, result.status);
+		if (
+			result.isFirstConnection &&
+			result.status !== PresenceStatusEnum.INVISIBLE
+		) {
+			this.broadcastConnectedToFriends(result.user, result.status);
+		}
 		this.broadcastOnlineCount(result.onlineCount);
 	}
 
 	handleDisconnect(client: ClientSocket) {
-		const result = this.presenceService.disconnect(client.id);
+		console.log(`Client disconnected: ${client.id}`);
+		this.presenceService.disconnect(client.id);
+	}
 
-		if (!result.userId) return;
-		if (result.isCompletelyOffline) {
-			this.broadcastStatus(result.userId, PresenceStatus.OFFLINE);
-		}
-		this.broadcastOnlineCount(result.onlineCount);
+	@OnEvent(AppEvents.PRESENCE_WENT_OFFLINE)
+	handleWentOffline(event: PresenceWentOfflineEvent) {
+		this.broadcastStatusToFriends(event.userId, PresenceStatusEnum.OFFLINE);
+		this.broadcastOnlineCount(event.onlineCount);
 	}
 
 	@UseGuards(WsJWTAccessGuard)
 	@SubscribeMessage(PRESENCE_EVENTS.RECEIVE.GO_VISIBLE)
-	GoVisible(@ConnectedSocket() client: UserSocket) {
-		this.handleStatusChange(client.data.user.sub, PresenceStatus.ONLINE);
+	async goVisible(@ConnectedSocket() client: UserSocket) {
+		await this.handleStatusChange(
+			client.data.user.sub,
+			PresenceStatusEnum.ONLINE,
+		);
 	}
 
 	@UseGuards(WsJWTAccessGuard)
 	@SubscribeMessage(PRESENCE_EVENTS.RECEIVE.GO_INVISIBLE)
-	GoInvisible(@ConnectedSocket() client: UserSocket) {
-		this.handleStatusChange(client.data.user.sub, PresenceStatus.INVISIBLE);
+	async goInvisible(@ConnectedSocket() client: UserSocket) {
+		await this.handleStatusChange(
+			client.data.user.sub,
+			PresenceStatusEnum.INVISIBLE,
+		);
 	}
 
 	@UseGuards(WsJWTAccessGuard)
 	@SubscribeMessage(PRESENCE_EVENTS.RECEIVE.GO_DND)
-	GoDoNotDisturb(@ConnectedSocket() client: UserSocket) {
-		this.handleStatusChange(
+	async goDoNotDisturb(@ConnectedSocket() client: UserSocket) {
+		await this.handleStatusChange(
 			client.data.user.sub,
-			PresenceStatus.DO_NOT_DISTURB,
+			PresenceStatusEnum.DO_NOT_DISTURB,
 		);
 	}
 
-	private handleStatusChange(userId: string, status: PresenceStatus) {
-		const result = this.presenceService.updateStatus(userId, status);
+	private async handleStatusChange(
+		userId: string,
+		status: PresencePreferedStatus,
+	) {
+		const result = await this.presenceService.updateStatus(userId, status);
 
 		if (result.broadcastCount)
 			this.broadcastOnlineCount(result.onlineCount);
-		if (result.broadcastStatus)
-			this.broadcastStatus(result.userId, result.status);
+		if (result.broadcastStatus) {
+			if (result.newConnection) {
+				this.broadcastConnectedToFriends(result.user, result.status);
+			} else this.broadcastStatusToFriends(userId, result.status);
+		}
 	}
 
-	private broadcastStatus(userId: string, status: PresenceStatus) {
+	private broadcastStatusToFriends(
+		userId: string,
+		status: PresenceStatusEnum,
+	) {
 		this.server
 			.to(`presence:${userId}`)
-			.emit(PRESENCE_EVENTS.SEND.STATUS_CHANGE, {
-				userId,
-				status,
-			});
+			.emit(
+				PRESENCE_EVENTS.SEND.STATUS_CHANGE,
+				new PresenceUpdatedEvent(userId, status),
+			);
+	}
+
+	private broadcastConnectedToFriends(
+		user: UserListItem,
+		status: PresenceStatusEnum,
+	) {
+		this.server
+			.to(`presence:${user.id}`)
+			.emit(
+				PRESENCE_EVENTS.SEND.CONNECTED,
+				new PresenceConnectedEvent(
+					user.id,
+					user.username,
+					user.displayName,
+					user.avatarUrl,
+					status,
+				),
+			);
 	}
 
 	private broadcastOnlineCount(count: number) {
-		this.server.emit(PRESENCE_EVENTS.SEND.GLOBAL_COUNT, count);
+		this.server.emit(
+			PRESENCE_EVENTS.SEND.GLOBAL_COUNT,
+			new PresenceCountEvent(count),
+		);
 	}
 }

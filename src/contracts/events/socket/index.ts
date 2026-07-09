@@ -1,1 +1,1 @@
-export * from './presence.events';
+export * from './presence/presence.events';

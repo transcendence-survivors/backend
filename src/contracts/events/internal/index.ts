@@ -9,4 +9,6 @@ export const AppEvents = {
 	BLOCK_CREATED: 'block.created',
 	FRIEND_REQUEST_SENT: 'friend.request.sent',
 	FRIEND_REQUEST_ACCEPTED: 'friend.request.accepted',
+
+	PRESENCE_WENT_OFFLINE: 'presence.went-offline',
 } as const;

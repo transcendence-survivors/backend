@@ -22,12 +22,21 @@ export class AuthUserResponseDto {
 	username!: string;
 
 	@ApiProperty({
-		description: 'The email address of the user',
-		example: 'john.doe@example.com',
+		description: 'The display name of the user',
+		example: 'John Doe',
 		type: String,
 	})
 	@Expose()
-	email!: string;
+	displayName!: string;
+
+	@ApiProperty({
+		description: 'The avatar URL of the user',
+		example: 'https://example.com/avatar.jpg',
+		type: String,
+		required: false,
+	})
+	@Expose()
+	avatarUrl?: string;
 
 	@ApiProperty({
 		description: 'The role of the user',

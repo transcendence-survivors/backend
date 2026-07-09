@@ -36,9 +36,10 @@ import { FriendshipPaginatedResponseDto } from '../dtos/responses/friend-paginat
 import { FriendshipCountResponseDto } from '../dtos/responses/friendship-count-response.dto';
 import { FriendShipListItemResponseDto } from '../dtos/responses/friendship-list-item-response.dto';
 import { UnitOfWork } from '@/core/database/uow/unit-of-work';
+import { IFriendService } from '@/contracts/services/friend/friend-service.port';
 
 @Injectable()
-export class FriendService {
+export class FriendService implements IFriendService {
 	constructor(
 		@InjectUserService() private readonly userService: IUserService,
 		@InjectBlockService() private readonly blockService: IBlockService,
@@ -47,6 +48,14 @@ export class FriendService {
 		private readonly mapper: FriendshipMapper,
 		private readonly uow: UnitOfWork,
 	) {}
+
+	public async getAllFriendsIds(userId: string): Promise<string[]> {
+		const friends = await this.repo.getAllFriendsIds(userId);
+
+		return friends.map((friend) =>
+			friend.userAId === userId ? friend.userBId : friend.userAId,
+		);
+	}
 
 	private toFriendShipListItem(
 		friends: FriendShipListItemParams[],

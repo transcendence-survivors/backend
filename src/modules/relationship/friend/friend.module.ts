@@ -7,6 +7,7 @@ import { FriendRepository } from './repositories/friend.repository';
 import { BlockModule } from '../block/block.module';
 import { FriendListener } from './listeners/friend.listener';
 import { FriendshipMapper } from './mappers/friendship.mapper';
+import { FRIEND_SERVICE } from '@/contracts/services/friend/friend-service.port';
 
 @Module({
 	imports: [UserModule, BlockModule],
@@ -16,6 +17,11 @@ import { FriendshipMapper } from './mappers/friendship.mapper';
 		FriendRepository,
 		FriendListener,
 		FriendshipMapper,
+		{
+			provide: FRIEND_SERVICE,
+			useExisting: FriendService,
+		},
 	],
+	exports: [FRIEND_SERVICE],
 })
 export class FriendModule {}
