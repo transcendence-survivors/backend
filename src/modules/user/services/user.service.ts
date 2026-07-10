@@ -29,6 +29,10 @@ export class UserService implements IUserService {
 		private readonly mapper: UserMapper,
 	) {}
 
+	public getCountIn(ids: string[], ctx?: DbContext): Promise<number> {
+		return this.repo.getCountIn(ids, ctx);
+	}
+
 	public getAuthData(
 		userId: string,
 		ctx?: DbContext,

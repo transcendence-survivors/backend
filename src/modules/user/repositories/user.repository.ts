@@ -22,7 +22,7 @@ export class UserRepository {
 
 	constructor(private readonly prisma: PrismaService) {}
 
-	async cursor(
+	cursor(
 		{ limit, cursor, search, orderBy, feedParams }: UsersCursorParams,
 		ctx?: DbContext,
 	): Promise<UserListItem[]> {
@@ -177,5 +177,13 @@ export class UserRepository {
 			select: { id: true },
 		});
 		return user !== null;
+	}
+
+	getCountIn(ids: string[], ctx?: DbContext): Promise<number> {
+		return (ctx?.client ?? this.prisma).user.count({
+			where: {
+				id: { in: ids },
+			},
+		});
 	}
 }

@@ -84,6 +84,10 @@ model User {
     blocksGiven    Block[]      @relation("blocker")
     blocksReceived Block[]      @relation("blocked")
 
+    createdChatRooms ChatRoom[]    @relation("RoomCreator")
+    chatMemberships  ChatMember[]
+    chatMessages     ChatMessage[]
+
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 }
@@ -216,4 +220,74 @@ model Like {
     createdAt DateTime @default(now())
 
     @@unique([userId, postId])
+}
+
+enum ChatMemberRole {
+    OWNER
+    ADMIN
+    MEMBER
+}
+
+enum ChatRoomType {
+    DIRECT
+    GROUP
+}
+
+model ChatRoom {
+    id        String       @id @default(uuid())
+    type      ChatRoomType @default(GROUP)
+    name      String?
+    avatarUrl String?
+
+    createdBy String
+    creator   User   @relation("RoomCreator", fields: [createdBy], references: [id])
+
+    members  ChatMember[]
+    messages ChatMessage[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+}
+
+model ChatMember {
+    id     String         @id @default(uuid())
+    roomId String
+    userId String
+    role   ChatMemberRole @default(MEMBER)
+
+    joinedAt   DateTime  @default(now())
+    lastReadAt DateTime?
+    isMuted    Boolean   @default(false)
+
+    room ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+    user User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    @@unique([roomId, userId])
+    @@index([userId])
+}
+
+model ChatMessage {
+    id       String @id @default(uuid())
+    roomId   String
+    senderId String
+
+    content String?
+
+    replyToId String?
+    replyTo   ChatMessage?  @relation("MessageReplies", fields: [replyToId], references: [id])
+    replies   ChatMessage[] @relation("MessageReplies")
+
+    isEdited  Boolean @default(false)
+    isDeleted Boolean @default(false)
+
+    room   ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
+    sender User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+    attachmentUrls String[] @default([])
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([roomId, createdAt])
+    @@index([senderId])
 }

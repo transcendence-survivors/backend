@@ -1,5 +1,5 @@
 import { NestFactory } from '@nestjs/core';
-import { AppModule } from './modules/app.module';
+import { AppModule } from './app.module';
 import cookieParser from 'cookie-parser';
 import { SocketIoAdapter } from './core/websocket/adapters/socket-io.adapter';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
