@@ -43,6 +43,17 @@ export class PostController {
 		return this.postService.findCursor(query, user?.sub);
 	}
 
+	@UseGuards(JWTOptionalAccessGuard)
+	@Get(':id')
+	@HttpCode(200)
+	@ResponseEnvelope('Post fetch successfully')
+	async getPost(
+		@Param('id') id: string,
+		@CurrentUser() user: JwtAccessPayload | null,
+	) {
+		return this.postService.findOne(id, user?.sub);
+	}
+
 	@UseGuards(JWTAccessGuard)
 	@Post()
 	@HttpCode(201)

@@ -39,6 +39,21 @@ export class PostService {
 		return this.postRepository.findAll();
 	}
 
+	async findOne(postId: string, userId?: string) {
+		const res = await this.postRepository.findByIdWithDetails(postId);
+		if (!res) throw new PostDoesNotExistException();
+
+		const likedIds = userId
+			? await this.likeRepository.findLikedPostIds(userId, [postId])
+			: [];
+
+		return {
+			...res,
+			likeCount: res._count.likes,
+			isLiked: likedIds.includes(postId),
+		};
+	}
+
 	create(userId: string, dto: CreatePostDto, imageUrl?: string) {
 		return this.postRepository.create(userId, dto, imageUrl);
 	}

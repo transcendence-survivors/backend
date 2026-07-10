@@ -58,6 +58,15 @@ export class PostRepository {
 		});
 	}
 
+	findByIdWithDetails(postId: string) {
+		return this.prisma.post.findFirst({
+			where: {
+				id: postId,
+			},
+			select: PostRepository.postSelect,
+		});
+	}
+
 	delete(postId: string) {
 		return this.prisma.post.delete({
 			where: {
