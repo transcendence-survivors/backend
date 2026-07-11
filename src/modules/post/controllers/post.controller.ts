@@ -19,7 +19,7 @@ import { CreatePostDto } from '../dto/post.dto';
 import { JWTAccessGuard } from '@/core/security/guards/jwt-access.guard';
 import type { JwtAccessPayload } from '@/core/security/interfaces/jwt-payload.interface';
 import { CurrentUser } from '@/core/security/decorators/current-user.decorator';
-import { PostQueryDto } from '../dto/post-querry.dto';
+import { PostQueryDto } from '../dto/post-query.dto';
 import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
 import { ApiNoContentResponse } from '@nestjs/swagger';
 import { StorageService } from '@/core/storage/services/storage.service';

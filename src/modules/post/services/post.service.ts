@@ -3,7 +3,7 @@ import { PostRepository } from '../repositories/post.repository';
 import { CreatePostDto } from '../dto/post.dto';
 import { PostOwnershipException } from '../exceptions/post-unauthorized.exception.';
 import { PostDoesNotExistException } from '../exceptions/post-unexisting.exception';
-import { PostQueryDto } from '../dto/post-querry.dto';
+import { PostQueryDto } from '../dto/post-query.dto';
 import { StorageService } from '@/core/storage/services/storage.service';
 import { CursorService } from '@/shared/services/cursor.service';
 import { LikeRepository } from '@/modules/like/repositories/like.repository';

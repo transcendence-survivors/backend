@@ -11,7 +11,8 @@ import {
 	type Env,
 } from '@/core/config/env/providers/env.provider';
 
-type Bucket = 'avatar' | 'post-image' | 'post-video';
+type Bucket =
+	'avatar' | 'post-image' | 'post-video' | 'comment-image' | 'comment-video';
 
 interface UploadParams {
 	fileName: string;
@@ -32,6 +33,8 @@ export class StorageService {
 			avatar: this.env.minio.buckets.avatar,
 			'post-image': this.env.minio.buckets.postImage,
 			'post-video': this.env.minio.buckets.postVideo,
+			'comment-image': this.env.minio.buckets.commentImage,
+			'comment-video': this.env.minio.buckets.commentVideo,
 		} satisfies Record<
 			Bucket,
 			keyof MinioBucket extends never ? string : string

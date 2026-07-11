@@ -3,7 +3,7 @@ import { Injectable } from '@nestjs/common';
 import { CreatePostDto } from '../dto/post.dto';
 import { DbContext } from '@/core/database/uow/db-context';
 import { PostOrderByWithRelationInput } from '@prisma-generated/models';
-import { PostQueryDto } from '../dto/post-querry.dto';
+import { PostQueryDto } from '../dto/post-query.dto';
 import { UserQueryHelper } from '@/modules/user/user.public-api';
 import type { PostSelect } from '@prisma-generated/models';
 
