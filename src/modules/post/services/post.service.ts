@@ -36,6 +36,7 @@ export class PostService {
 		const enriched = posts.map((p) => ({
 			...p,
 			likeCount: p._count.likes,
+			commentCount: p._count.replies,
 			isLiked: likedSet.has(p.id),
 		}));
 
@@ -57,6 +58,7 @@ export class PostService {
 		return {
 			...res,
 			likeCount: res._count.likes,
+			commentCount: res._count.replies,
 			isLiked: likedIds.includes(postId),
 		};
 	}

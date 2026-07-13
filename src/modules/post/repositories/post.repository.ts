@@ -17,10 +17,18 @@ export class PostRepository {
 		content: true,
 		createdAt: true,
 		imageUrl: true,
+		parentPostId: true,
 		author: {
 			select: UserQueryHelper.userSelect,
 		},
-		_count: { select: { likes: true } },
+		parent: {
+			select: {
+				author: {
+					select: { username: true },
+				},
+			},
+		},
+		_count: { select: { likes: true, replies: true } },
 	} satisfies PostSelect;
 	private readonly orderByCursorMapping: Record<
 		PostOrderBy,
