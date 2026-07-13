@@ -35,12 +35,18 @@ export class PostRepository {
 		return this.prisma.post.findMany();
 	}
 
-	create(userId: string, dto: CreatePostDto, imageUrl?: string) {
+	create(
+		userId: string,
+		dto: CreatePostDto,
+		imageUrl?: string,
+		parentPostId?: string,
+	) {
 		return this.prisma.post.create({
 			data: {
 				authorId: userId,
 				content: dto.content,
 				imageUrl,
+				parentPostId,
 			},
 		});
 	}
@@ -75,11 +81,16 @@ export class PostRepository {
 		});
 	}
 
-	cursor({ limit, cursor, orderBy, search }: PostQueryDto, ctx?: DbContext) {
+	cursor(
+		parentPostId: string | null,
+		{ limit, cursor, orderBy, search }: PostQueryDto,
+		ctx?: DbContext,
+	) {
 		const client = ctx?.client ?? this.prisma;
 		return client.post.findMany({
 			take: limit + 1,
 			where: {
+				parentPostId,
 				...(search && {
 					content: {
 						contains: search,

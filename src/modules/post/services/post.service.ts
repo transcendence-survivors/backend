@@ -17,8 +17,15 @@ export class PostService {
 		private readonly storageService: StorageService,
 	) {}
 
-	async findCursor(query: PostQueryDto, userId?: string) {
-		const posts = await this.postRepository.cursor(query);
+	async findCursor(
+		query: PostQueryDto,
+		userId?: string,
+		parentPostId?: string,
+	) {
+		const posts = await this.postRepository.cursor(
+			parentPostId ?? null,
+			query,
+		);
 		const ids = posts.map((p) => p.id);
 
 		const likedIds = userId
@@ -54,8 +61,13 @@ export class PostService {
 		};
 	}
 
-	create(userId: string, dto: CreatePostDto, imageUrl?: string) {
-		return this.postRepository.create(userId, dto, imageUrl);
+	create(
+		userId: string,
+		dto: CreatePostDto,
+		imageUrl?: string,
+		parentPostId?: string,
+	) {
+		return this.postRepository.create(userId, dto, imageUrl, parentPostId);
 	}
 
 	async delete(postId: string, userId: string) {

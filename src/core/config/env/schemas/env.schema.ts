@@ -27,8 +27,6 @@ const envSchema = z.object({
 	MINIO_BUCKET_AVATARS: z.string().min(1),
 	MINIO_BUCKET_POST_IMAGES: z.string().min(1),
 	MINIO_BUCKET_POST_VIDEOS: z.string().min(1),
-	MINIO_BUCKET_COMMENT_IMAGES: z.string().min(1),
-	MINIO_BUCKET_COMMENT_VIDEOS: z.string().min(1),
 });
 
 const env = envSchema.parse(process.env);

@@ -20,8 +20,6 @@ export interface MinioBucket {
 	avatar: string;
 	postImage: string;
 	postVideo: string;
-	commentImage: string;
-	commentVideo: string;
 }
 
 interface Minio {
@@ -70,8 +68,6 @@ export const EnvProvider: Provider<Env> = {
 				avatar: env.MINIO_BUCKET_AVATARS,
 				postImage: env.MINIO_BUCKET_POST_IMAGES,
 				postVideo: env.MINIO_BUCKET_POST_VIDEOS,
-				commentImage: env.MINIO_BUCKET_COMMENT_IMAGES,
-				commentVideo: env.MINIO_BUCKET_COMMENT_VIDEOS,
 			},
 		},
 

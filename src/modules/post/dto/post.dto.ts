@@ -5,4 +5,8 @@ export class CreatePostDto {
 	@IsString()
 	@MinLength(1)
 	content?: string;
+
+	@IsOptional()
+	@IsString()
+	parentPostId?: string;
 }

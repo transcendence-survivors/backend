@@ -76,9 +76,8 @@ model User {
     blocksGiven    Block[]      @relation("blocker")
     blocksReceived Block[]      @relation("blocked")
 
-    createdAt DateTime  @default(now())
-    updatedAt DateTime  @updatedAt
-    comments  Comment[]
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 }
 
 model Friendship {
@@ -194,8 +193,11 @@ model Post {
 
     likes Like[]
 
-    createdAt DateTime  @default(now())
-    comments  Comment[]
+    createdAt DateTime @default(now())
+
+    parentPostId String?
+    parent       Post?   @relation("PostReplies", fields: [parentPostId], references: [id], onDelete: Cascade)
+    replies      Post[]  @relation("PostReplies")
 }
 
 model Like {
@@ -210,18 +212,4 @@ model Like {
     createdAt DateTime @default(now())
 
     @@unique([userId, postId])
-}
-
-model Comment {
-    id String @id @default(uuid())
-
-    userId   String
-    postId   String
-    content  String?
-    imageUrl String?
-
-    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-    post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-
-    createdAt DateTime @default(now())
 }

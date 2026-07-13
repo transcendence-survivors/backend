@@ -35,7 +35,7 @@ export class PostController {
 	@UseGuards(JWTOptionalAccessGuard)
 	@Get()
 	@HttpCode(200)
-	@ResponseEnvelope('Post fetch successfully')
+	@ResponseEnvelope('Post fetched successfully')
 	async getPosts(
 		@Query() query: PostQueryDto,
 		@CurrentUser() user: JwtAccessPayload | null,
@@ -46,12 +46,24 @@ export class PostController {
 	@UseGuards(JWTOptionalAccessGuard)
 	@Get(':id')
 	@HttpCode(200)
-	@ResponseEnvelope('Post fetch successfully')
+	@ResponseEnvelope('Post fetched successfully')
 	async getPost(
 		@Param('id') id: string,
 		@CurrentUser() user: JwtAccessPayload | null,
 	) {
 		return this.postService.findOne(id, user?.sub);
+	}
+
+	@UseGuards(JWTOptionalAccessGuard)
+	@Get(':id/replies')
+	@HttpCode(200)
+	@ResponseEnvelope('Replies fetched successfully')
+	async getReplies(
+		@Param('id') id: string,
+		@Query() query: PostQueryDto,
+		@CurrentUser() user: JwtAccessPayload | null,
+	) {
+		return this.postService.findCursor(query, user?.sub, id);
 	}
 
 	@UseGuards(JWTAccessGuard)
@@ -74,7 +86,7 @@ export class PostController {
 	)
 	@ResponseEnvelope('Post created successfully')
 	async writePost(
-		@Body() { content }: CreatePostDto,
+		@Body() { content, parentPostId }: CreatePostDto,
 		@CurrentUser() user: JwtAccessPayload,
 		@UploadedFile() file: Express.Multer.File,
 	) {
@@ -94,6 +106,7 @@ export class PostController {
 				user.sub,
 				{ content },
 				imageUrl,
+				parentPostId,
 			);
 		} catch (err) {
 			if (imageUrl) await this.storageService.delete(imageUrl);
