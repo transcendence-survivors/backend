@@ -19,10 +19,11 @@ import { CreatePostDto } from '../dto/post.dto';
 import { JWTAccessGuard } from '@/core/security/guards/jwt-access.guard';
 import type { JwtAccessPayload } from '@/core/security/interfaces/jwt-payload.interface';
 import { CurrentUser } from '@/core/security/decorators/current-user.decorator';
-import { PostQueryDto } from '../dto/post-querry.dto';
+import { PostQueryDto } from '../dto/post-query.dto';
 import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
 import { ApiNoContentResponse } from '@nestjs/swagger';
 import { StorageService } from '@/core/storage/services/storage.service';
+import { JWTOptionalAccessGuard } from '@/core/security/guards/jwt-optional-access-guard';
 
 @Controller('posts')
 export class PostController {
@@ -31,11 +32,38 @@ export class PostController {
 		private readonly storageService: StorageService,
 	) {}
 
+	@UseGuards(JWTOptionalAccessGuard)
 	@Get()
 	@HttpCode(200)
-	@ResponseEnvelope('Post fetch successfully')
-	async getPosts(@Query() query: PostQueryDto) {
-		return this.postService.findCursor(query);
+	@ResponseEnvelope('Post fetched successfully')
+	async getPosts(
+		@Query() query: PostQueryDto,
+		@CurrentUser() user: JwtAccessPayload | null,
+	) {
+		return this.postService.findCursor(query, user?.sub);
+	}
+
+	@UseGuards(JWTOptionalAccessGuard)
+	@Get(':id')
+	@HttpCode(200)
+	@ResponseEnvelope('Post fetched successfully')
+	async getPost(
+		@Param('id') id: string,
+		@CurrentUser() user: JwtAccessPayload | null,
+	) {
+		return this.postService.findOne(id, user?.sub);
+	}
+
+	@UseGuards(JWTOptionalAccessGuard)
+	@Get(':id/replies')
+	@HttpCode(200)
+	@ResponseEnvelope('Replies fetched successfully')
+	async getReplies(
+		@Param('id') id: string,
+		@Query() query: PostQueryDto,
+		@CurrentUser() user: JwtAccessPayload | null,
+	) {
+		return this.postService.findCursor(query, user?.sub, id);
 	}
 
 	@UseGuards(JWTAccessGuard)
@@ -58,7 +86,7 @@ export class PostController {
 	)
 	@ResponseEnvelope('Post created successfully')
 	async writePost(
-		@Body() { content }: CreatePostDto,
+		@Body() { content, parentPostId }: CreatePostDto,
 		@CurrentUser() user: JwtAccessPayload,
 		@UploadedFile() file: Express.Multer.File,
 	) {
@@ -78,6 +106,7 @@ export class PostController {
 				user.sub,
 				{ content },
 				imageUrl,
+				parentPostId,
 			);
 		} catch (err) {
 			if (imageUrl) await this.storageService.delete(imageUrl);

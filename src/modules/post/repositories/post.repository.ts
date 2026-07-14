@@ -3,8 +3,9 @@ import { Injectable } from '@nestjs/common';
 import { CreatePostDto } from '../dto/post.dto';
 import { DbContext } from '@/core/database/uow/db-context';
 import { PostOrderByWithRelationInput } from '@prisma-generated/models';
-import { PostQueryDto } from '../dto/post-querry.dto';
+import { PostQueryDto } from '../dto/post-query.dto';
 import { UserQueryHelper } from '@/modules/user/user.public-api';
+import type { PostSelect } from '@prisma-generated/models';
 
 export const POST_ORDER_BY = ['date-asc', 'date-desc'] as const;
 export type PostOrderBy = (typeof POST_ORDER_BY)[number];
@@ -16,10 +17,19 @@ export class PostRepository {
 		content: true,
 		createdAt: true,
 		imageUrl: true,
+		parentPostId: true,
 		author: {
 			select: UserQueryHelper.userSelect,
 		},
-	};
+		parent: {
+			select: {
+				author: {
+					select: { username: true },
+				},
+			},
+		},
+		_count: { select: { likes: true, replies: true } },
+	} satisfies PostSelect;
 	private readonly orderByCursorMapping: Record<
 		PostOrderBy,
 		PostOrderByWithRelationInput[]
@@ -33,12 +43,18 @@ export class PostRepository {
 		return this.prisma.post.findMany();
 	}
 
-	create(userId: string, dto: CreatePostDto, imageUrl?: string) {
+	create(
+		userId: string,
+		dto: CreatePostDto,
+		imageUrl?: string,
+		parentPostId?: string,
+	) {
 		return this.prisma.post.create({
 			data: {
 				authorId: userId,
 				content: dto.content,
 				imageUrl,
+				parentPostId,
 			},
 		});
 	}
@@ -56,6 +72,15 @@ export class PostRepository {
 		});
 	}
 
+	findByIdWithDetails(postId: string) {
+		return this.prisma.post.findFirst({
+			where: {
+				id: postId,
+			},
+			select: PostRepository.postSelect,
+		});
+	}
+
 	delete(postId: string) {
 		return this.prisma.post.delete({
 			where: {
@@ -64,11 +89,16 @@ export class PostRepository {
 		});
 	}
 
-	cursor({ limit, cursor, orderBy, search }: PostQueryDto, ctx?: DbContext) {
+	cursor(
+		parentPostId: string | null,
+		{ limit, cursor, orderBy, search }: PostQueryDto,
+		ctx?: DbContext,
+	) {
 		const client = ctx?.client ?? this.prisma;
 		return client.post.findMany({
 			take: limit + 1,
 			where: {
+				parentPostId,
 				...(search && {
 					content: {
 						contains: search,

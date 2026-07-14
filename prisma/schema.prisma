@@ -206,6 +206,10 @@ model Post {
     likes Like[]
 
     createdAt DateTime @default(now())
+
+    parentPostId String?
+    parent       Post?   @relation("PostReplies", fields: [parentPostId], references: [id], onDelete: Cascade)
+    replies      Post[]  @relation("PostReplies")
 }
 
 model Like {
