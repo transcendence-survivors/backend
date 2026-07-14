@@ -11,7 +11,7 @@ import { ChatRoomDmConflictException } from '../exceptions/chat-room-conflict.ex
 import { type IUserService } from '@/contracts/services/user/user-service.port';
 import { InjectUserService } from '@/contracts/services/user/user-service.inject';
 import { ChatUserNotFoundException } from '../exceptions/chat-user-not-found.exception';
-import { SelfChatDm } from '../exceptions/chat-room-bad.exception';
+import { SelfChatDmException } from '../exceptions/chat-room-bad.exception';
 import { ChatRoomNotFoundException } from '../exceptions/chat-room-not-found.exceptions';
 
 @Injectable()
@@ -54,7 +54,7 @@ export class ChatRoomService {
 
 		if (type === ChatRoomType.DIRECT) {
 			const recipientId = uniqueUserIds[0];
-			if (recipientId === userId) throw new SelfChatDm();
+			if (recipientId === userId) throw new SelfChatDmException();
 			const existingRoom = await this.repo.findExistingDm({
 				userAId: userId,
 				userBId: recipientId,

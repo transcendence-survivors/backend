@@ -42,20 +42,18 @@ export class ChatRoomRepository {
 		name,
 		userIds,
 	}: ChatRoomCreateParams): Promise<ChatRoomListItem> {
-		const uniqueUserIds = Array.from(new Set([createdBy, ...userIds]));
-
 		return this.prisma.chatRoom.create({
 			data: {
 				type: type,
-				name:
-					type === ChatRoomType.GROUP
-						? name
-						: uniqueUserIds.join(', '),
+				name: type === ChatRoomType.GROUP ? name : userIds.join(', '),
 				createdBy: createdBy,
 				members: {
-					create: uniqueUserIds.map((id) => ({
+					create: userIds.map((id) => ({
 						userId: id,
-						role: id === createdBy ? 'OWNER' : 'MEMBER',
+						role:
+							id === createdBy
+								? ChatMemberRole.OWNER
+								: ChatMemberRole.MEMBER,
 					})),
 				},
 			},

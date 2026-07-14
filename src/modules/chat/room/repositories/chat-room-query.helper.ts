@@ -15,6 +15,31 @@ export class ChatRoomQueryHelper {
 		name: true,
 		avatarUrl: true,
 		updatedAt: true,
+		messages: {
+			orderBy: { createdAt: 'desc' },
+			take: 1,
+			select: {
+				content: true,
+				createdAt: true,
+				sender: {
+					select: {
+						displayName: true,
+					},
+				},
+			},
+		},
+		members: {
+			select: {
+				userId: true,
+				role: true,
+				user: {
+					select: {
+						displayName: true,
+						avatarUrl: true,
+					},
+				},
+			},
+		},
 	} satisfies Record<
 		keyof ChatRoomListItem,
 		ChatRoomSelect[keyof ChatRoomListItem]

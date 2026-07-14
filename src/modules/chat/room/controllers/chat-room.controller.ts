@@ -26,6 +26,12 @@ import { CurrentUser } from '@/core/security/decorators/current-user.decorator';
 import { type JwtAccessPayload } from '@/core/security/interfaces/jwt-payload.interface';
 import { ChatRoomListItemResponseDto } from '../dtos/responses/chat-room-list-item-response.dto';
 import { ChatRoomCreateDto } from '../dtos/requests/chat-room-create.dto';
+import {
+	ApiChatRoomDmConflictResponse,
+	ApiChatRoomNotFoundResponse,
+	ApiChatRoomSelfDmResponse,
+	ApiChatUserNotFoundResponse,
+} from '../decorators/chat-room-api-errors.decorator';
 
 @UseGuards(JWTAccessGuard)
 @Controller('chat/rooms')
@@ -57,6 +63,9 @@ export class ChatRoomController {
 		type: ['type must be a valid enum value'],
 		userIds: ['userIds must be an array of strings'],
 	})
+	@ApiChatRoomDmConflictResponse()
+	@ApiChatRoomSelfDmResponse()
+	@ApiChatUserNotFoundResponse()
 	@ResponseEnvelope('Chat room created successfully')
 	create(
 		@CurrentUser() { sub }: JwtAccessPayload,
@@ -68,6 +77,7 @@ export class ChatRoomController {
 	@Delete()
 	@HttpCode(204)
 	@ApiNoContentSuccessResponse()
+	@ApiChatRoomNotFoundResponse()
 	@ResponseEnvelope('Chat room deleted successfully')
 	delete(
 		@CurrentUser() { sub }: JwtAccessPayload,

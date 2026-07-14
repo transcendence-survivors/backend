@@ -1,7 +1,7 @@
 import { AppHttpException } from '@/shared/filters/app.http.exception';
 import { HttpStatus } from '@nestjs/common';
 
-export class SelfChatDm extends AppHttpException {
+export class SelfChatDmException extends AppHttpException {
 	static describe() {
 		return {
 			status: HttpStatus.BAD_REQUEST,
@@ -11,7 +11,7 @@ export class SelfChatDm extends AppHttpException {
 	}
 
 	constructor() {
-		const { status, message, messageKey } = SelfChatDm.describe();
+		const { status, message, messageKey } = SelfChatDmException.describe();
 		super(message, messageKey, status);
 	}
 }
