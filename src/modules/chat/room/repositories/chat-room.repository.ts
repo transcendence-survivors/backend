@@ -23,12 +23,14 @@ export class ChatRoomRepository {
 		return this.prisma.chatRoom.findMany({
 			...ChatRoomQueryHelper.pagination(limit, cursor),
 			where: {
-				...ChatRoomQueryHelper.feedWhere(userId, feedMode),
-				...(search && ChatRoomQueryHelper.searchWhere(search)),
+				AND: [
+					ChatRoomQueryHelper.feedWhere(userId, feedMode),
+					search ? ChatRoomQueryHelper.searchWhere(search) : {},
+				],
 			},
 			orderBy: ChatRoomQueryHelper.orderBy[orderBy],
 			select: {
-				...ChatRoomQueryHelper.chatRoomSelect,
+				...ChatRoomQueryHelper.chatRoomSelect(userId),
 			} satisfies Record<
 				keyof ChatRoomListItem,
 				ChatRoomSelect[keyof ChatRoomListItem]
@@ -45,7 +47,7 @@ export class ChatRoomRepository {
 		return this.prisma.chatRoom.create({
 			data: {
 				type: type,
-				name: type === ChatRoomType.GROUP ? name : userIds.join(', '),
+				name: name,
 				createdBy: createdBy,
 				members: {
 					create: userIds.map((id) => ({
@@ -58,11 +60,8 @@ export class ChatRoomRepository {
 				},
 			},
 			select: {
-				...ChatRoomQueryHelper.chatRoomSelect,
-			} satisfies Record<
-				keyof ChatRoomListItem,
-				ChatRoomSelect[keyof ChatRoomListItem]
-			>,
+				...ChatRoomQueryHelper.chatRoomSelect(createdBy),
+			},
 		});
 	}
 

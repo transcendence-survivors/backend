@@ -52,12 +52,6 @@ export class UserQueryHelper {
 		return {
 			OR: [
 				{
-					username: {
-						contains: query,
-						mode: 'insensitive',
-					},
-				},
-				{
 					displayName: {
 						contains: query,
 						mode: 'insensitive',

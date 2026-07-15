@@ -7,43 +7,44 @@ import { ChatRoomType } from '@prisma-generated/enums';
 import { ChatRoomListItem } from '../types/records/chat-room-list-item.type';
 import { ChatRoomOrderByEnum } from '../types/enums/chat-room-order-by.enum';
 import { ChatRoomFeedEnum } from '../types/enums/chat-room-feed-enum';
+import { UserQueryHelper } from '@/modules/user/user.public-api';
 
 export class ChatRoomQueryHelper {
-	public static readonly chatRoomSelect = {
-		id: true,
-		type: true,
-		name: true,
-		avatarUrl: true,
-		updatedAt: true,
-		messages: {
-			orderBy: { createdAt: 'desc' },
-			take: 1,
-			select: {
-				content: true,
-				createdAt: true,
-				sender: {
-					select: {
-						displayName: true,
+	public static chatRoomSelect(currentUserId: string) {
+		return {
+			id: true,
+			type: true,
+			name: true,
+			avatarUrl: true,
+			messages: {
+				orderBy: {
+					createdAt: 'desc',
+				},
+				take: 1,
+				select: {
+					content: true,
+					createdAt: true,
+					sender: {
+						select: { displayName: true },
 					},
 				},
 			},
-		},
-		members: {
-			select: {
-				userId: true,
-				role: true,
-				user: {
-					select: {
-						displayName: true,
-						avatarUrl: true,
+			members: {
+				where: {
+					userId: { not: currentUserId },
+				},
+				take: 1,
+				select: {
+					user: {
+						select: UserQueryHelper.userSelect,
 					},
 				},
 			},
-		},
-	} satisfies Record<
-		keyof ChatRoomListItem,
-		ChatRoomSelect[keyof ChatRoomListItem]
-	>;
+		} as const satisfies Record<
+			keyof ChatRoomListItem,
+			ChatRoomSelect[keyof ChatRoomListItem]
+		>;
+	}
 
 	public static readonly orderBy: Record<
 		ChatRoomOrderByEnum,

@@ -42,10 +42,10 @@ export class ChatRoomService {
 	}
 
 	async createRoom(
-		{ name, type, userIds }: ChatRoomCreateDto,
+		{ name, type, usersIds }: ChatRoomCreateDto,
 		userId: string,
 	): Promise<ChatRoomListItemResponseDto> {
-		const uniqueUserIds = Array.from(new Set([userId, ...userIds]));
+		const uniqueUserIds = Array.from(new Set([userId, ...usersIds]));
 		const existingUsersCount =
 			await this.userService.getCountIn(uniqueUserIds);
 
@@ -53,7 +53,7 @@ export class ChatRoomService {
 			throw new ChatUserNotFoundException();
 
 		if (type === ChatRoomType.DIRECT) {
-			const recipientId = uniqueUserIds[0];
+			const recipientId = usersIds[0];
 			if (recipientId === userId) throw new SelfChatDmException();
 			const existingRoom = await this.repo.findExistingDm({
 				userAId: userId,

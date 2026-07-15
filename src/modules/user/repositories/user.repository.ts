@@ -31,12 +31,15 @@ export class UserRepository {
 		return client.user.findMany({
 			...UserQueryHelper.pagination(limit, cursor),
 			where: {
-				...(search && UserQueryHelper.searchWhere(search)),
-				...(feedParams &&
-					UserQueryHelper.feedWhere(
-						feedParams.userId,
-						feedParams.feed,
-					)),
+				AND: [
+					search ? UserQueryHelper.searchWhere(search) : {},
+					feedParams
+						? UserQueryHelper.feedWhere(
+								feedParams.userId,
+								feedParams.feed,
+							)
+						: {},
+				],
 			},
 			orderBy: UserQueryHelper.orderBy[orderBy],
 			select: {

@@ -1,34 +1,118 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { Exclude } from 'class-transformer';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ChatRoomType } from '@prisma-generated/enums';
+import { Exclude, Expose, Type } from 'class-transformer';
+
+class LastMessageDto {
+	@ApiProperty({
+		type: String,
+		description: 'Text content of the most recent message in the room',
+		example: 'Hey, are we still on for tomorrow?',
+	})
+	@Expose()
+	content!: string;
+
+	@ApiProperty({
+		type: String,
+		format: 'date-time',
+		description: 'Timestamp when the last message was created',
+		example: '2026-07-15T09:32:11.000Z',
+	})
+	@Expose()
+	createdAt!: Date;
+
+	@ApiProperty({
+		type: String,
+		description: 'Display name of the user who sent the last message',
+		example: 'Jane Doe',
+	})
+	@Expose()
+	senderDisplayName!: string;
+}
+
+export class ChatRoomMemberDto {
+	@ApiProperty({
+		type: String,
+		format: 'uuid',
+		description: 'Unique identifier of the member',
+		example: 'b3f1a2c4-5d6e-4f7a-8b9c-0d1e2f3a4b5c',
+	})
+	@Expose()
+	id!: string;
+
+	@ApiProperty({
+		type: String,
+		description: 'Display name of the member',
+		example: 'John Smith',
+	})
+	@Expose()
+	displayName!: string;
+
+	@ApiPropertyOptional({
+		type: String,
+		nullable: true,
+		description: "URL of the member's avatar image, if set",
+		example: 'https://cdn.example.com/avatars/john-smith.png',
+	})
+	@Expose()
+	avatarUrl!: string | null;
+}
 
 @Exclude()
 export class ChatRoomListItemResponseDto {
 	@ApiProperty({
-		description: 'The unique identifier of the chat room',
-		example: '123e4567-e89b-12d3-a456-426614174000',
 		type: String,
 		format: 'uuid',
+		description: 'Unique identifier of the chat room',
+		example: 'a1b2c3d4-e5f6-4a5b-8c9d-1e2f3a4b5c6d',
 	})
+	@Expose()
 	id!: string;
 
 	@ApiProperty({
-		description: 'The name of the chat room',
-		example: 'General Chat',
+		enum: ChatRoomType,
+		enumName: 'ChatRoomType',
+		description: 'Type of the chat room: a 1-to-1 conversation or a group',
+		example: ChatRoomType.DIRECT,
+	})
+	@Expose()
+	type!: (typeof ChatRoomType)[keyof typeof ChatRoomType];
+
+	@ApiPropertyOptional({
 		type: String,
+		nullable: true,
+		description:
+			'Name of the room. Typically null for DIRECT rooms and set for GROUP rooms',
+		example: 'Weekend Trip Planning',
 	})
-	name!: string;
+	@Expose()
+	name!: string | null;
 
-	@ApiProperty({
-		description: 'The timestamp when the chat room was created',
-		example: '2023-01-01T00:00:00Z',
-		type: Date,
+	@ApiPropertyOptional({
+		type: String,
+		nullable: true,
+		description:
+			"URL of the room avatar image. For DIRECT rooms this is usually null, with the UI falling back to the other member's avatar",
+		example: 'https://cdn.example.com/rooms/weekend-trip.png',
 	})
-	createdAt!: Date;
+	@Expose()
+	avatarUrl!: string | null;
 
-	@ApiProperty({
-		description: 'The timestamp when the chat room was last updated',
-		example: '2023-01-02T00:00:00Z',
-		type: Date,
+	@ApiPropertyOptional({
+		type: LastMessageDto,
+		nullable: true,
+		description:
+			'The most recent message sent in the room, if any exist yet',
 	})
-	updatedAt!: Date;
+	@Expose()
+	@Type(() => LastMessageDto)
+	lastMessage!: LastMessageDto | null;
+
+	@ApiPropertyOptional({
+		type: ChatRoomMemberDto,
+		description:
+			'The other participant in the conversation. Only present when type is DIRECT',
+	})
+	@Expose()
+	@Type(() => ChatRoomMemberDto)
+	otherMember?: ChatRoomMemberDto;
 }

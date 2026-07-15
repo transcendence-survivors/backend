@@ -1,12 +1,8 @@
-import {
-	ChatMember,
-	ChatMessage,
-	ChatRoom,
-	User,
-} from '@prisma-generated/client';
+import { UserListItem } from '@/contracts/types/user/user-list-item.type';
+import { ChatMessage, ChatRoom, User } from '@prisma-generated/client';
 
-type ChatRoomMemberSelect = Pick<ChatMember, 'userId' | 'role'> & {
-	user: Pick<User, 'displayName' | 'avatarUrl'>;
+type ChatRoomMemberSelect = {
+	user: UserListItem;
 };
 
 type ChatRoomMessageSelect = Pick<ChatMessage, 'content' | 'createdAt'> & {
@@ -15,7 +11,7 @@ type ChatRoomMessageSelect = Pick<ChatMessage, 'content' | 'createdAt'> & {
 
 export type ChatRoomListItem = Pick<
 	ChatRoom,
-	'id' | 'name' | 'avatarUrl' | 'type' | 'updatedAt'
+	'id' | 'name' | 'avatarUrl' | 'type'
 > & {
 	members: ChatRoomMemberSelect[];
 	messages: ChatRoomMessageSelect[];

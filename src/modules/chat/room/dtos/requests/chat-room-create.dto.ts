@@ -1,13 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { ChatRoomType } from '@prisma-generated/enums';
-import {
-	ArrayMaxSize,
-	ArrayMinSize,
-	IsArray,
-	IsEnum,
-	IsString,
-	ValidateIf,
-} from 'class-validator';
+import { IsArray, IsEnum, IsString, ValidateIf } from 'class-validator';
+import { ValidUserIdsForRoomType } from '../../validators';
 
 export class ChatRoomCreateDto {
 	@ApiProperty({
@@ -32,16 +26,6 @@ export class ChatRoomCreateDto {
 	})
 	@IsArray()
 	@IsString({ each: true })
-	@ValidateIf((o: ChatRoomCreateDto) => o.type === ChatRoomType.DIRECT)
-	@ArrayMinSize(1, {
-		message: 'Direct chats must have exactly one recipient.',
-	})
-	@ArrayMaxSize(1, {
-		message: 'Direct chats must have exactly one recipient.',
-	})
-	@ValidateIf((o: ChatRoomCreateDto) => o.type === ChatRoomType.GROUP)
-	@ArrayMinSize(1, {
-		message: 'You must invite at least one user to a group chat room.',
-	})
-	userIds!: string[];
+	@ValidUserIdsForRoomType()
+	usersIds!: string[];
 }
