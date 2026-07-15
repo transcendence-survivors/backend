@@ -43,6 +43,32 @@ export class PostService {
 		return this.cursor.create(enriched, query.limit, (post) => post.id);
 	}
 
+	async findUserComments(
+		authorId: string,
+		query: PostQueryDto,
+		userId?: string,
+	) {
+		const posts = await this.postRepository.findUserComments(
+			authorId,
+			query,
+		);
+		const ids = posts.map((p) => p.id);
+
+		const likedIds = userId
+			? await this.likeRepository.findLikedPostIds(userId, ids)
+			: [];
+		const likedSet = new Set(likedIds);
+
+		const enriched = posts.map((p) => ({
+			...p,
+			likeCount: p._count.likes,
+			commentCount: p._count.replies,
+			isLiked: likedSet.has(p.id),
+		}));
+
+		return this.cursor.create(enriched, query.limit, (post) => post.id);
+	}
+
 	findAll() {
 		return this.postRepository.findAll();
 	}
@@ -68,8 +94,15 @@ export class PostService {
 		dto: CreatePostDto,
 		imageUrl?: string,
 		parentPostId?: string,
+		quotedPostId?: string,
 	) {
-		return this.postRepository.create(userId, dto, imageUrl, parentPostId);
+		return this.postRepository.create(
+			userId,
+			dto,
+			imageUrl,
+			parentPostId,
+			quotedPostId,
+		);
 	}
 
 	async delete(postId: string, userId: string) {

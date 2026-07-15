@@ -179,6 +179,17 @@ export class UserRepository {
 		return user !== null;
 	}
 
+	async findIdByUsername(
+		username: string,
+		ctx?: DbContext,
+	): Promise<string | null> {
+		const user = await (ctx?.client ?? this.prisma).user.findFirst({
+			where: { username },
+			select: { id: true },
+		});
+		return user?.id ?? null;
+	}
+
 	getCountIn(ids: string[], ctx?: DbContext): Promise<number> {
 		return (ctx?.client ?? this.prisma).user.count({
 			where: {

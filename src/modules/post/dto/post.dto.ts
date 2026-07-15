@@ -9,4 +9,8 @@ export class CreatePostDto {
 	@IsOptional()
 	@IsString()
 	parentPostId?: string;
+
+	@IsOptional()
+	@IsString()
+	quotedPostId?: string;
 }

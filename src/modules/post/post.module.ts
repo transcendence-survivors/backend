@@ -3,9 +3,10 @@ import { PostController } from './controllers/post.controller';
 import { PostRepository } from './repositories/post.repository';
 import { PostService } from './services/post.service';
 import { LikeModule } from '../like/like.module';
+import { UserModule } from '../user/user.module';
 
 @Module({
-	imports: [LikeModule],
+	imports: [LikeModule, UserModule],
 	controllers: [PostController],
 	providers: [PostRepository, PostService],
 })

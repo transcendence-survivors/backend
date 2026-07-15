@@ -24,12 +24,15 @@ import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
 import { ApiNoContentResponse } from '@nestjs/swagger';
 import { StorageService } from '@/core/storage/services/storage.service';
 import { JWTOptionalAccessGuard } from '@/core/security/guards/jwt-optional-access-guard';
+import { InjectUserService } from '@/contracts/services/user/user-service.inject';
+import type { IUserService } from '@/contracts/services/user/user-service.port';
 
 @Controller('posts')
 export class PostController {
 	constructor(
 		private readonly postService: PostService,
 		private readonly storageService: StorageService,
+		@InjectUserService() private readonly userService: IUserService,
 	) {}
 
 	@UseGuards(JWTOptionalAccessGuard)
@@ -66,6 +69,19 @@ export class PostController {
 		return this.postService.findCursor(query, user?.sub, id);
 	}
 
+	@UseGuards(JWTOptionalAccessGuard)
+	@Get('user/:username/comments')
+	@HttpCode(200)
+	@ResponseEnvelope('Comments fetched successfully')
+	async getUserComments(
+		@Param('username') username: string,
+		@Query() query: PostQueryDto,
+		@CurrentUser() user: JwtAccessPayload | null,
+	) {
+		const authorId = await this.userService.getIdByUsername(username);
+		return this.postService.findUserComments(authorId, query, user?.sub);
+	}
+
 	@UseGuards(JWTAccessGuard)
 	@Post()
 	@HttpCode(201)
@@ -86,7 +102,7 @@ export class PostController {
 	)
 	@ResponseEnvelope('Post created successfully')
 	async writePost(
-		@Body() { content, parentPostId }: CreatePostDto,
+		@Body() { content, parentPostId, quotedPostId }: CreatePostDto,
 		@CurrentUser() user: JwtAccessPayload,
 		@UploadedFile() file: Express.Multer.File,
 	) {
@@ -107,6 +123,7 @@ export class PostController {
 				{ content },
 				imageUrl,
 				parentPostId,
+				quotedPostId,
 			);
 		} catch (err) {
 			if (imageUrl) await this.storageService.delete(imageUrl);

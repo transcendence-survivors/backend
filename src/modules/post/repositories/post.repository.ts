@@ -23,8 +23,18 @@ export class PostRepository {
 		},
 		parent: {
 			select: {
+				content: true,
 				author: {
-					select: { username: true },
+					select: UserQueryHelper.userSelect,
+				},
+			},
+		},
+		quotedPostId: true,
+		quotedPost: {
+			select: {
+				content: true,
+				author: {
+					select: UserQueryHelper.userSelect,
 				},
 			},
 		},
@@ -48,6 +58,7 @@ export class PostRepository {
 		dto: CreatePostDto,
 		imageUrl?: string,
 		parentPostId?: string,
+		quotedPostId?: string,
 	) {
 		return this.prisma.post.create({
 			data: {
@@ -55,6 +66,7 @@ export class PostRepository {
 				content: dto.content,
 				imageUrl,
 				parentPostId,
+				quotedPostId,
 			},
 		});
 	}
@@ -77,6 +89,32 @@ export class PostRepository {
 			where: {
 				id: postId,
 			},
+			select: PostRepository.postSelect,
+		});
+	}
+
+	findUserComments(
+		authorId: string,
+		{ limit, cursor, orderBy, search }: PostQueryDto,
+		ctx?: DbContext,
+	) {
+		const client = ctx?.client ?? this.prisma;
+		return client.post.findMany({
+			take: limit + 1,
+			where: {
+				authorId,
+				parentPostId: { not: null },
+				...(search && {
+					content: {
+						contains: search,
+					},
+				}),
+			},
+			...(cursor && {
+				cursor: { id: cursor },
+				skip: 1,
+			}),
+			orderBy: this.orderByCursorMapping[orderBy],
 			select: PostRepository.postSelect,
 		});
 	}

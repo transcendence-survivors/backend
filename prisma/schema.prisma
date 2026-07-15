@@ -210,6 +210,10 @@ model Post {
     parentPostId String?
     parent       Post?   @relation("PostReplies", fields: [parentPostId], references: [id], onDelete: Cascade)
     replies      Post[]  @relation("PostReplies")
+
+    quotedPostId String?
+    quotedPost   Post?   @relation("PostQuotes", fields: [quotedPostId], references: [id], onDelete: SetNull)
+    quotes       Post[]  @relation("PostQuotes")
 }
 
 model Like {
