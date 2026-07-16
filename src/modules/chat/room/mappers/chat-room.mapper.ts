@@ -9,34 +9,24 @@ import { ChatRoomType } from '@prisma-generated/enums';
 
 @Injectable()
 export class ChatRoomMapper {
-	toListItemDto(room: ChatRoomListItem): ChatRoomListItemResponseDto {
-		const [lastMessageRaw] = room.messages;
-		const [memberRaw] = room.members;
+	toListItemDto(
+		room: ChatRoomListItem,
+		memberIds: string[],
+	): ChatRoomListItemResponseDto {
+		const otherMembers = room.members.map((m) => m.user);
+		const isDirect = room.type === ChatRoomType.DIRECT;
 
-		return plainToInstance(
-			ChatRoomListItemResponseDto,
-			{
-				id: room.id,
-				type: room.type,
-				name: room.name,
-				avatarUrl: room.avatarUrl,
-				lastMessage: lastMessageRaw
-					? {
-							content: lastMessageRaw.content,
-							createdAt: lastMessageRaw.createdAt,
-							senderDisplayName:
-								lastMessageRaw.sender.displayName,
-						}
-					: null,
-				otherMember:
-					room.type === ChatRoomType.DIRECT && memberRaw
-						? memberRaw.user
-						: undefined,
-			},
-			{
-				excludeExtraneousValues: true,
-			},
-		);
+		return plainToInstance(ChatRoomListItemResponseDto, {
+			id: room.id,
+			type: room.type,
+			name: room.name,
+			avatarUrl: room.avatarUrl,
+			lastMessage: room.messages[0] ?? null,
+			otherMember: isDirect ? otherMembers[0] : undefined,
+			membersPreview: isDirect ? undefined : otherMembers,
+			memberIds: isDirect ? undefined : memberIds,
+			memberCount: isDirect ? undefined : memberIds.length,
+		});
 	}
 
 	toCountDto(count: number): ChatRoomCountResponseDto {
@@ -60,8 +50,11 @@ export class ChatRoomMapper {
 	}
 
 	toListItemDtoList(
-		rooms: ChatRoomListItem[],
+		chatRooms: ChatRoomListItem[],
+		memberIdsByRoom: Record<string, string[]>,
 	): ChatRoomListItemResponseDto[] {
-		return rooms.map((r) => this.toListItemDto(r));
+		return chatRooms.map((room) =>
+			this.toListItemDto(room, memberIdsByRoom[room.id] ?? []),
+		);
 	}
 }

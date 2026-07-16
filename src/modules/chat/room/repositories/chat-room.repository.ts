@@ -12,6 +12,23 @@ import { ChatRoomCreateParams } from '../types/params/chat-room-create.params';
 export class ChatRoomRepository {
 	constructor(private readonly prisma: PrismaService) {}
 
+	groupMemberIds(
+		roomIds: string[],
+		userId: string,
+	): Promise<{ roomId: string; userId: string }[]> {
+		if (roomIds.length === 0) {
+			return Promise.resolve([]);
+		}
+
+		return this.prisma.chatMember.findMany({
+			where: ChatRoomQueryHelper.groupMemberIdsWhere(roomIds, userId),
+			select: {
+				roomId: true,
+				userId: true,
+			},
+		});
+	}
+
 	cursor({
 		limit,
 		cursor,

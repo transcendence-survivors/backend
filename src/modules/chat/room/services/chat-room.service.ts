@@ -32,11 +32,26 @@ export class ChatRoomService {
 			cursor: dto.cursor,
 			search: dto.search,
 			orderBy: dto.orderBy,
-			feedMode: dto.feedMode,
+			feedMode: dto.type,
 			userId,
 		});
 
-		const dtos = this.mapper.toListItemDtoList(chatRooms);
+		const groupRoomIds = chatRooms
+			.filter((room) => room.type === ChatRoomType.GROUP)
+			.map((room) => room.id);
+		const groupMembers = await this.repo.groupMemberIds(
+			groupRoomIds,
+			userId,
+		);
+		const memberIdsByRoom = groupMembers.reduce<Record<string, string[]>>(
+			(acc, m) => {
+				(acc[m.roomId] ??= []).push(m.userId);
+				return acc;
+			},
+			{},
+		);
+
+		const dtos = this.mapper.toListItemDtoList(chatRooms, memberIdsByRoom);
 		const result = this.cursor.create(dtos, dto.limit, (item) => item.id);
 		return this.mapper.toPaginatedListDto(result);
 	}
@@ -68,7 +83,7 @@ export class ChatRoomService {
 			name: name,
 			userIds: uniqueUserIds,
 		});
-		return this.mapper.toListItemDto(newRoom);
+		return this.mapper.toListItemDto(newRoom, usersIds);
 	}
 
 	async deleteRoom(roomId: string, userId: string): Promise<void> {

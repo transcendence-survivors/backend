@@ -1,4 +1,5 @@
 import {
+	ChatMemberWhereInput,
 	ChatRoomOrderByWithRelationInput,
 	ChatRoomSelect,
 	ChatRoomWhereInput,
@@ -33,7 +34,7 @@ export class ChatRoomQueryHelper {
 				where: {
 					userId: { not: currentUserId },
 				},
-				take: 1,
+				take: 2,
 				select: {
 					user: {
 						select: UserQueryHelper.userSelect,
@@ -101,6 +102,16 @@ export class ChatRoomQueryHelper {
 			members: {
 				some: { userId },
 			},
+		};
+	}
+
+	public static groupMemberIdsWhere(
+		roomIds: string[],
+		currentUserId: string,
+	): ChatMemberWhereInput {
+		return {
+			roomId: { in: roomIds },
+			userId: { not: currentUserId },
 		};
 	}
 

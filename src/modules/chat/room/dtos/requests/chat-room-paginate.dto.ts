@@ -38,5 +38,5 @@ export class ChatRoomPaginateDto {
 
 	@IsOptional()
 	@IsEnum(ChatRoomFeedEnum)
-	feedMode: ChatRoomFeedEnum = ChatRoomFeedEnum.ALL;
+	type: ChatRoomFeedEnum = ChatRoomFeedEnum.ALL;
 }

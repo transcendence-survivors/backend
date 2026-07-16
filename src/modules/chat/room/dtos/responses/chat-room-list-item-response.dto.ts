@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ChatRoomType } from '@prisma-generated/enums';
-import { Exclude, Expose, Type } from 'class-transformer';
+import { Exclude, Expose, Transform, Type } from 'class-transformer';
 
 class LastMessageDto {
 	@ApiProperty({
@@ -47,6 +47,14 @@ export class ChatRoomMemberDto {
 	@Expose()
 	displayName!: string;
 
+	@ApiProperty({
+		type: String,
+		description: 'Username of the member',
+		example: 'johnsmith',
+	})
+	@Expose()
+	username!: string;
+
 	@ApiPropertyOptional({
 		type: String,
 		nullable: true,
@@ -75,7 +83,7 @@ export class ChatRoomListItemResponseDto {
 		example: ChatRoomType.DIRECT,
 	})
 	@Expose()
-	type!: (typeof ChatRoomType)[keyof typeof ChatRoomType];
+	type!: ChatRoomType;
 
 	@ApiPropertyOptional({
 		type: String,
@@ -110,9 +118,45 @@ export class ChatRoomListItemResponseDto {
 	@ApiPropertyOptional({
 		type: ChatRoomMemberDto,
 		description:
-			'The other participant in the conversation. Only present when type is DIRECT',
+			'The other participant in the conversation. \
+            Only present when type is DIRECT',
 	})
 	@Expose()
 	@Type(() => ChatRoomMemberDto)
 	otherMember?: ChatRoomMemberDto;
+
+	@ApiPropertyOptional({
+		type: [ChatRoomMemberDto],
+		description:
+			'Preview of up to 5 members (excluding the current user), \
+            used to render the avatar stack in the UI. \
+            Only present when type is GROUP',
+	})
+	@Expose()
+	@Type(() => ChatRoomMemberDto)
+	membersPreview?: ChatRoomMemberDto[];
+
+	@ApiPropertyOptional({
+		type: [String],
+		format: 'uuid',
+		description:
+			'IDs of all members in the room (excluding the current user), \
+            used by the client to look up live online status from the presence store. \
+            Only present when type is GROUP',
+	})
+	@Expose()
+	memberIds?: string[];
+
+	@ApiPropertyOptional({
+		type: Number,
+		description:
+			'Total number of members in the room (excluding the current user). \
+            Only present when type is GROUP. \
+            Equivalent to memberIds.length — exposed separately so clients can render the count without needing the full memberIds array',
+	})
+	@Expose()
+	@Transform(
+		({ obj }: { obj: { memberIds?: string[] } }) => obj.memberIds?.length,
+	)
+	memberCount?: number;
 }
