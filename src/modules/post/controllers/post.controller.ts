@@ -95,6 +95,19 @@ export class PostController {
 		return this.postService.findUserReposts(authorId, query, user?.sub);
 	}
 
+	@UseGuards(JWTOptionalAccessGuard)
+	@Get('user/:username/likes')
+	@HttpCode(200)
+	@ResponseEnvelope('Likes fetched successfully')
+	async getUserLikes(
+		@Param('username') username: string,
+		@Query() query: PostQueryDto,
+		@CurrentUser() user: JwtAccessPayload | null,
+	) {
+		const userId = await this.userService.getIdByUsername(username);
+		return this.postService.findUserLikes(userId, query, user?.sub);
+	}
+
 	@UseGuards(JWTAccessGuard)
 	@Post()
 	@HttpCode(201)
