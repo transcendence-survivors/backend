@@ -82,6 +82,19 @@ export class PostController {
 		return this.postService.findUserComments(authorId, query, user?.sub);
 	}
 
+	@UseGuards(JWTOptionalAccessGuard)
+	@Get('user/:username/reposts')
+	@HttpCode(200)
+	@ResponseEnvelope('Reposts fetched successfully')
+	async getUserReposts(
+		@Param('username') username: string,
+		@Query() query: PostQueryDto,
+		@CurrentUser() user: JwtAccessPayload | null,
+	) {
+		const authorId = await this.userService.getIdByUsername(username);
+		return this.postService.findUserReposts(authorId, query, user?.sub);
+	}
+
 	@UseGuards(JWTAccessGuard)
 	@Post()
 	@HttpCode(201)

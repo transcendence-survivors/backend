@@ -69,6 +69,32 @@ export class PostService {
 		return this.cursor.create(enriched, query.limit, (post) => post.id);
 	}
 
+	async findUserReposts(
+		authorId: string,
+		query: PostQueryDto,
+		userId?: string,
+	) {
+		const posts = await this.postRepository.findUserReposts(
+			authorId,
+			query,
+		);
+		const ids = posts.map((p) => p.id);
+
+		const likedIds = userId
+			? await this.likeRepository.findLikedPostIds(userId, ids)
+			: [];
+		const likedSet = new Set(likedIds);
+
+		const enriched = posts.map((p) => ({
+			...p,
+			likeCount: p._count.likes,
+			commentCount: p._count.replies,
+			isLiked: likedSet.has(p.id),
+		}));
+
+		return this.cursor.create(enriched, query.limit, (post) => post.id);
+	}
+
 	findAll() {
 		return this.postRepository.findAll();
 	}
