@@ -170,6 +170,32 @@ export class PostRepository {
 		});
 	}
 
+	findUserPosts(
+		authorId: string,
+		{ limit, cursor, orderBy, search }: PostQueryDto,
+		ctx?: DbContext,
+	) {
+		const client = ctx?.client ?? this.prisma;
+		return client.post.findMany({
+			take: limit + 1,
+			where: {
+				authorId,
+				parentPostId: null,
+				...(search && {
+					content: {
+						contains: search,
+					},
+				}),
+			},
+			...(cursor && {
+				cursor: { id: cursor },
+				skip: 1,
+			}),
+			orderBy: this.orderByCursorMapping[orderBy],
+			select: PostRepository.postSelect,
+		});
+	}
+
 	delete(postId: string) {
 		return this.prisma.post.delete({
 			where: {
