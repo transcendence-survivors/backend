@@ -74,7 +74,7 @@ export class ChatRoomController {
 		return this.service.createRoom(body, sub);
 	}
 
-	@Delete()
+	@Delete(':roomId')
 	@HttpCode(204)
 	@ApiNoContentSuccessResponse()
 	@ApiChatRoomNotFoundResponse()
@@ -84,5 +84,18 @@ export class ChatRoomController {
 		@Param('roomId') roomId: string,
 	): Promise<void> {
 		return this.service.deleteRoom(roomId, sub);
+	}
+
+	@Get(':roomId')
+	@HttpCode(200)
+	@ApiSuccessResponse(ChatRoomListItemResponseDto)
+	@ApiChatRoomNotFoundResponse()
+	@ResponseEnvelope('Chat room retrieved successfully')
+	get(
+		@CurrentUser() { sub }: JwtAccessPayload,
+		@Param('roomId') roomId: string,
+	): Promise<ChatRoomListItemResponseDto> {
+		console.log('roomId:', roomId, 'userId:', sub);
+		return this.service.getRoom(roomId, sub);
 	}
 }

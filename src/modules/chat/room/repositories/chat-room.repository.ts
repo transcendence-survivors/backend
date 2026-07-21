@@ -5,20 +5,29 @@ import { ChatRoomListItem } from '../types/records/chat-room-list-item.type';
 import { ChatRoomSelect } from '@prisma-generated/models';
 import { ChatRoomsCursorParams } from '../types/params/chat-rooms-cursor.params';
 import { ChatMemberRole, ChatRoomType } from '@prisma-generated/enums';
-import { ChatRoomFindDmParams } from '../types/params/chat-room-find-dm.params';
+import {
+	ChatRoomFindDmParams,
+	ChatRoomFindParams,
+} from '../types/params/chat-room-find.params';
 import { ChatRoomCreateParams } from '../types/params/chat-room-create.params';
+import { ChatRoomDeleteParams } from '../types/params/chat-room-delete.params';
+
+interface ChatRoomGroupMemberIdsParams {
+	roomIds: string[];
+	userId: string;
+}
 
 @Injectable()
 export class ChatRoomRepository {
 	constructor(private readonly prisma: PrismaService) {}
 
-	groupMemberIds(
-		roomIds: string[],
-		userId: string,
-	): Promise<{ roomId: string; userId: string }[]> {
-		if (roomIds.length === 0) {
-			return Promise.resolve([]);
-		}
+	groupMemberIds({
+		roomIds,
+		userId,
+	}: ChatRoomGroupMemberIdsParams): Promise<
+		{ roomId: string; userId: string }[]
+	> {
+		if (roomIds.length === 0) return Promise.resolve([]);
 
 		return this.prisma.chatMember.findMany({
 			where: ChatRoomQueryHelper.groupMemberIdsWhere(roomIds, userId),
@@ -82,7 +91,7 @@ export class ChatRoomRepository {
 		});
 	}
 
-	findExistingDm({
+	findDm({
 		userAId,
 		userBId,
 	}: ChatRoomFindDmParams): Promise<{ id: string } | null> {
@@ -100,7 +109,28 @@ export class ChatRoomRepository {
 		});
 	}
 
-	deleteRoom(roomId: string, userId: string) {
+	findRoom({
+		roomId,
+		userId,
+	}: ChatRoomFindParams): Promise<ChatRoomListItem | null> {
+		return this.prisma.chatRoom.findFirst({
+			where: {
+				id: roomId,
+				members: { some: { userId } },
+			},
+			select: {
+				...ChatRoomQueryHelper.chatRoomSelect(userId),
+			} satisfies Record<
+				keyof ChatRoomListItem,
+				ChatRoomSelect[keyof ChatRoomListItem]
+			>,
+		});
+	}
+
+	deleteRoom({
+		roomId,
+		userId,
+	}: ChatRoomDeleteParams): Promise<{ count: number }> {
 		return this.prisma.chatRoom.deleteMany({
 			where: {
 				id: roomId,

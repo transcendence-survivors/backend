@@ -39,10 +39,10 @@ export class ChatRoomService {
 		const groupRoomIds = chatRooms
 			.filter((room) => room.type === ChatRoomType.GROUP)
 			.map((room) => room.id);
-		const groupMembers = await this.repo.groupMemberIds(
-			groupRoomIds,
+		const groupMembers = await this.repo.groupMemberIds({
+			roomIds: groupRoomIds,
 			userId,
-		);
+		});
 		const memberIdsByRoom = groupMembers.reduce<Record<string, string[]>>(
 			(acc, m) => {
 				(acc[m.roomId] ??= []).push(m.userId);
@@ -54,6 +54,20 @@ export class ChatRoomService {
 		const dtos = this.mapper.toListItemDtoList(chatRooms, memberIdsByRoom);
 		const result = this.cursor.create(dtos, dto.limit, (item) => item.id);
 		return this.mapper.toPaginatedListDto(result);
+	}
+
+	async getRoom(
+		roomId: string,
+		userId: string,
+	): Promise<ChatRoomListItemResponseDto> {
+		const room = await this.repo.findRoom({ roomId, userId });
+		if (!room) throw new ChatRoomNotFoundException();
+		const members = await this.repo.groupMemberIds({
+			roomIds: [roomId],
+			userId,
+		});
+		const memberIds = members.map((m) => m.userId);
+		return this.mapper.toListItemDto(room, memberIds);
 	}
 
 	async createRoom(
@@ -70,7 +84,7 @@ export class ChatRoomService {
 		if (type === ChatRoomType.DIRECT) {
 			const recipientId = usersIds[0];
 			if (recipientId === userId) throw new SelfChatDmException();
-			const existingRoom = await this.repo.findExistingDm({
+			const existingRoom = await this.repo.findDm({
 				userAId: userId,
 				userBId: recipientId,
 			});
@@ -87,9 +101,7 @@ export class ChatRoomService {
 	}
 
 	async deleteRoom(roomId: string, userId: string): Promise<void> {
-		const res = await this.repo.deleteRoom(roomId, userId);
-		if (res.count === 0) {
-			throw new ChatRoomNotFoundException();
-		}
+		const res = await this.repo.deleteRoom({ roomId, userId });
+		if (res.count === 0) throw new ChatRoomNotFoundException();
 	}
 }
