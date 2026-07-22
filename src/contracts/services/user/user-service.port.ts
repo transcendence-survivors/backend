@@ -22,4 +22,6 @@ export interface IUserService {
 	validateUserId(userId: string, ctx?: DbContext): Promise<void>;
 
 	getCountIn(ids: string[], ctx?: DbContext): Promise<number>;
+
+	getIdByUsername(username: string): Promise<string>;
 }

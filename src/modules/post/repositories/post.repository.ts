@@ -23,12 +23,22 @@ export class PostRepository {
 		},
 		parent: {
 			select: {
+				content: true,
 				author: {
-					select: { username: true },
+					select: UserQueryHelper.userSelect,
 				},
 			},
 		},
-		_count: { select: { likes: true, replies: true } },
+		quotedPostId: true,
+		quotedPost: {
+			select: {
+				content: true,
+				author: {
+					select: UserQueryHelper.userSelect,
+				},
+			},
+		},
+		_count: { select: { likes: true, replies: true, reposts: true } },
 	} satisfies PostSelect;
 	private readonly orderByCursorMapping: Record<
 		PostOrderBy,
@@ -48,6 +58,7 @@ export class PostRepository {
 		dto: CreatePostDto,
 		imageUrl?: string,
 		parentPostId?: string,
+		quotedPostId?: string,
 	) {
 		return this.prisma.post.create({
 			data: {
@@ -55,6 +66,7 @@ export class PostRepository {
 				content: dto.content,
 				imageUrl,
 				parentPostId,
+				quotedPostId,
 			},
 		});
 	}
@@ -81,6 +93,109 @@ export class PostRepository {
 		});
 	}
 
+	findUserComments(
+		authorId: string,
+		{ limit, cursor, orderBy, search }: PostQueryDto,
+		ctx?: DbContext,
+	) {
+		const client = ctx?.client ?? this.prisma;
+		return client.post.findMany({
+			take: limit + 1,
+			where: {
+				authorId,
+				parentPostId: { not: null },
+				...(search && {
+					content: {
+						contains: search,
+					},
+				}),
+			},
+			...(cursor && {
+				cursor: { id: cursor },
+				skip: 1,
+			}),
+			orderBy: this.orderByCursorMapping[orderBy],
+			select: PostRepository.postSelect,
+		});
+	}
+
+	findUserReposts(
+		authorId: string,
+		{ limit, cursor, orderBy, search }: PostQueryDto,
+		ctx?: DbContext,
+	) {
+		const client = ctx?.client ?? this.prisma;
+		return client.post.findMany({
+			take: limit + 1,
+			where: {
+				authorId,
+				quotedPostId: { not: null },
+				...(search && {
+					content: {
+						contains: search,
+					},
+				}),
+			},
+			...(cursor && {
+				cursor: { id: cursor },
+				skip: 1,
+			}),
+			orderBy: this.orderByCursorMapping[orderBy],
+			select: PostRepository.postSelect,
+		});
+	}
+
+	findUserLikes(
+		userId: string,
+		{ limit, cursor, orderBy, search }: PostQueryDto,
+		ctx?: DbContext,
+	) {
+		const client = ctx?.client ?? this.prisma;
+		return client.post.findMany({
+			take: limit + 1,
+			where: {
+				likes: { some: { userId } },
+				...(search && {
+					content: {
+						contains: search,
+					},
+				}),
+			},
+			...(cursor && {
+				cursor: { id: cursor },
+				skip: 1,
+			}),
+			orderBy: this.orderByCursorMapping[orderBy],
+			select: PostRepository.postSelect,
+		});
+	}
+
+	findUserPosts(
+		authorId: string,
+		{ limit, cursor, orderBy, search }: PostQueryDto,
+		ctx?: DbContext,
+	) {
+		const client = ctx?.client ?? this.prisma;
+		return client.post.findMany({
+			take: limit + 1,
+			where: {
+				authorId,
+				parentPostId: null,
+				...(search && {
+					content: {
+						contains: search,
+					},
+				}),
+			},
+			...(cursor && {
+				cursor: { id: cursor },
+				skip: 1,
+			}),
+			orderBy: this.orderByCursorMapping[orderBy],
+			select: PostRepository.postSelect,
+		});
+	}
+
 	delete(postId: string) {
 		return this.prisma.post.delete({
 			where: {
@@ -92,6 +207,7 @@ export class PostRepository {
 	cursor(
 		parentPostId: string | null,
 		{ limit, cursor, orderBy, search }: PostQueryDto,
+		excludeUserId?: string,
 		ctx?: DbContext,
 	) {
 		const client = ctx?.client ?? this.prisma;
@@ -99,6 +215,7 @@ export class PostRepository {
 			take: limit + 1,
 			where: {
 				parentPostId,
+				...(excludeUserId && { authorId: { not: excludeUserId } }),
 				...(search && {
 					content: {
 						contains: search,

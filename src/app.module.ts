@@ -10,6 +10,7 @@ import { RelationshipsModule } from './modules/relationship/relationship.module'
 import { PresenceModule } from './modules/presence/presence.module';
 import { LikeModule } from './modules/like/like.module';
 import { ChatModule } from './modules/chat/chat.module';
+import { RepostModule } from './modules/repost/repost.module';
 
 @Module({
 	imports: [
@@ -22,6 +23,7 @@ import { ChatModule } from './modules/chat/chat.module';
 		RelationshipsModule,
 		PresenceModule,
 		LikeModule,
+		RepostModule,
 		ChatModule,
 	],
 })

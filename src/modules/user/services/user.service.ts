@@ -47,6 +47,13 @@ export class UserService implements IUserService {
 		if (!user) throw new UserNotFoundException();
 		return user;
 	}
+
+	async getIdByUsername(username: string): Promise<string> {
+		const id = await this.repo.findIdByUsername(username);
+		if (!id) throw new UserNotFoundException();
+		return id;
+	}
+
 	public async createUserOrThrow(
 		input: UserCreateParams,
 		ctx?: DbContext,

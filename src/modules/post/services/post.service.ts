@@ -7,12 +7,14 @@ import { PostQueryDto } from '../dto/post-query.dto';
 import { StorageService } from '@/core/storage/services/storage.service';
 import { CursorService } from '@/shared/services/cursor.service';
 import { LikeRepository } from '@/modules/like/repositories/like.repository';
+import { RepostRepository } from '@/modules/repost/repositories/repost.repositories';
 
 @Injectable()
 export class PostService {
 	constructor(
 		private readonly postRepository: PostRepository,
 		private readonly likeRepository: LikeRepository,
+		private readonly repostRepository: RepostRepository,
 		private readonly cursor: CursorService,
 		private readonly storageService: StorageService,
 	) {}
@@ -22,8 +24,43 @@ export class PostService {
 		userId?: string,
 		parentPostId?: string,
 	) {
+		const excludeUserId = parentPostId ? undefined : userId;
 		const posts = await this.postRepository.cursor(
 			parentPostId ?? null,
+			query,
+			excludeUserId,
+		);
+		const ids = posts.map((p) => p.id);
+
+		const likedIds = userId
+			? await this.likeRepository.findLikedPostIds(userId, ids)
+			: [];
+		const likedSet = new Set(likedIds);
+
+		const repostedIds = userId
+			? await this.repostRepository.findRepostedPostIds(userId, ids)
+			: [];
+		const repostedSet = new Set(repostedIds);
+
+		const enriched = posts.map((p) => ({
+			...p,
+			likeCount: p._count.likes,
+			isLiked: likedSet.has(p.id),
+			commentCount: p._count.replies,
+			repostCount: p._count.reposts,
+			isReposted: repostedSet.has(p.id),
+		}));
+
+		return this.cursor.create(enriched, query.limit, (post) => post.id);
+	}
+
+	async findUserComments(
+		authorId: string,
+		query: PostQueryDto,
+		userId?: string,
+	) {
+		const posts = await this.postRepository.findUserComments(
+			authorId,
 			query,
 		);
 		const ids = posts.map((p) => p.id);
@@ -33,11 +70,111 @@ export class PostService {
 			: [];
 		const likedSet = new Set(likedIds);
 
+		const repostedIds = userId
+			? await this.repostRepository.findRepostedPostIds(userId, ids)
+			: [];
+		const repostedSet = new Set(repostedIds);
+
 		const enriched = posts.map((p) => ({
 			...p,
 			likeCount: p._count.likes,
 			commentCount: p._count.replies,
 			isLiked: likedSet.has(p.id),
+			repostCount: p._count.reposts,
+			isReposted: repostedSet.has(p.id),
+		}));
+
+		return this.cursor.create(enriched, query.limit, (post) => post.id);
+	}
+
+	async findUserReposts(
+		authorId: string,
+		query: PostQueryDto,
+		userId?: string,
+	) {
+		const posts = await this.postRepository.findUserReposts(
+			authorId,
+			query,
+		);
+		const ids = posts.map((p) => p.id);
+
+		const likedIds = userId
+			? await this.likeRepository.findLikedPostIds(userId, ids)
+			: [];
+		const likedSet = new Set(likedIds);
+
+		const repostedIds = userId
+			? await this.repostRepository.findRepostedPostIds(userId, ids)
+			: [];
+		const repostedSet = new Set(repostedIds);
+
+		const enriched = posts.map((p) => ({
+			...p,
+			likeCount: p._count.likes,
+			commentCount: p._count.replies,
+			isLiked: likedSet.has(p.id),
+			repostCount: p._count.reposts,
+			isReposted: repostedSet.has(p.id),
+		}));
+
+		return this.cursor.create(enriched, query.limit, (post) => post.id);
+	}
+
+	async findUserLikes(
+		userId: string,
+		query: PostQueryDto,
+		viewerId?: string,
+	) {
+		const posts = await this.postRepository.findUserLikes(userId, query);
+		const ids = posts.map((p) => p.id);
+
+		const likedIds = viewerId
+			? await this.likeRepository.findLikedPostIds(viewerId, ids)
+			: [];
+		const likedSet = new Set(likedIds);
+
+		const repostedIds = userId
+			? await this.repostRepository.findRepostedPostIds(userId, ids)
+			: [];
+		const repostedSet = new Set(repostedIds);
+
+		const enriched = posts.map((p) => ({
+			...p,
+			likeCount: p._count.likes,
+			commentCount: p._count.replies,
+			isLiked: likedSet.has(p.id),
+			repostCount: p._count.reposts,
+			isReposted: repostedSet.has(p.id),
+		}));
+
+		return this.cursor.create(enriched, query.limit, (post) => post.id);
+	}
+
+	async findUserPosts(
+		authorId: string,
+		query: PostQueryDto,
+		viewerId?: string,
+	) {
+		const posts = await this.postRepository.findUserPosts(authorId, query);
+		const ids = posts.map((p) => p.id);
+
+		const likedIds = viewerId
+			? await this.likeRepository.findLikedPostIds(viewerId, ids)
+			: [];
+		const likedSet = new Set(likedIds);
+
+		const repostedIds = viewerId
+			? await this.repostRepository.findRepostedPostIds(viewerId, ids)
+			: [];
+		const repostedSet = new Set(repostedIds);
+
+		const enriched = posts.map((p) => ({
+			...p,
+			likeCount: p._count.likes,
+			commentCount: p._count.replies,
+			isLiked: likedSet.has(p.id),
+			repostCount: p._count.reposts,
+			isReposted: repostedSet.has(p.id),
 		}));
 
 		return this.cursor.create(enriched, query.limit, (post) => post.id);
@@ -55,11 +192,18 @@ export class PostService {
 			? await this.likeRepository.findLikedPostIds(userId, [postId])
 			: [];
 
+		const repostedIds = userId
+			? await this.repostRepository.findRepostedPostIds(userId, [postId])
+			: [];
+		const repostedSet = new Set(repostedIds);
+
 		return {
 			...res,
 			likeCount: res._count.likes,
 			commentCount: res._count.replies,
 			isLiked: likedIds.includes(postId),
+			repostCount: res._count.reposts,
+			isReposted: repostedSet.has(postId),
 		};
 	}
 
@@ -68,8 +212,15 @@ export class PostService {
 		dto: CreatePostDto,
 		imageUrl?: string,
 		parentPostId?: string,
+		quotedPostId?: string,
 	) {
-		return this.postRepository.create(userId, dto, imageUrl, parentPostId);
+		return this.postRepository.create(
+			userId,
+			dto,
+			imageUrl,
+			parentPostId,
+			quotedPostId,
+		);
 	}
 
 	async delete(postId: string, userId: string) {
