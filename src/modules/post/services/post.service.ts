@@ -24,9 +24,11 @@ export class PostService {
 		userId?: string,
 		parentPostId?: string,
 	) {
+		const excludeUserId = parentPostId ? undefined : userId;
 		const posts = await this.postRepository.cursor(
 			parentPostId ?? null,
 			query,
+			excludeUserId,
 		);
 		const ids = posts.map((p) => p.id);
 

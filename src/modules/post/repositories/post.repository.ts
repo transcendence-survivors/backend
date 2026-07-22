@@ -207,6 +207,7 @@ export class PostRepository {
 	cursor(
 		parentPostId: string | null,
 		{ limit, cursor, orderBy, search }: PostQueryDto,
+		excludeUserId?: string,
 		ctx?: DbContext,
 	) {
 		const client = ctx?.client ?? this.prisma;
@@ -214,6 +215,7 @@ export class PostRepository {
 			take: limit + 1,
 			where: {
 				parentPostId,
+				...(excludeUserId && { authorId: { not: excludeUserId } }),
 				...(search && {
 					content: {
 						contains: search,
