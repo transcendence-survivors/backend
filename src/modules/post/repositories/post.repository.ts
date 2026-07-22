@@ -38,7 +38,7 @@ export class PostRepository {
 				},
 			},
 		},
-		_count: { select: { likes: true, replies: true } },
+		_count: { select: { likes: true, replies: true, reposts: true } },
 	} satisfies PostSelect;
 	private readonly orderByCursorMapping: Record<
 		PostOrderBy,
