@@ -9,6 +9,7 @@ import { ChatMessageOrderByEnum } from '../types/enums/chat-message-order-by.enu
 export class ChatMessageQueryHelper {
 	public static chatMessageSelect = {
 		id: true,
+		roomId: true,
 		content: true,
 		attachmentUrls: true,
 		isEdited: true,

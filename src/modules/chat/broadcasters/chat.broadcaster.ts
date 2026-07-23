@@ -1,0 +1,55 @@
+import { WsServerProvider } from '@/core/websocket/provider/ws-server.provider';
+import { CHAT_EVENTS } from '../chat.events';
+import { ChatMember } from '@prisma-generated/browser';
+import { InjectPresenceStore } from '@/contracts/services/presence/presence-store.inject';
+import { type IPresenceStore } from '@/contracts/services/presence/presence-store.port';
+import { Injectable } from '@nestjs/common';
+import { ChatMessageListItem } from '../message/types/records/chat-message-list-item';
+
+@Injectable()
+export class ChatBroadcaster {
+	constructor(
+		private readonly ws: WsServerProvider,
+		@InjectPresenceStore() private readonly presenceStore: IPresenceStore,
+	) {}
+
+	messageNew(message: ChatMessageListItem) {
+		this.ws
+			.get()
+			.to(message.roomId)
+			.emit(CHAT_EVENTS.SEND.MESSAGE_NEW, message);
+	}
+
+	messageUpdated(message: ChatMessageListItem) {
+		this.ws
+			.get()
+			.to(message.roomId)
+			.emit(CHAT_EVENTS.SEND.MESSAGE_UPDATED, message);
+	}
+
+	messageSoftDeleted(messageId: string, roomId: string) {
+		this.ws
+			.get()
+			.to(roomId)
+			.emit(CHAT_EVENTS.SEND.MESSAGE_SOFT_DELETED, { messageId, roomId });
+	}
+
+	memberAdded(roomId: string, member: ChatMember) {
+		this.ws.get().to(roomId).emit(CHAT_EVENTS.SEND.MEMBER_ADDED, member);
+	}
+
+	memberRemoved(roomId: string, userId: string) {
+		this.ws
+			.get()
+			.to(roomId)
+			.emit(CHAT_EVENTS.SEND.MEMBER_REMOVED, { roomId, userId });
+		this.forceLeaveRoom(userId, roomId);
+	}
+
+	private forceLeaveRoom(userId: string, roomId: string) {
+		const socketIds = this.presenceStore.getSocketsByUserId(userId);
+		for (const socketId of socketIds) {
+			void this.ws.get().sockets.sockets.get(socketId)?.leave(roomId);
+		}
+	}
+}

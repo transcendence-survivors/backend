@@ -9,8 +9,8 @@ import { PresencePreferedStatus } from '@prisma-generated/enums';
 import { PresenceDisconnect } from '../types/records/presence-disconnect.type';
 import { PresenceUpdate } from '../types/records/presence-update.type';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { AppEvents } from '@/contracts/events/internal';
-import { PresenceWentOfflineEvent } from '@/contracts/events/internal/presence-went-offline';
+import { APP_EVENTS } from '@/contracts/events/internal';
+import { PresenceWentOfflineEvent } from '@/contracts/events/internal/presence/presence-went-offline';
 
 @Injectable()
 export class PresenceService implements OnModuleDestroy {
@@ -154,7 +154,7 @@ export class PresenceService implements OnModuleDestroy {
 
 		this.store.finalizeOffline(userId);
 		this.eventEmitter.emit(
-			AppEvents.PRESENCE_WENT_OFFLINE,
+			APP_EVENTS.PRESENCE_WENT_OFFLINE,
 			new PresenceWentOfflineEvent(
 				userId,
 				this.store.getOnlineUserCount(),

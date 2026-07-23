@@ -6,7 +6,7 @@ import { AuthResetPasswordDto } from '../dtos/requests/auth-reset-password.dto';
 import { TokenService } from '../token/service/token.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import {
-	AppEvents,
+	APP_EVENTS,
 	UserCreatedEvent,
 	PasswordResetRequestedEvent,
 } from '@/contracts/events/internal';
@@ -87,7 +87,7 @@ export class AuthService {
 		});
 
 		this.eventEmitter.emit(
-			AppEvents.USER_CREATED,
+			APP_EVENTS.USER_CREATED,
 			new UserCreatedEvent(
 				user.id,
 				userData.email,
@@ -137,7 +137,7 @@ export class AuthService {
 
 		const token = await this.tokenService.createPasswordReset(user.id);
 		this.eventEmitter.emit(
-			AppEvents.PASSWORD_RESET_REQUESTED,
+			APP_EVENTS.PASSWORD_RESET_REQUESTED,
 			new PasswordResetRequestedEvent(
 				dto.email,
 				token,

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { ChatMessageRepository } from '../repositories/chat-message.repository';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ChatMessageNotFoundException } from '../exceptions/chat-message-not-found.exceptions';
@@ -10,6 +10,11 @@ import { ChatMessagePaginatedListResponseDto } from '../dtos/responses/chat-mess
 import { CursorService } from '@/shared/services/cursor.service';
 import { ChatMessageCountDto } from '../dtos/requests/chat-message-count.dto';
 import { ChatMessageCountResponseDto } from '../dtos/responses/chat-room-count-response.dto';
+import { CreateMessageDto } from '../dtos/requests/chat-message-create.dto';
+import { ChatMemberService } from '../../members/services/chat-member.service';
+import { APP_EVENTS } from '@/contracts/events/internal';
+import { ChatMessageCreatedEvent } from '@/contracts/events/internal/chat/chat-message-created.event';
+import { ChatMessageSoftDeleteEvent } from '@/contracts/events/internal/chat/chat-message-soft-delete.event';
 
 @Injectable()
 export class ChatMessageService {
@@ -21,6 +26,7 @@ export class ChatMessageService {
 
 	constructor(
 		private readonly repo: ChatMessageRepository,
+		private readonly memberService: ChatMemberService,
 		private readonly eventEmitter: EventEmitter2,
 		private readonly mapper: ChatMessageMapper,
 		private readonly cursor: CursorService,
@@ -59,13 +65,40 @@ export class ChatMessageService {
 		return this.mapper.toCountDto(messages);
 	}
 
+	async create(roomId: string, userId: string, dto: CreateMessageDto) {
+		await this.checkPerm(userId, userId, roomId);
+
+		if (!dto.content?.trim() && !dto.attachmentUrls?.length) {
+			throw new BadRequestException(
+				'Message must have content or an attachment',
+			);
+		}
+
+		const message = await this.repo.create({
+			roomId,
+			senderId: userId,
+			content: dto.content,
+			attachmentUrls: dto.attachmentUrls ?? [],
+			replyToId: dto.replyToId,
+		});
+
+		this.eventEmitter.emit(
+			APP_EVENTS.CHAT_MESSAGE_CREATED,
+			new ChatMessageCreatedEvent(message),
+		);
+		return message;
+	}
+
 	async softDelete(messageId: string, userId: string) {
 		const message = await this.repo.findById(messageId);
 		if (!message) throw new ChatMessageNotFoundException();
 		await this.checkPerm(userId, message.senderId, message.roomId);
 
 		const deleted = await this.repo.softDelete(messageId);
-		this.eventEmitter.emit('message.deleted', deleted);
+		this.eventEmitter.emit(
+			APP_EVENTS.CHAT_MESSAGE_SOFT_DELETED,
+			new ChatMessageSoftDeleteEvent(messageId, message.roomId),
+		);
 		return deleted;
 	}
 
@@ -74,10 +107,17 @@ export class ChatMessageService {
 		senderId: string,
 		roomId: string,
 	): Promise<void> {
-		if (userId === senderId) return;
+		if (userId === senderId) {
+			const member = await this.memberService.findByRoomAndUser({
+				roomId,
+				userId,
+			});
+			if (!member) throw new ChatMessageActionForbiddenException();
+			return;
+		}
 		const [user, sender] = await Promise.all([
-			this.repo.findByRoomAndUser({ roomId, userId }),
-			this.repo.findByRoomAndUser({ roomId, userId: senderId }),
+			this.memberService.findByRoomAndUser({ roomId, userId }),
+			this.memberService.findByRoomAndUser({ roomId, userId: senderId }),
 		]);
 		if (!user || !sender) throw new ChatMessageActionForbiddenException();
 		if (this.roleHierarchy[user.role] <= this.roleHierarchy[sender.role])

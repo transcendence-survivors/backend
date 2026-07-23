@@ -2,20 +2,10 @@ import { PrismaService } from '@/core/database/services/prisma.service';
 import { Injectable } from '@nestjs/common';
 import { ChatMessagesCursorParams } from '../types/params/chat-messages-cursor.params';
 import { ChatMessageQueryHelper } from './chat-message-query.helper';
-import { ChatMessageCreateParams } from '../types/params/chat-message-create-params';
+import { ChatMessageCreateParams } from '../types/params/chat-message-create.params';
 import { ChatMessageListItem } from '../types/records/chat-message-list-item';
 import { ChatMessageSelect } from '@prisma-generated/models';
-
-interface ChatMemberFindParams {
-	roomId: string;
-	userId: string;
-}
-
-interface ChatMessageCountParams {
-	roomId: string;
-	userId: string;
-	search?: string;
-}
+import { ChatMessageCountParams } from '../types/params/chat-message-count.params';
 
 @Injectable()
 export class ChatMessageRepository {
@@ -64,15 +54,21 @@ export class ChatMessageRepository {
 		content,
 		replyToId,
 		attachmentUrls,
-	}: ChatMessageCreateParams) {
+	}: ChatMessageCreateParams): Promise<ChatMessageListItem> {
 		return this.prisma.chatMessage.create({
 			data: {
 				roomId: roomId,
 				senderId: senderId,
 				content: content,
-				replyToId: replyToId,
 				attachmentUrls: attachmentUrls,
+				replyToId: replyToId,
 			},
+			select: {
+				...ChatMessageQueryHelper.chatMessageSelect,
+			} satisfies Record<
+				keyof ChatMessageListItem,
+				ChatMessageSelect[keyof ChatMessageListItem]
+			>,
 		});
 	}
 
@@ -91,13 +87,6 @@ export class ChatMessageRepository {
 				roomId: true,
 				senderId: true,
 			},
-		});
-	}
-
-	findByRoomAndUser({ roomId, userId }: ChatMemberFindParams) {
-		return this.prisma.chatMember.findUnique({
-			where: { roomId_userId: { roomId, userId } },
-			select: { role: true, isMuted: true },
 		});
 	}
 }

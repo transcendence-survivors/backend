@@ -1,13 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { FriendService } from '../services/friend.service';
 import { OnEvent } from '@nestjs/event-emitter';
-import { AppEvents, BlockCreatedEvent } from '@/contracts/events/internal';
+import { APP_EVENTS, BlockCreatedEvent } from '@/contracts/events/internal';
 
 @Injectable()
 export class FriendListener {
 	constructor(private readonly service: FriendService) {}
 
-	@OnEvent(AppEvents.BLOCK_CREATED)
+	@OnEvent(APP_EVENTS.BLOCK_CREATED)
 	async handleBlockCreated(event: BlockCreatedEvent) {
 		const count = await this.service.removeIfExists(
 			event.blockerUserId,

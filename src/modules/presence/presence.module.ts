@@ -7,17 +7,23 @@ import { PresenceRepository } from './repositories/presence.repository';
 import { PresenceMapper } from './mappers/presence.mapper';
 import { PresenceBroadcaster } from './broadcasters/presence.broadcaster';
 import { PresenceListener } from './listeners/presence.listener';
+import { PRESENCE_STORE } from '@/contracts/services/presence/presence-store.port';
 
 @Module({
 	imports: [FriendModule],
 	providers: [
-		PresenceMapper,
-		PresenceBroadcaster,
-		PresenceGateway,
 		PresenceStoreService,
 		PresenceService,
 		PresenceRepository,
+		PresenceMapper,
+		PresenceGateway,
+		PresenceBroadcaster,
 		PresenceListener,
+		{
+			provide: PRESENCE_STORE,
+			useExisting: PresenceStoreService,
+		},
 	],
+	exports: [PRESENCE_STORE],
 })
 export class PresenceModule {}

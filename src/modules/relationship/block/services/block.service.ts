@@ -10,7 +10,7 @@ import { BlockConflictException } from '../exceptions/block-conflict.exception';
 import { BlockNotFoundException } from '../exceptions/block-not-found.exceptions';
 import { type IBlockService } from '@/contracts/services/block/block-service.port';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { AppEvents, BlockCreatedEvent } from '@/contracts/events/internal';
+import { APP_EVENTS, BlockCreatedEvent } from '@/contracts/events/internal';
 import { CursorService } from '@/shared/services/cursor.service';
 import { BlockPaginateDto } from '../dtos/requests/block-paginate.dto';
 import { BlockMapper } from '../mappers/block.mapper';
@@ -88,7 +88,7 @@ export class BlockService implements IBlockService {
 
 		const block = await this.repo.save({ blockerId, blockedId });
 		this.eventEmitter.emit(
-			AppEvents.BLOCK_CREATED,
+			APP_EVENTS.BLOCK_CREATED,
 			new BlockCreatedEvent(blockerId, blockedId),
 		);
 

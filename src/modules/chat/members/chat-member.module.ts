@@ -5,8 +5,8 @@ import { ChatMemberRepository } from './repositories/chat-member.repository';
 import { ChatMemberService } from './services/chat-member.service';
 
 @Module({
-	imports: [],
 	controllers: [ChatMemberController],
 	providers: [ChatMemberService, ChatMemberRepository, ChatMemberMapper],
+	exports: [ChatMemberService, ChatMemberMapper],
 })
 export class ChatMemberModule {}

@@ -1,5 +1,5 @@
 import {
-	AppEvents,
+	APP_EVENTS,
 	PasswordResetRequestedEvent,
 	UserCreatedEvent,
 } from '@/contracts/events/internal';
@@ -11,7 +11,7 @@ import { Injectable } from '@nestjs/common';
 export class EMailListener {
 	constructor(private readonly service: EmailService) {}
 
-	@OnEvent(AppEvents.USER_CREATED)
+	@OnEvent(APP_EVENTS.USER_CREATED)
 	async handleUserCreated(event: UserCreatedEvent) {
 		await this.service.sendWelcomeEmail(
 			{
@@ -24,7 +24,7 @@ export class EMailListener {
 		);
 	}
 
-	@OnEvent(AppEvents.PASSWORD_RESET_REQUESTED)
+	@OnEvent(APP_EVENTS.PASSWORD_RESET_REQUESTED)
 	async handlePasswordReset(event: PasswordResetRequestedEvent) {
 		await this.service.sendResetPassword(
 			event.email,
