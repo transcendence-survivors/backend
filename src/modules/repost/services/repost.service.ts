@@ -7,7 +7,7 @@ import { RepostDoesNotExistException } from '../exceptions/repost-does-not-exist
 export class RepostService {
 	constructor(private readonly repostRepository: RepostRepository) {}
 
-	private async isReposted(postId: string, userId: string) {
+	async isReposted(postId: string, userId: string) {
 		const repost = await this.repostRepository.isReposted(postId, userId);
 		return !!repost;
 	}

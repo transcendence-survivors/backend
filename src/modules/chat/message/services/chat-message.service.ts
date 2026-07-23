@@ -4,6 +4,12 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { ChatMessageNotFoundException } from '../exceptions/chat-message-not-found.exceptions';
 import { ChatMessageActionForbiddenException } from '../exceptions/chat-message-forbidden.exceptions';
 import { ChatMemberRole } from '@prisma-generated/enums';
+import { ChatMessagePaginateDto } from '../dtos/requests/chat-message-paginate.dto';
+import { ChatMessageMapper } from '../mappers/chat-message.mapper';
+import { ChatMessagePaginatedListResponseDto } from '../dtos/responses/chat-message-paginated-list-response.dto';
+import { CursorService } from '@/shared/services/cursor.service';
+import { ChatMessageCountDto } from '../dtos/requests/chat-message-count.dto';
+import { ChatMessageCountResponseDto } from '../dtos/responses/chat-room-count-response.dto';
 
 @Injectable()
 export class ChatMessageService {
@@ -16,7 +22,42 @@ export class ChatMessageService {
 	constructor(
 		private readonly repo: ChatMessageRepository,
 		private readonly eventEmitter: EventEmitter2,
+		private readonly mapper: ChatMessageMapper,
+		private readonly cursor: CursorService,
 	) {}
+
+	async listMessages(
+		{ limit, cursor, search, orderBy }: ChatMessagePaginateDto,
+		userId: string,
+		roomId: string,
+	): Promise<ChatMessagePaginatedListResponseDto> {
+		const messages = await this.repo.cursor({
+			limit,
+			cursor,
+			search,
+			orderBy,
+			userId,
+			roomId,
+		});
+
+		const dtos = this.mapper.toListItemDtoList(messages);
+		const pagination = this.cursor.create(dtos, limit, (item) => item.id);
+		return this.mapper.toPaginatedListDto(pagination);
+	}
+
+	async countMessages(
+		{ search }: ChatMessageCountDto,
+		userId: string,
+		roomId: string,
+	): Promise<ChatMessageCountResponseDto> {
+		const messages = await this.repo.count({
+			search,
+			userId,
+			roomId,
+		});
+
+		return this.mapper.toCountDto(messages);
+	}
 
 	async softDelete(messageId: string, userId: string) {
 		const message = await this.repo.findById(messageId);

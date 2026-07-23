@@ -69,9 +69,6 @@ export class PresenceService implements OnModuleDestroy {
 		const result = this.store.removeConnection(socketId);
 
 		if (result.userId && result.isCompletelyOffline) {
-			console.log(
-				`User ${result.userId} has no active connections. Scheduling offline confirmation.`,
-			);
 			this.scheduleOfflineConfirmation(result.userId);
 		}
 

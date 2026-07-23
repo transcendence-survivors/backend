@@ -4,6 +4,7 @@ import { INestApplicationContext } from '@nestjs/common';
 import { Env, ENV } from '@/core/config/env/providers/env.provider';
 import { SocketAuthMiddleware } from '../middlewares/socket-auth.middleware';
 import { type ClientSocket } from '@/core/websocket/interface/ws-socket.inteface';
+import { WsServerProvider } from '../provider/ws-server.provider';
 
 export class SocketIoAdapter extends IoAdapter {
 	constructor(private readonly appContext: INestApplicationContext) {
@@ -28,7 +29,7 @@ export class SocketIoAdapter extends IoAdapter {
 		server.use((client: ClientSocket, next) => {
 			authMiddleware.use(client, next);
 		});
-
+		this.appContext.get(WsServerProvider).set(server);
 		return server;
 	}
 }

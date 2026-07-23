@@ -95,7 +95,6 @@ export class ChatRoomController {
 		@CurrentUser() { sub }: JwtAccessPayload,
 		@Param('roomId') roomId: string,
 	): Promise<ChatRoomListItemResponseDto> {
-		console.log('roomId:', roomId, 'userId:', sub);
 		return this.service.getRoom(roomId, sub);
 	}
 }

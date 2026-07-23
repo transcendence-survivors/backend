@@ -1,22 +1,62 @@
 import { PrismaService } from '@/core/database/services/prisma.service';
 import { Injectable } from '@nestjs/common';
-
-interface ChatMessageCreateParams {
-	roomId: string;
-	senderId: string;
-	content: string;
-	replyToId?: string;
-	attachmentUrls?: string[];
-}
+import { ChatMessagesCursorParams } from '../types/params/chat-messages-cursor.params';
+import { ChatMessageQueryHelper } from './chat-message-query.helper';
+import { ChatMessageCreateParams } from '../types/params/chat-message-create-params';
+import { ChatMessageListItem } from '../types/records/chat-message-list-item';
+import { ChatMessageSelect } from '@prisma-generated/models';
 
 interface ChatMemberFindParams {
 	roomId: string;
 	userId: string;
 }
 
+interface ChatMessageCountParams {
+	roomId: string;
+	userId: string;
+	search?: string;
+}
+
 @Injectable()
 export class ChatMessageRepository {
 	constructor(private readonly prisma: PrismaService) {}
+
+	cursor({
+		limit,
+		cursor,
+		search,
+		orderBy,
+		userId,
+		roomId,
+	}: ChatMessagesCursorParams): Promise<ChatMessageListItem[]> {
+		return this.prisma.chatMessage.findMany({
+			...ChatMessageQueryHelper.pagination(limit, cursor),
+			where: {
+				AND: [
+					ChatMessageQueryHelper.whereRoom(userId, roomId),
+					ChatMessageQueryHelper.whereSearch(search),
+				],
+			},
+			select: {
+				...ChatMessageQueryHelper.chatMessageSelect,
+			} satisfies Record<
+				keyof ChatMessageListItem,
+				ChatMessageSelect[keyof ChatMessageListItem]
+			>,
+			orderBy: ChatMessageQueryHelper.orderBy[orderBy],
+		});
+	}
+
+	count({ search, userId, roomId }: ChatMessageCountParams): Promise<number> {
+		return this.prisma.chatMessage.count({
+			where: {
+				AND: [
+					ChatMessageQueryHelper.whereRoom(userId, roomId),
+					ChatMessageQueryHelper.whereSearch(search),
+				],
+			},
+		});
+	}
 
 	create({
 		roomId,
