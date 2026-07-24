@@ -1,14 +1,12 @@
 import { PrismaService } from '@/core/database/services/prisma.service';
 import { Injectable } from '@nestjs/common';
-import { CreatePostDto } from '../dto/post.dto';
+import { PostCreateDto } from '../dtos/requests/post-create.dto';
 import { DbContext } from '@/core/database/uow/db-context';
 import { PostOrderByWithRelationInput } from '@prisma-generated/models';
-import { PostQueryDto } from '../dto/post-query.dto';
+import { PostPaginateDto } from '../dtos/requests/post-paginate.dto';
 import { UserQueryHelper } from '@/modules/user/user.public-api';
 import type { PostSelect } from '@prisma-generated/models';
-
-export const POST_ORDER_BY = ['date-asc', 'date-desc'] as const;
-export type PostOrderBy = (typeof POST_ORDER_BY)[number];
+import { PostOrderByEnum } from '../types/enums/post-order-by.enum';
 
 @Injectable()
 export class PostRepository {
@@ -40,8 +38,9 @@ export class PostRepository {
 		},
 		_count: { select: { likes: true, replies: true, reposts: true } },
 	} satisfies PostSelect;
+
 	private readonly orderByCursorMapping: Record<
-		PostOrderBy,
+		PostOrderByEnum,
 		PostOrderByWithRelationInput[]
 	> = {
 		'date-asc': [{ createdAt: 'asc' }, { id: 'asc' }],
@@ -55,7 +54,7 @@ export class PostRepository {
 
 	create(
 		userId: string,
-		dto: CreatePostDto,
+		dto: PostCreateDto,
 		imageUrl?: string,
 		parentPostId?: string,
 		quotedPostId?: string,
@@ -95,7 +94,7 @@ export class PostRepository {
 
 	findUserComments(
 		authorId: string,
-		{ limit, cursor, orderBy, search }: PostQueryDto,
+		{ limit, cursor, orderBy, search }: PostPaginateDto,
 		ctx?: DbContext,
 	) {
 		const client = ctx?.client ?? this.prisma;
@@ -121,7 +120,7 @@ export class PostRepository {
 
 	findUserReposts(
 		authorId: string,
-		{ limit, cursor, orderBy, search }: PostQueryDto,
+		{ limit, cursor, orderBy, search }: PostPaginateDto,
 		ctx?: DbContext,
 	) {
 		const client = ctx?.client ?? this.prisma;
@@ -147,7 +146,7 @@ export class PostRepository {
 
 	findUserLikes(
 		userId: string,
-		{ limit, cursor, orderBy, search }: PostQueryDto,
+		{ limit, cursor, orderBy, search }: PostPaginateDto,
 		ctx?: DbContext,
 	) {
 		const client = ctx?.client ?? this.prisma;
@@ -172,7 +171,7 @@ export class PostRepository {
 
 	findUserPosts(
 		authorId: string,
-		{ limit, cursor, orderBy, search }: PostQueryDto,
+		{ limit, cursor, orderBy, search }: PostPaginateDto,
 		ctx?: DbContext,
 	) {
 		const client = ctx?.client ?? this.prisma;
@@ -206,7 +205,7 @@ export class PostRepository {
 
 	cursor(
 		parentPostId: string | null,
-		{ limit, cursor, orderBy, search }: PostQueryDto,
+		{ limit, cursor, orderBy, search }: PostPaginateDto,
 		excludeUserId?: string,
 		ctx?: DbContext,
 	) {

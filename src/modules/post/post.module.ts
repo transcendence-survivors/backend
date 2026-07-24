@@ -5,10 +5,11 @@ import { PostService } from './services/post.service';
 import { LikeModule } from '../like/like.module';
 import { UserModule } from '../user/user.module';
 import { RepostModule } from '../repost/repost.module';
+import { PostMapper } from './mappers/post.mapper';
 
 @Module({
 	imports: [LikeModule, UserModule, RepostModule],
 	controllers: [PostController],
-	providers: [PostRepository, PostService],
+	providers: [PostRepository, PostService, PostMapper],
 })
 export class PostModule {}
