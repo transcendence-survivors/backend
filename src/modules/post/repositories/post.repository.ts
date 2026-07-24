@@ -1,12 +1,16 @@
 import { PrismaService } from '@/core/database/services/prisma.service';
 import { Injectable } from '@nestjs/common';
-import { PostCreateDto } from '../dtos/requests/post-create.dto';
 import { DbContext } from '@/core/database/uow/db-context';
 import { PostOrderByWithRelationInput } from '@prisma-generated/models';
-import { PostPaginateDto } from '../dtos/requests/post-paginate.dto';
 import { UserQueryHelper } from '@/modules/user/user.public-api';
 import type { PostSelect } from '@prisma-generated/models';
 import { PostOrderByEnum } from '../types/enums/post-order-by.enum';
+import type { PostCreateParams } from '../types/params/post-create.params';
+import type {
+	PostsByAuthorCursorParams,
+	PostsFeedCursorParams,
+	PostsLikedByCursorParams,
+} from '../types/params/posts-cursor.params';
 
 @Injectable()
 export class PostRepository {
@@ -48,21 +52,39 @@ export class PostRepository {
 	};
 
 	constructor(private readonly prisma: PrismaService) {}
+
+	private pagination(limit: number, cursor?: string) {
+		return {
+			take: limit + 1,
+			...(cursor && {
+				cursor: { id: cursor },
+				skip: 1,
+			}),
+		};
+	}
+
+	private searchWhere(search?: string) {
+		return search ? { content: { contains: search } } : {};
+	}
+
 	findAll() {
 		return this.prisma.post.findMany();
 	}
 
 	create(
-		userId: string,
-		dto: PostCreateDto,
-		imageUrl?: string,
-		parentPostId?: string,
-		quotedPostId?: string,
+		{
+			authorId,
+			content,
+			imageUrl,
+			parentPostId,
+			quotedPostId,
+		}: PostCreateParams,
+		ctx?: DbContext,
 	) {
-		return this.prisma.post.create({
+		return (ctx?.client ?? this.prisma).post.create({
 			data: {
-				authorId: userId,
-				content: dto.content,
+				authorId,
+				content,
 				imageUrl,
 				parentPostId,
 				quotedPostId,
@@ -70,8 +92,8 @@ export class PostRepository {
 		});
 	}
 
-	findById(postId: string) {
-		return this.prisma.post.findFirst({
+	findById(postId: string, ctx?: DbContext) {
+		return (ctx?.client ?? this.prisma).post.findFirst({
 			where: {
 				id: postId,
 			},
@@ -83,8 +105,8 @@ export class PostRepository {
 		});
 	}
 
-	findByIdWithDetails(postId: string) {
-		return this.prisma.post.findFirst({
+	findByIdWithDetails(postId: string, ctx?: DbContext) {
+		return (ctx?.client ?? this.prisma).post.findFirst({
 			where: {
 				id: postId,
 			},
@@ -92,141 +114,102 @@ export class PostRepository {
 		});
 	}
 
-	findUserComments(
-		authorId: string,
-		{ limit, cursor, orderBy, search }: PostPaginateDto,
+	cursor(
+		{
+			parentPostId,
+			excludeUserId,
+			limit,
+			cursor,
+			orderBy,
+			search,
+		}: PostsFeedCursorParams,
 		ctx?: DbContext,
 	) {
 		const client = ctx?.client ?? this.prisma;
 		return client.post.findMany({
-			take: limit + 1,
+			...this.pagination(limit, cursor),
 			where: {
-				authorId,
-				parentPostId: { not: null },
-				...(search && {
-					content: {
-						contains: search,
-					},
-				}),
+				parentPostId,
+				...(excludeUserId && { authorId: { not: excludeUserId } }),
+				...this.searchWhere(search),
 			},
-			...(cursor && {
-				cursor: { id: cursor },
-				skip: 1,
-			}),
-			orderBy: this.orderByCursorMapping[orderBy],
-			select: PostRepository.postSelect,
-		});
-	}
-
-	findUserReposts(
-		authorId: string,
-		{ limit, cursor, orderBy, search }: PostPaginateDto,
-		ctx?: DbContext,
-	) {
-		const client = ctx?.client ?? this.prisma;
-		return client.post.findMany({
-			take: limit + 1,
-			where: {
-				authorId,
-				quotedPostId: { not: null },
-				...(search && {
-					content: {
-						contains: search,
-					},
-				}),
-			},
-			...(cursor && {
-				cursor: { id: cursor },
-				skip: 1,
-			}),
-			orderBy: this.orderByCursorMapping[orderBy],
-			select: PostRepository.postSelect,
-		});
-	}
-
-	findUserLikes(
-		userId: string,
-		{ limit, cursor, orderBy, search }: PostPaginateDto,
-		ctx?: DbContext,
-	) {
-		const client = ctx?.client ?? this.prisma;
-		return client.post.findMany({
-			take: limit + 1,
-			where: {
-				likes: { some: { userId } },
-				...(search && {
-					content: {
-						contains: search,
-					},
-				}),
-			},
-			...(cursor && {
-				cursor: { id: cursor },
-				skip: 1,
-			}),
 			orderBy: this.orderByCursorMapping[orderBy],
 			select: PostRepository.postSelect,
 		});
 	}
 
 	findUserPosts(
-		authorId: string,
-		{ limit, cursor, orderBy, search }: PostPaginateDto,
+		{ authorId, limit, cursor, orderBy, search }: PostsByAuthorCursorParams,
 		ctx?: DbContext,
 	) {
 		const client = ctx?.client ?? this.prisma;
 		return client.post.findMany({
-			take: limit + 1,
+			...this.pagination(limit, cursor),
 			where: {
 				authorId,
 				parentPostId: null,
-				...(search && {
-					content: {
-						contains: search,
-					},
-				}),
+				...this.searchWhere(search),
 			},
-			...(cursor && {
-				cursor: { id: cursor },
-				skip: 1,
-			}),
 			orderBy: this.orderByCursorMapping[orderBy],
 			select: PostRepository.postSelect,
 		});
 	}
 
-	delete(postId: string) {
-		return this.prisma.post.delete({
-			where: {
-				id: postId,
-			},
-		});
-	}
-
-	cursor(
-		parentPostId: string | null,
-		{ limit, cursor, orderBy, search }: PostPaginateDto,
-		excludeUserId?: string,
+	findUserComments(
+		{ authorId, limit, cursor, orderBy, search }: PostsByAuthorCursorParams,
 		ctx?: DbContext,
 	) {
 		const client = ctx?.client ?? this.prisma;
 		return client.post.findMany({
-			take: limit + 1,
+			...this.pagination(limit, cursor),
 			where: {
-				parentPostId,
-				...(excludeUserId && { authorId: { not: excludeUserId } }),
-				...(search && {
-					content: {
-						contains: search,
-					},
-				}),
+				authorId,
+				parentPostId: { not: null },
+				...this.searchWhere(search),
 			},
-			...(cursor && {
-				cursor: { id: cursor },
-				skip: 1,
-			}),
 			orderBy: this.orderByCursorMapping[orderBy],
 			select: PostRepository.postSelect,
+		});
+	}
+
+	findUserReposts(
+		{ authorId, limit, cursor, orderBy, search }: PostsByAuthorCursorParams,
+		ctx?: DbContext,
+	) {
+		const client = ctx?.client ?? this.prisma;
+		return client.post.findMany({
+			...this.pagination(limit, cursor),
+			where: {
+				authorId,
+				quotedPostId: { not: null },
+				...this.searchWhere(search),
+			},
+			orderBy: this.orderByCursorMapping[orderBy],
+			select: PostRepository.postSelect,
+		});
+	}
+
+	findUserLikes(
+		{ userId, limit, cursor, orderBy, search }: PostsLikedByCursorParams,
+		ctx?: DbContext,
+	) {
+		const client = ctx?.client ?? this.prisma;
+		return client.post.findMany({
+			...this.pagination(limit, cursor),
+			where: {
+				likes: { some: { userId } },
+				...this.searchWhere(search),
+			},
+			orderBy: this.orderByCursorMapping[orderBy],
+			select: PostRepository.postSelect,
+		});
+	}
+
+	delete(postId: string, ctx?: DbContext) {
+		return (ctx?.client ?? this.prisma).post.delete({
+			where: {
+				id: postId,
+			},
 		});
 	}
 }

@@ -39,10 +39,6 @@ export class PostCreateDto {
 	@IsString()
 	quotedPostId?: string;
 
-	/**
-	 * Documented for Swagger only: the file is consumed by the
-	 * `FileInterceptor` and never reaches the validation pipe.
-	 */
 	@ApiPropertyOptional({
 		description: 'An image to attach to the post (max 10 MB)',
 		type: String,

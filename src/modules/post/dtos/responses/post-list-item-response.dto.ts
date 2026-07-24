@@ -38,10 +38,6 @@ export class PostAuthorResponseDto {
 	avatarUrl!: string | null;
 }
 
-/**
- * Lightweight preview of a related post: the post being replied to
- * (`parent`) or the post being quoted (`quotedPost`).
- */
 @Exclude()
 export class PostPreviewResponseDto {
 	@ApiProperty({

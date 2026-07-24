@@ -16,21 +16,18 @@ import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
 import { ApiSuccessResponse } from '@/shared/decorators/api-success-response.decorator';
 import { LikeInfoResponseDto } from '../dtos/responses/like-info-response.dto';
 
-const ApiPostIdParam = () =>
-	ApiParam({
-		name: 'postId',
-		description: 'The id of the target post',
-		type: String,
-		format: 'uuid',
-	});
-
 @UseGuards(JWTAccessGuard)
 @Controller('likes')
 export class LikeController {
 	constructor(private readonly likeService: LikeService) {}
 
 	@Post(':postId')
-	@ApiPostIdParam()
+	@ApiParam({
+		name: 'postId',
+		description: 'The id of the post to like',
+		type: String,
+		format: 'uuid',
+	})
 	@ResponseEnvelope('post liked successfully')
 	addLike(
 		@Param('postId') postId: string,
@@ -40,7 +37,12 @@ export class LikeController {
 	}
 
 	@Delete(':postId')
-	@ApiPostIdParam()
+	@ApiParam({
+		name: 'postId',
+		description: 'The id of the post to unlike',
+		type: String,
+		format: 'uuid',
+	})
 	@ResponseEnvelope('post unliked successfully')
 	deleteLike(
 		@Param('postId') postId: string,
@@ -51,7 +53,12 @@ export class LikeController {
 
 	@Get(':postId')
 	@HttpCode(200)
-	@ApiPostIdParam()
+	@ApiParam({
+		name: 'postId',
+		description: 'The id of the post to retrieve the like info from',
+		type: String,
+		format: 'uuid',
+	})
 	@ApiSuccessResponse(LikeInfoResponseDto)
 	@ResponseEnvelope('like info retrieved successfully')
 	getLikeInfo(

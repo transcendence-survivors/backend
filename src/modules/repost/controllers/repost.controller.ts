@@ -16,21 +16,18 @@ import { ApiParam } from '@nestjs/swagger';
 import { RepostService } from '../services/repost.service';
 import { RepostInfoResponseDto } from '../dtos/responses/repost-info-response.dto';
 
-const ApiPostIdParam = () =>
-	ApiParam({
-		name: 'postId',
-		description: 'The id of the target post',
-		type: String,
-		format: 'uuid',
-	});
-
 @UseGuards(JWTAccessGuard)
 @Controller('reposts')
 export class RepostController {
 	constructor(private readonly repostService: RepostService) {}
 
 	@Post(':postId')
-	@ApiPostIdParam()
+	@ApiParam({
+		name: 'postId',
+		description: 'The id of the post to repost',
+		type: String,
+		format: 'uuid',
+	})
 	@ResponseEnvelope('post reposted successfully')
 	addRepost(
 		@Param('postId') postId: string,
@@ -40,7 +37,12 @@ export class RepostController {
 	}
 
 	@Delete(':postId')
-	@ApiPostIdParam()
+	@ApiParam({
+		name: 'postId',
+		description: 'The id of the post to remove the repost from',
+		type: String,
+		format: 'uuid',
+	})
 	@ResponseEnvelope('repost removed successfully')
 	deleteRepost(
 		@Param('postId') postId: string,
@@ -51,7 +53,12 @@ export class RepostController {
 
 	@Get(':postId')
 	@HttpCode(200)
-	@ApiPostIdParam()
+	@ApiParam({
+		name: 'postId',
+		description: 'The id of the post to retrieve the repost info from',
+		type: String,
+		format: 'uuid',
+	})
 	@ApiSuccessResponse(RepostInfoResponseDto)
 	@ResponseEnvelope('repost info retrieved successfully')
 	getRepostInfo(

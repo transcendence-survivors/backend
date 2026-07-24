@@ -223,13 +223,13 @@ export class PostController {
 			});
 		}
 		try {
-			return await this.postService.create(
-				user.sub,
-				{ content },
+			return await this.postService.create({
+				authorId: user.sub,
+				content,
 				imageUrl,
 				parentPostId,
 				quotedPostId,
-			);
+			});
 		} catch (err) {
 			if (imageUrl) await this.storageService.delete(imageUrl);
 			throw err;

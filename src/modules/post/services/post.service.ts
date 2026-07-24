@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
 import { PostRepository } from '../repositories/post.repository';
-import { PostCreateDto } from '../dtos/requests/post-create.dto';
 import { PostOwnershipException } from '../exceptions/post-unauthorized.exception.';
 import { PostDoesNotExistException } from '../exceptions/post-unexisting.exception';
 import { PostPaginateDto } from '../dtos/requests/post-paginate.dto';
@@ -10,6 +9,7 @@ import { LikeRepository } from '@/modules/like/repositories/like.repository';
 import { RepostRepository } from '@/modules/repost/repositories/repost.repositories';
 import { PostMapper } from '../mappers/post.mapper';
 import { PostListItem } from '../types/records/post-list-item.type';
+import { PostCreateParams } from '../types/params/post-create.params';
 import { PostListItemResponseDto } from '../dtos/responses/post-list-item-response.dto';
 import { PostPaginatedListResponseDto } from '../dtos/responses/post-paginated-list-response.dto';
 import { PostCreatedResponseDto } from '../dtos/responses/post-created-response.dto';
@@ -25,10 +25,6 @@ export class PostService {
 		private readonly mapper: PostMapper,
 	) {}
 
-	/**
-	 * Resolves, for the current viewer, which of the given posts they already
-	 * liked and reposted. Anonymous viewers get empty sets.
-	 */
 	private async viewerInteractions(
 		postIds: string[],
 		viewerId?: string,
@@ -64,48 +60,11 @@ export class PostService {
 		viewerId?: string,
 		parentPostId?: string,
 	): Promise<PostPaginatedListResponseDto> {
-		const excludeUserId = parentPostId ? undefined : viewerId;
-		const posts = await this.postRepository.cursor(
-			parentPostId ?? null,
-			query,
-			excludeUserId,
-		);
-
-		return this.toPaginatedListDto(posts, query.limit, viewerId);
-	}
-
-	async findUserComments(
-		authorId: string,
-		query: PostPaginateDto,
-		viewerId?: string,
-	): Promise<PostPaginatedListResponseDto> {
-		const posts = await this.postRepository.findUserComments(
-			authorId,
-			query,
-		);
-
-		return this.toPaginatedListDto(posts, query.limit, viewerId);
-	}
-
-	async findUserReposts(
-		authorId: string,
-		query: PostPaginateDto,
-		viewerId?: string,
-	): Promise<PostPaginatedListResponseDto> {
-		const posts = await this.postRepository.findUserReposts(
-			authorId,
-			query,
-		);
-
-		return this.toPaginatedListDto(posts, query.limit, viewerId);
-	}
-
-	async findUserLikes(
-		userId: string,
-		query: PostPaginateDto,
-		viewerId?: string,
-	): Promise<PostPaginatedListResponseDto> {
-		const posts = await this.postRepository.findUserLikes(userId, query);
+		const posts = await this.postRepository.cursor({
+			...query,
+			parentPostId: parentPostId ?? null,
+			excludeUserId: parentPostId ? undefined : viewerId,
+		});
 
 		return this.toPaginatedListDto(posts, query.limit, viewerId);
 	}
@@ -115,7 +74,49 @@ export class PostService {
 		query: PostPaginateDto,
 		viewerId?: string,
 	): Promise<PostPaginatedListResponseDto> {
-		const posts = await this.postRepository.findUserPosts(authorId, query);
+		const posts = await this.postRepository.findUserPosts({
+			...query,
+			authorId,
+		});
+
+		return this.toPaginatedListDto(posts, query.limit, viewerId);
+	}
+
+	async findUserComments(
+		authorId: string,
+		query: PostPaginateDto,
+		viewerId?: string,
+	): Promise<PostPaginatedListResponseDto> {
+		const posts = await this.postRepository.findUserComments({
+			...query,
+			authorId,
+		});
+
+		return this.toPaginatedListDto(posts, query.limit, viewerId);
+	}
+
+	async findUserReposts(
+		authorId: string,
+		query: PostPaginateDto,
+		viewerId?: string,
+	): Promise<PostPaginatedListResponseDto> {
+		const posts = await this.postRepository.findUserReposts({
+			...query,
+			authorId,
+		});
+
+		return this.toPaginatedListDto(posts, query.limit, viewerId);
+	}
+
+	async findUserLikes(
+		userId: string,
+		query: PostPaginateDto,
+		viewerId?: string,
+	): Promise<PostPaginatedListResponseDto> {
+		const posts = await this.postRepository.findUserLikes({
+			...query,
+			userId,
+		});
 
 		return this.toPaginatedListDto(posts, query.limit, viewerId);
 	}
@@ -139,20 +140,8 @@ export class PostService {
 		return this.mapper.toListItemDto(post, liked, reposted);
 	}
 
-	async create(
-		userId: string,
-		dto: PostCreateDto,
-		imageUrl?: string,
-		parentPostId?: string,
-		quotedPostId?: string,
-	): Promise<PostCreatedResponseDto> {
-		const post = await this.postRepository.create(
-			userId,
-			dto,
-			imageUrl,
-			parentPostId,
-			quotedPostId,
-		);
+	async create(params: PostCreateParams): Promise<PostCreatedResponseDto> {
+		const post = await this.postRepository.create(params);
 
 		return this.mapper.toCreatedDto(post);
 	}

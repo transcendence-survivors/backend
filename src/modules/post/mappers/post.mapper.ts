@@ -7,11 +7,6 @@ import { PostListItemResponseDto } from '../dtos/responses/post-list-item-respon
 import { PostPaginatedListResponseDto } from '../dtos/responses/post-paginated-list-response.dto';
 import { PostCreatedResponseDto } from '../dtos/responses/post-created-response.dto';
 
-/**
- * Turns the raw records coming from the repository into the response DTOs
- * exposed by the controllers. Nothing else in the module is allowed to leak
- * a Prisma shape to the outside world.
- */
 @Injectable()
 export class PostMapper {
 	toListItemDto(
