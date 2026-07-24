@@ -1,5 +1,5 @@
 import { Global, Module } from '@nestjs/common';
-import { ExceptionsFilter } from './filters/http-exception.filter';
+import { HttpExceptionsFilter } from './filters/http-exception.filter';
 import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ResponseInterceptor } from './interceptors/response.interceptor';
 import { CustomValidationPipe } from './pipes/custom-validation.pipe';
@@ -20,7 +20,7 @@ import { HealthController } from './health.controller';
 		},
 		{
 			provide: APP_FILTER,
-			useClass: ExceptionsFilter,
+			useClass: HttpExceptionsFilter,
 		},
 		CursorService,
 	],

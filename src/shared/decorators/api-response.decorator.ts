@@ -1,4 +1,4 @@
-import { ApiSuccessEnvelope } from '../interfaces/api-response.interface';
+import { ApiSuccessEnvelope } from '../types/response.type';
 
 export const ResponseEnvelope = (message?: string): MethodDecorator => {
 	return (_target, _propertyKey, descriptor: PropertyDescriptor) => {

@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Exclude, Expose, Type } from 'class-transformer';
 
+@Exclude()
 class ChatMessageSenderDto {
 	@ApiProperty({
 		type: String,
@@ -50,28 +51,32 @@ export class ChatMessageListItemResponseDto {
 
 	@ApiProperty({
 		type: String,
+		format: 'uuid',
+		description: 'Unique identifier of the chat room',
+		example: 'f1e2d3c4-b5a6-4b7c-8d9e-0f1a2b3c4d5e',
+	})
+	@Expose()
+	roomId!: string;
+
+	@ApiProperty({
+		type: String,
 		description: 'Content of the chat message',
 		example: 'Hello, friend!',
 	})
 	@Expose()
 	content!: string;
 
-	@ApiProperty({
-		type: ChatMessageSenderDto,
-		description: 'The sender of the chat message',
+	@ApiPropertyOptional({
+		type: [String],
+		description:
+			'List of URLs for attachments associated with the chat message',
+		example: [
+			'https://cdn.example.com/attachments/file1.png',
+			'https://cdn.example.com/attachments/file2.pdf',
+		],
 	})
 	@Expose()
-	@Type(() => ChatMessageSenderDto)
-	sender!: ChatMessageSenderDto;
-
-	@ApiProperty({
-		type: String,
-		format: 'date-time',
-		description: 'Timestamp when the chat message was created',
-		example: '2023-01-01T12:00:00Z',
-	})
-	@Expose()
-	createdAt!: Date;
+	attachmentUrls!: string[];
 
 	@ApiProperty({
 		type: Boolean,
@@ -100,15 +105,20 @@ export class ChatMessageListItemResponseDto {
 	@Expose()
 	replyToId!: string | null;
 
-	@ApiPropertyOptional({
-		type: [String],
-		description:
-			'List of URLs for attachments associated with the chat message',
-		example: [
-			'https://cdn.example.com/attachments/file1.png',
-			'https://cdn.example.com/attachments/file2.pdf',
-		],
+	@ApiProperty({
+		type: String,
+		format: 'date-time',
+		description: 'Timestamp when the chat message was created',
+		example: '2023-01-01T12:00:00Z',
 	})
 	@Expose()
-	attachmentUrls!: string[];
+	createdAt!: Date;
+
+	@ApiProperty({
+		type: ChatMessageSenderDto,
+		description: 'The sender of the chat message',
+	})
+	@Expose()
+	@Type(() => ChatMessageSenderDto)
+	sender!: ChatMessageSenderDto;
 }

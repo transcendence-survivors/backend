@@ -11,6 +11,7 @@ import { PresenceModule } from './modules/presence/presence.module';
 import { LikeModule } from './modules/like/like.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { RepostModule } from './modules/repost/repost.module';
+import { UploadModule } from './modules/upload/upload.module';
 
 @Module({
 	imports: [
@@ -25,6 +26,7 @@ import { RepostModule } from './modules/repost/repost.module';
 		LikeModule,
 		RepostModule,
 		ChatModule,
+		UploadModule,
 	],
 })
 export class AppModule {}

@@ -18,8 +18,8 @@ interface Smtp {
 
 export interface MinioBucket {
 	avatar: string;
-	postImage: string;
-	postVideo: string;
+	post: string;
+	chat: string;
 }
 
 interface Minio {
@@ -66,8 +66,8 @@ export const EnvProvider: Provider<Env> = {
 			secretKey: env.MINIO_ROOT_PASSWORD,
 			buckets: {
 				avatar: env.MINIO_BUCKET_AVATARS,
-				postImage: env.MINIO_BUCKET_POST_IMAGES,
-				postVideo: env.MINIO_BUCKET_POST_VIDEOS,
+				post: env.MINIO_BUCKET_POST,
+				chat: env.MINIO_BUCKET_CHAT,
 			},
 		},
 

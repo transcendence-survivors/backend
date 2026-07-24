@@ -6,10 +6,7 @@ import {
 } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
-import {
-	ApiSuccess,
-	ApiSuccessEnvelope,
-} from '../interfaces/api-response.interface';
+import { ApiSuccess, ApiSuccessEnvelope } from '../types/response.type';
 
 export type ResponseInput<T> = T | ApiSuccessEnvelope<T>;
 

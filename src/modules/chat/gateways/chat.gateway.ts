@@ -9,12 +9,14 @@ import { ChatMessageService } from '../message/services/chat-message.service';
 import { CHAT_EVENTS } from '../chat.events';
 import { Server } from 'socket.io';
 import { CreateMessageDto } from '../message/dtos/requests/chat-message-create.dto';
-import { UseGuards } from '@nestjs/common';
+import { UseFilters, UseGuards } from '@nestjs/common';
 import { WsJWTAccessGuard } from '@/core/security/guards/jwt-access.guard';
 import { type UserSocket } from '@/core/websocket/interface/ws-socket.inteface';
 import { ChatBroadcaster } from '../broadcasters/chat.broadcaster';
+import { WsExceptionsFilter } from '@/shared/filters/ws-exception.filter';
 
-@WebSocketGateway({ namespace: '/chat' })
+@UseFilters(WsExceptionsFilter)
+@WebSocketGateway()
 export class ChatGateway {
 	@WebSocketServer()
 	server!: Server;
@@ -30,6 +32,7 @@ export class ChatGateway {
 		@ConnectedSocket() client: UserSocket,
 		@MessageBody() dto: CreateMessageDto,
 	) {
+		console.log('handleMessageSend called with dto:', dto);
 		const message = await this.messagesService.create(
 			dto.roomId,
 			client.data.user.sub,

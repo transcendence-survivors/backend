@@ -153,7 +153,7 @@ export class PostController {
 				fileName: `posts/${user.sub}-${Date.now()}${extname(file.originalname)}`,
 				contentType: file.mimetype,
 				body: file.buffer,
-				bucket: 'post-image',
+				bucket: 'post',
 			});
 		}
 		try {

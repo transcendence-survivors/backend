@@ -25,8 +25,8 @@ const envSchema = z.object({
 	MINIO_ROOT_USER: z.string().min(1),
 	MINIO_ROOT_PASSWORD: z.string().min(1),
 	MINIO_BUCKET_AVATARS: z.string().min(1),
-	MINIO_BUCKET_POST_IMAGES: z.string().min(1),
-	MINIO_BUCKET_POST_VIDEOS: z.string().min(1),
+	MINIO_BUCKET_POST: z.string().min(1),
+	MINIO_BUCKET_CHAT: z.string().min(1),
 });
 
 const env = envSchema.parse(process.env);
