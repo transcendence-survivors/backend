@@ -21,6 +21,7 @@ import { PresenceStatusEnum } from '../types/enums/presence-status.enum';
 import { PresencePreferedStatus } from '@prisma-generated/enums';
 import { PresenceBroadcaster } from '../broadcasters/presence.broadcaster';
 import { WsExceptionsFilter } from '@/shared/filters/ws-exception.filter';
+import { handleWs } from '@/shared/utils/exceptions.utils';
 
 @UseFilters(WsExceptionsFilter)
 @WebSocketGateway()
@@ -68,28 +69,34 @@ export class PresenceGateway
 	@UseGuards(WsJWTAccessGuard)
 	@SubscribeMessage(PRESENCE_EVENTS.RECEIVE.GO_VISIBLE)
 	async goVisible(@ConnectedSocket() client: UserSocket) {
-		await this.handleStatusChange(
-			client.data.user.sub,
-			PresenceStatusEnum.ONLINE,
-		);
+		return handleWs(async () => {
+			return await this.handleStatusChange(
+				client.data.user.sub,
+				PresenceStatusEnum.ONLINE,
+			);
+		});
 	}
 
 	@UseGuards(WsJWTAccessGuard)
 	@SubscribeMessage(PRESENCE_EVENTS.RECEIVE.GO_INVISIBLE)
 	async goInvisible(@ConnectedSocket() client: UserSocket) {
-		await this.handleStatusChange(
-			client.data.user.sub,
-			PresenceStatusEnum.INVISIBLE,
-		);
+		return handleWs(async () => {
+			return await this.handleStatusChange(
+				client.data.user.sub,
+				PresenceStatusEnum.INVISIBLE,
+			);
+		});
 	}
 
 	@UseGuards(WsJWTAccessGuard)
 	@SubscribeMessage(PRESENCE_EVENTS.RECEIVE.GO_DND)
 	async goDoNotDisturb(@ConnectedSocket() client: UserSocket) {
-		await this.handleStatusChange(
-			client.data.user.sub,
-			PresenceStatusEnum.DO_NOT_DISTURB,
-		);
+		return handleWs(async () => {
+			return await this.handleStatusChange(
+				client.data.user.sub,
+				PresenceStatusEnum.DO_NOT_DISTURB,
+			);
+		});
 	}
 
 	private async handleStatusChange(
