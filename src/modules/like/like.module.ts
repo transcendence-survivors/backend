@@ -2,10 +2,11 @@ import { Module } from '@nestjs/common';
 import { LikeController } from './controllers/like.controller';
 import { LikeRepository } from './repositories/like.repository';
 import { LikeService } from './services/like.service';
+import { LikeMapper } from './mappers/like.mapper';
 
 @Module({
 	controllers: [LikeController],
-	providers: [LikeRepository, LikeService],
+	providers: [LikeRepository, LikeService, LikeMapper],
 	exports: [LikeRepository],
 })
 export class LikeModule {}

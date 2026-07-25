@@ -1,13 +1,18 @@
 import { Injectable } from '@nestjs/common';
 import { PostRepository } from '../repositories/post.repository';
-import { CreatePostDto } from '../dto/post.dto';
 import { PostOwnershipException } from '../exceptions/post-unauthorized.exception.';
 import { PostDoesNotExistException } from '../exceptions/post-unexisting.exception';
-import { PostQueryDto } from '../dto/post-query.dto';
+import { PostPaginateDto } from '../dtos/requests/post-paginate.dto';
 import { StorageService } from '@/core/storage/services/storage.service';
 import { CursorService } from '@/shared/services/cursor.service';
 import { LikeRepository } from '@/modules/like/repositories/like.repository';
 import { RepostRepository } from '@/modules/repost/repositories/repost.repositories';
+import { PostMapper } from '../mappers/post.mapper';
+import { PostListItem } from '../types/records/post-list-item.type';
+import { PostCreateParams } from '../types/params/post-create.params';
+import { PostListItemResponseDto } from '../dtos/responses/post-list-item-response.dto';
+import { PostPaginatedListResponseDto } from '../dtos/responses/post-paginated-list-response.dto';
+import { PostCreatedResponseDto } from '../dtos/responses/post-created-response.dto';
 
 @Injectable()
 export class PostService {
@@ -17,219 +22,137 @@ export class PostService {
 		private readonly repostRepository: RepostRepository,
 		private readonly cursor: CursorService,
 		private readonly storageService: StorageService,
+		private readonly mapper: PostMapper,
 	) {}
 
-	async findCursor(
-		query: PostQueryDto,
-		userId?: string,
-		parentPostId?: string,
-	) {
-		const excludeUserId = parentPostId ? undefined : userId;
-		const posts = await this.postRepository.cursor(
-			parentPostId ?? null,
-			query,
-			excludeUserId,
-		);
-		const ids = posts.map((p) => p.id);
-
-		const likedIds = userId
-			? await this.likeRepository.findLikedPostIds(userId, ids)
-			: [];
-		const likedSet = new Set(likedIds);
-
-		const repostedIds = userId
-			? await this.repostRepository.findRepostedPostIds(userId, ids)
-			: [];
-		const repostedSet = new Set(repostedIds);
-
-		const enriched = posts.map((p) => ({
-			...p,
-			likeCount: p._count.likes,
-			isLiked: likedSet.has(p.id),
-			commentCount: p._count.replies,
-			repostCount: p._count.reposts,
-			isReposted: repostedSet.has(p.id),
-		}));
-
-		return this.cursor.create(enriched, query.limit, (post) => post.id);
-	}
-
-	async findUserComments(
-		authorId: string,
-		query: PostQueryDto,
-		userId?: string,
-	) {
-		const posts = await this.postRepository.findUserComments(
-			authorId,
-			query,
-		);
-		const ids = posts.map((p) => p.id);
-
-		const likedIds = userId
-			? await this.likeRepository.findLikedPostIds(userId, ids)
-			: [];
-		const likedSet = new Set(likedIds);
-
-		const repostedIds = userId
-			? await this.repostRepository.findRepostedPostIds(userId, ids)
-			: [];
-		const repostedSet = new Set(repostedIds);
-
-		const enriched = posts.map((p) => ({
-			...p,
-			likeCount: p._count.likes,
-			commentCount: p._count.replies,
-			isLiked: likedSet.has(p.id),
-			repostCount: p._count.reposts,
-			isReposted: repostedSet.has(p.id),
-		}));
-
-		return this.cursor.create(enriched, query.limit, (post) => post.id);
-	}
-
-	async findUserReposts(
-		authorId: string,
-		query: PostQueryDto,
-		userId?: string,
-	) {
-		const posts = await this.postRepository.findUserReposts(
-			authorId,
-			query,
-		);
-		const ids = posts.map((p) => p.id);
-
-		const likedIds = userId
-			? await this.likeRepository.findLikedPostIds(userId, ids)
-			: [];
-		const likedSet = new Set(likedIds);
-
-		const repostedIds = userId
-			? await this.repostRepository.findRepostedPostIds(userId, ids)
-			: [];
-		const repostedSet = new Set(repostedIds);
-
-		const enriched = posts.map((p) => ({
-			...p,
-			likeCount: p._count.likes,
-			commentCount: p._count.replies,
-			isLiked: likedSet.has(p.id),
-			repostCount: p._count.reposts,
-			isReposted: repostedSet.has(p.id),
-		}));
-
-		return this.cursor.create(enriched, query.limit, (post) => post.id);
-	}
-
-	async findUserLikes(
-		userId: string,
-		query: PostQueryDto,
+	private async viewerInteractions(
+		postIds: string[],
 		viewerId?: string,
-	) {
-		const posts = await this.postRepository.findUserLikes(userId, query);
-		const ids = posts.map((p) => p.id);
+	): Promise<{ liked: ReadonlySet<string>; reposted: ReadonlySet<string> }> {
+		if (!viewerId || postIds.length === 0)
+			return { liked: new Set(), reposted: new Set() };
 
-		const likedIds = viewerId
-			? await this.likeRepository.findLikedPostIds(viewerId, ids)
-			: [];
-		const likedSet = new Set(likedIds);
+		const [likedIds, repostedIds] = await Promise.all([
+			this.likeRepository.findLikedPostIds(viewerId, postIds),
+			this.repostRepository.findRepostedPostIds(viewerId, postIds),
+		]);
 
-		const repostedIds = userId
-			? await this.repostRepository.findRepostedPostIds(userId, ids)
-			: [];
-		const repostedSet = new Set(repostedIds);
+		return { liked: new Set(likedIds), reposted: new Set(repostedIds) };
+	}
 
-		const enriched = posts.map((p) => ({
-			...p,
-			likeCount: p._count.likes,
-			commentCount: p._count.replies,
-			isLiked: likedSet.has(p.id),
-			repostCount: p._count.reposts,
-			isReposted: repostedSet.has(p.id),
-		}));
+	private async toPaginatedListDto(
+		posts: PostListItem[],
+		limit: number,
+		viewerId?: string,
+	): Promise<PostPaginatedListResponseDto> {
+		const { liked, reposted } = await this.viewerInteractions(
+			posts.map((post) => post.id),
+			viewerId,
+		);
 
-		return this.cursor.create(enriched, query.limit, (post) => post.id);
+		const dtos = this.mapper.toListItemDtoList(posts, liked, reposted);
+		const result = this.cursor.create(dtos, limit, (item) => item.id);
+		return this.mapper.toPaginatedListDto(result);
+	}
+
+	async findCursor(
+		query: PostPaginateDto,
+		viewerId?: string,
+		parentPostId?: string,
+	): Promise<PostPaginatedListResponseDto> {
+		const posts = await this.postRepository.cursor({
+			...query,
+			parentPostId: parentPostId ?? null,
+			excludeUserId: parentPostId ? undefined : viewerId,
+		});
+
+		return this.toPaginatedListDto(posts, query.limit, viewerId);
 	}
 
 	async findUserPosts(
 		authorId: string,
-		query: PostQueryDto,
+		query: PostPaginateDto,
 		viewerId?: string,
-	) {
-		const posts = await this.postRepository.findUserPosts(authorId, query);
-		const ids = posts.map((p) => p.id);
+	): Promise<PostPaginatedListResponseDto> {
+		const posts = await this.postRepository.findUserPosts({
+			...query,
+			authorId,
+		});
 
-		const likedIds = viewerId
-			? await this.likeRepository.findLikedPostIds(viewerId, ids)
-			: [];
-		const likedSet = new Set(likedIds);
+		return this.toPaginatedListDto(posts, query.limit, viewerId);
+	}
 
-		const repostedIds = viewerId
-			? await this.repostRepository.findRepostedPostIds(viewerId, ids)
-			: [];
-		const repostedSet = new Set(repostedIds);
+	async findUserComments(
+		authorId: string,
+		query: PostPaginateDto,
+		viewerId?: string,
+	): Promise<PostPaginatedListResponseDto> {
+		const posts = await this.postRepository.findUserComments({
+			...query,
+			authorId,
+		});
 
-		const enriched = posts.map((p) => ({
-			...p,
-			likeCount: p._count.likes,
-			commentCount: p._count.replies,
-			isLiked: likedSet.has(p.id),
-			repostCount: p._count.reposts,
-			isReposted: repostedSet.has(p.id),
-		}));
+		return this.toPaginatedListDto(posts, query.limit, viewerId);
+	}
 
-		return this.cursor.create(enriched, query.limit, (post) => post.id);
+	async findUserReposts(
+		authorId: string,
+		query: PostPaginateDto,
+		viewerId?: string,
+	): Promise<PostPaginatedListResponseDto> {
+		const posts = await this.postRepository.findUserReposts({
+			...query,
+			authorId,
+		});
+
+		return this.toPaginatedListDto(posts, query.limit, viewerId);
+	}
+
+	async findUserLikes(
+		userId: string,
+		query: PostPaginateDto,
+		viewerId?: string,
+	): Promise<PostPaginatedListResponseDto> {
+		const posts = await this.postRepository.findUserLikes({
+			...query,
+			userId,
+		});
+
+		return this.toPaginatedListDto(posts, query.limit, viewerId);
 	}
 
 	findAll() {
 		return this.postRepository.findAll();
 	}
 
-	async findOne(postId: string, userId?: string) {
-		const res = await this.postRepository.findByIdWithDetails(postId);
-		if (!res) throw new PostDoesNotExistException();
+	async findOne(
+		postId: string,
+		viewerId?: string,
+	): Promise<PostListItemResponseDto> {
+		const post = await this.postRepository.findByIdWithDetails(postId);
+		if (!post) throw new PostDoesNotExistException();
 
-		const likedIds = userId
-			? await this.likeRepository.findLikedPostIds(userId, [postId])
-			: [];
-
-		const repostedIds = userId
-			? await this.repostRepository.findRepostedPostIds(userId, [postId])
-			: [];
-		const repostedSet = new Set(repostedIds);
-
-		return {
-			...res,
-			likeCount: res._count.likes,
-			commentCount: res._count.replies,
-			isLiked: likedIds.includes(postId),
-			repostCount: res._count.reposts,
-			isReposted: repostedSet.has(postId),
-		};
-	}
-
-	create(
-		userId: string,
-		dto: CreatePostDto,
-		imageUrl?: string,
-		parentPostId?: string,
-		quotedPostId?: string,
-	) {
-		return this.postRepository.create(
-			userId,
-			dto,
-			imageUrl,
-			parentPostId,
-			quotedPostId,
+		const { liked, reposted } = await this.viewerInteractions(
+			[postId],
+			viewerId,
 		);
+
+		return this.mapper.toListItemDto(post, liked, reposted);
 	}
 
-	async delete(postId: string, userId: string) {
+	async create(params: PostCreateParams): Promise<PostCreatedResponseDto> {
+		const post = await this.postRepository.create(params);
+
+		return this.mapper.toCreatedDto(post);
+	}
+
+	async delete(postId: string, userId: string): Promise<void> {
 		const found = await this.postRepository.findById(postId);
 		if (!found) throw new PostDoesNotExistException();
 		if (found.authorId !== userId) throw new PostOwnershipException();
 		if (found.imageUrl) {
 			await this.storageService.delete(found.imageUrl);
 		}
-		return this.postRepository.delete(postId);
+		await this.postRepository.delete(postId);
 	}
 }
