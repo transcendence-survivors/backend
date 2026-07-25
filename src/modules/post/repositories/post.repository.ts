@@ -67,10 +67,6 @@ export class PostRepository {
 		return search ? { content: { contains: search } } : {};
 	}
 
-	findAll() {
-		return this.prisma.post.findMany();
-	}
-
 	create(
 		{
 			authorId,

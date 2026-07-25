@@ -121,10 +121,6 @@ export class PostService {
 		return this.toPaginatedListDto(posts, query.limit, viewerId);
 	}
 
-	findAll() {
-		return this.postRepository.findAll();
-	}
-
 	async findOne(
 		postId: string,
 		viewerId?: string,
@@ -142,7 +138,6 @@ export class PostService {
 
 	async create(params: PostCreateParams): Promise<PostCreatedResponseDto> {
 		const post = await this.postRepository.create(params);
-
 		return this.mapper.toCreatedDto(post);
 	}
 
