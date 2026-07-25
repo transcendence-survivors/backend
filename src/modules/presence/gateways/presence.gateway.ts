@@ -102,7 +102,7 @@ export class PresenceGateway
 	private async handleStatusChange(
 		userId: string,
 		status: PresencePreferedStatus,
-	) {
+	): Promise<void> {
 		const result = await this.service.updateStatus(userId, status);
 
 		if (result.broadcastCount)
