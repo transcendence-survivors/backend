@@ -10,11 +10,12 @@ import { ChatMessagePaginatedListResponseDto } from '../dtos/responses/chat-mess
 import { CursorService } from '@/shared/services/cursor.service';
 import { ChatMessageCountDto } from '../dtos/requests/chat-message-count.dto';
 import { ChatMessageCountResponseDto } from '../dtos/responses/chat-room-count-response.dto';
-import { CreateMessageDto } from '../dtos/requests/chat-message-create.dto';
+import { ChatMessageCreateDto } from '../dtos/requests/chat-message-create.dto';
 import { ChatMemberService } from '../../members/services/chat-member.service';
 import { APP_EVENTS } from '@/contracts/events/internal';
 import { ChatMessageCreatedEvent } from '@/contracts/events/internal/chat/chat-message-created.event';
 import { ChatMessageSoftDeleteEvent } from '@/contracts/events/internal/chat/chat-message-soft-delete.event';
+import { ChatMessageEditDto } from '../dtos/requests/chat-message-edit';
 
 @Injectable()
 export class ChatMessageService {
@@ -65,7 +66,7 @@ export class ChatMessageService {
 		return this.mapper.toCountDto(messages);
 	}
 
-	async create(roomId: string, userId: string, dto: CreateMessageDto) {
+	async create(roomId: string, userId: string, dto: ChatMessageCreateDto) {
 		await this.checkPerm(userId, userId, roomId);
 
 		if (!dto.content?.trim() && !dto.attachmentUrls?.length) {
@@ -89,23 +90,35 @@ export class ChatMessageService {
 		return message;
 	}
 
-	async softDelete(messageId: string, userId: string) {
+	async softDelete(messageId: string, userId: string): Promise<void> {
 		const message = await this.repo.findById(messageId);
 		if (!message) throw new ChatMessageNotFoundException();
 		await this.checkPerm(userId, message.senderId, message.roomId);
 
-		const deleted = await this.repo.softDelete(messageId);
+		await this.repo.softDelete(messageId);
 		this.eventEmitter.emit(
 			APP_EVENTS.CHAT_MESSAGE_SOFT_DELETED,
 			new ChatMessageSoftDeleteEvent(messageId, message.roomId),
 		);
-		return deleted;
+	}
+
+	async edit(
+		{ messageId, content }: ChatMessageEditDto,
+		userId: string,
+	): Promise<void> {
+		const message = await this.repo.findById(messageId);
+		if (!message) throw new ChatMessageNotFoundException();
+		await this.checkPerm(userId, message.senderId, message.roomId, false);
+
+		const updated = await this.repo.edit(messageId, content);
+		this.eventEmitter.emit(APP_EVENTS.CHAT_MESSAGE_EDITED, updated);
 	}
 
 	async checkPerm(
 		userId: string,
 		senderId: string,
 		roomId: string,
+		roleCheck: boolean = true,
 	): Promise<void> {
 		if (userId === senderId) {
 			const member = await this.memberService.findByRoomAndUser({
@@ -115,6 +128,7 @@ export class ChatMessageService {
 			if (!member) throw new ChatMessageActionForbiddenException();
 			return;
 		}
+		if (!roleCheck) return;
 		const [user, sender] = await Promise.all([
 			this.memberService.findByRoomAndUser({ roomId, userId }),
 			this.memberService.findByRoomAndUser({ roomId, userId: senderId }),

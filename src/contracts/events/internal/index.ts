@@ -17,7 +17,7 @@ const PresenceEvents = {
 const CHAT_PREFIX = 'chat.' as const;
 const ChatEvents = {
 	CHAT_MESSAGE_CREATED: `${CHAT_PREFIX}message.created`,
-	CHAT_MESSAGE_UPDATED: `${CHAT_PREFIX}message.updated`,
+	CHAT_MESSAGE_EDITED: `${CHAT_PREFIX}message.edited`,
 	CHAT_MESSAGE_SOFT_DELETED: `${CHAT_PREFIX}message.soft-deleted`,
 	CHAT_MEMBER_ADDED: `${CHAT_PREFIX}member.added`,
 	CHAT_MEMBER_REMOVED: `${CHAT_PREFIX}member.removed`,

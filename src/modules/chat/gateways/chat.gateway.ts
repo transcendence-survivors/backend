@@ -8,37 +8,86 @@ import {
 import { ChatMessageService } from '../message/services/chat-message.service';
 import { CHAT_EVENTS } from '../chat.events';
 import { Server } from 'socket.io';
-import { CreateMessageDto } from '../message/dtos/requests/chat-message-create.dto';
+import { ChatMessageCreateDto } from '../message/dtos/requests/chat-message-create.dto';
 import { UseFilters, UseGuards } from '@nestjs/common';
 import { WsJWTAccessGuard } from '@/core/security/guards/jwt-access.guard';
 import { type UserSocket } from '@/core/websocket/interface/ws-socket.inteface';
-import { ChatBroadcaster } from '../broadcasters/chat.broadcaster';
 import { WsExceptionsFilter } from '@/shared/filters/ws-exception.filter';
+import { handleWs } from '@/shared/utils/exceptions.utils';
+import { ChatMessageSoftDeleteDto } from '../message/dtos/requests/chat-message-softdelete';
+import { ChatMessageEditDto } from '../message/dtos/requests/chat-message-edit';
+import { ChatMemberService } from '../members/services/chat-member.service';
 
 @UseFilters(WsExceptionsFilter)
+@UseGuards(WsJWTAccessGuard)
 @WebSocketGateway()
 export class ChatGateway {
 	@WebSocketServer()
 	server!: Server;
 
 	constructor(
-		private readonly broadcaster: ChatBroadcaster,
-		private messagesService: ChatMessageService,
+		private readonly messagesService: ChatMessageService,
+		private readonly membersService: ChatMemberService,
 	) {}
 
-	@UseGuards(WsJWTAccessGuard)
+	@SubscribeMessage(CHAT_EVENTS.RECEIVE.ROOM_JOIN)
+	async handleRoomJoin(
+		@ConnectedSocket() client: UserSocket,
+		@MessageBody() dto: { roomId: string },
+	) {
+		const userId = client.data.user.sub;
+
+		return handleWs(async () => {
+			await this.membersService.checkMembership({
+				roomId: dto.roomId,
+				userId,
+			});
+			await client.join(dto.roomId);
+		});
+	}
+	@SubscribeMessage(CHAT_EVENTS.RECEIVE.ROOM_LEAVE)
+	async handleRoomLeave(
+		@ConnectedSocket() client: UserSocket,
+		@MessageBody() dto: { roomId: string },
+	) {
+		return handleWs(async () => {
+			await client.leave(dto.roomId);
+		});
+	}
+
 	@SubscribeMessage(CHAT_EVENTS.RECEIVE.MESSAGE_SEND)
 	async handleMessageSend(
 		@ConnectedSocket() client: UserSocket,
-		@MessageBody() dto: CreateMessageDto,
+		@MessageBody() dto: ChatMessageCreateDto,
 	) {
-		console.log('handleMessageSend called with dto:', dto);
-		const message = await this.messagesService.create(
-			dto.roomId,
-			client.data.user.sub,
-			dto,
-		);
+		const userId = client.data.user.sub;
 
-		this.broadcaster.messageNew(message);
+		return handleWs(async () => {
+			await this.messagesService.create(dto.roomId, userId, dto);
+		});
+	}
+
+	@SubscribeMessage(CHAT_EVENTS.RECEIVE.MESSAGE_EDIT)
+	async handleEdit(
+		@ConnectedSocket() client: UserSocket,
+		@MessageBody() dto: ChatMessageEditDto,
+	) {
+		const userId = client.data.user.sub;
+
+		return handleWs(async () => {
+			await this.messagesService.edit(dto, userId);
+		});
+	}
+
+	@SubscribeMessage(CHAT_EVENTS.RECEIVE.MESSAGE_SOFT_DELETE)
+	async handleMessageSoftDelete(
+		@ConnectedSocket() client: UserSocket,
+		@MessageBody() dto: ChatMessageSoftDeleteDto,
+	) {
+		const userId = client.data.user.sub;
+
+		return handleWs(async () => {
+			await this.messagesService.softDelete(dto.messageId, userId);
+		});
 	}
 }

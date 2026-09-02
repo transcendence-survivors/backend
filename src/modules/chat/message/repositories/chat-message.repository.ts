@@ -79,6 +79,13 @@ export class ChatMessageRepository {
 		});
 	}
 
+	edit(id: string, content?: string) {
+		return this.prisma.chatMessage.update({
+			where: { id },
+			data: { content, isEdited: true },
+		});
+	}
+
 	findById(id: string) {
 		return this.prisma.chatMessage.findUnique({
 			where: { id },

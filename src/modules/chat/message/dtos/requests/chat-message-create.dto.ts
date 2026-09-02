@@ -7,8 +7,7 @@ import {
 	MaxLength,
 } from 'class-validator';
 
-// dto/create-message.dto.ts
-export class CreateMessageDto {
+export class ChatMessageCreateDto {
 	@IsUUID()
 	roomId!: string;
 

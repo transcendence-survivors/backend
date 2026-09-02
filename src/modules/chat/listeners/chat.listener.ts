@@ -15,9 +15,9 @@ export class ChatEventListener {
 		this.broadcaster.messageNew(event.message);
 	}
 
-	@OnEvent(APP_EVENTS.CHAT_MESSAGE_UPDATED)
-	handleMessageUpdated(event: ChatMessageListItem) {
-		this.broadcaster.messageUpdated(event);
+	@OnEvent(APP_EVENTS.CHAT_MESSAGE_EDITED)
+	handleMessageEdited(event: ChatMessageListItem) {
+		this.broadcaster.messageEdited(event);
 	}
 
 	@OnEvent(APP_EVENTS.CHAT_MESSAGE_SOFT_DELETED)

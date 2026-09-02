@@ -20,11 +20,11 @@ export class ChatBroadcaster {
 			.emit(CHAT_EVENTS.SEND.MESSAGE_NEW, message);
 	}
 
-	messageUpdated(message: ChatMessageListItem) {
+	messageEdited(message: ChatMessageListItem) {
 		this.ws
 			.get()
 			.to(message.roomId)
-			.emit(CHAT_EVENTS.SEND.MESSAGE_UPDATED, message);
+			.emit(CHAT_EVENTS.SEND.MESSAGE_EDITED, message);
 	}
 
 	messageSoftDeleted(messageId: string, roomId: string) {
