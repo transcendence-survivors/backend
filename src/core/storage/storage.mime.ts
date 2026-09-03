@@ -1,7 +1,20 @@
 import { StorageBucket } from './types/storage-bucket';
 
-const IMAGE_MIMES = ['image/jpeg', 'image/png', 'image/webp'] as const;
-const VIDEO_MIMES = ['video/mp4', 'video/webm'] as const;
+const IMAGE_MIMES = [
+	'image/jpeg',
+	'image/png',
+	'image/webp',
+	'image/svg+xml',
+	'image/gif',
+	'image/bmp',
+] as const;
+
+const VIDEO_MIMES = [
+	'video/mp4',
+	'video/webm',
+	'video/ogg',
+	'video/avi',
+] as const;
 
 const ALLOWED_CONTENT_TYPES: Record<StorageBucket, string[]> = {
 	avatar: [...IMAGE_MIMES],

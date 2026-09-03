@@ -1,10 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import { ChatBroadcaster } from '../broadcasters/chat.broadcaster';
 import { OnEvent } from '@nestjs/event-emitter';
-import { type ChatMessageListItem } from '../message/types/records/chat-message-list-item';
 import { APP_EVENTS } from '@/contracts/events/internal';
 import { ChatMessageCreatedEvent } from '@/contracts/events/internal/chat/chat-message-created.event';
 import { ChatMessageSoftDeleteEvent } from '@/contracts/events/internal/chat/chat-message-soft-delete.event';
+import { ChatMessageEditedEvent } from '@/contracts/events/internal/chat/chat-message-edited.event';
 
 @Injectable()
 export class ChatEventListener {
@@ -16,8 +16,8 @@ export class ChatEventListener {
 	}
 
 	@OnEvent(APP_EVENTS.CHAT_MESSAGE_EDITED)
-	handleMessageEdited(event: ChatMessageListItem) {
-		this.broadcaster.messageEdited(event);
+	handleMessageEdited(event: ChatMessageEditedEvent) {
+		this.broadcaster.messageEdited(event.message);
 	}
 
 	@OnEvent(APP_EVENTS.CHAT_MESSAGE_SOFT_DELETED)

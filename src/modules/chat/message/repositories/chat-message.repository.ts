@@ -79,10 +79,16 @@ export class ChatMessageRepository {
 		});
 	}
 
-	edit(id: string, content?: string) {
+	edit(id: string, content?: string): Promise<ChatMessageListItem> {
 		return this.prisma.chatMessage.update({
 			where: { id },
 			data: { content, isEdited: true },
+			select: {
+				...ChatMessageQueryHelper.chatMessageSelect,
+			} satisfies Record<
+				keyof ChatMessageListItem,
+				ChatMessageSelect[keyof ChatMessageListItem]
+			>,
 		});
 	}
 

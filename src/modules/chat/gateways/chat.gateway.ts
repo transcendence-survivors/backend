@@ -15,11 +15,10 @@ import { type UserSocket } from '@/core/websocket/interface/ws-socket.inteface';
 import { WsExceptionsFilter } from '@/shared/filters/ws-exception.filter';
 import { handleWs } from '@/shared/utils/exceptions.utils';
 import { ChatMessageSoftDeleteDto } from '../message/dtos/requests/chat-message-softdelete';
-import { ChatMessageEditDto } from '../message/dtos/requests/chat-message-edit';
+import { ChatMessageEditDto } from '../message/dtos/requests/chat-message-edit.dto';
 import { ChatMemberService } from '../members/services/chat-member.service';
 
 @UseFilters(WsExceptionsFilter)
-@UseGuards(WsJWTAccessGuard)
 @WebSocketGateway()
 export class ChatGateway {
 	@WebSocketServer()
@@ -30,6 +29,7 @@ export class ChatGateway {
 		private readonly membersService: ChatMemberService,
 	) {}
 
+	@UseGuards(WsJWTAccessGuard)
 	@SubscribeMessage(CHAT_EVENTS.RECEIVE.ROOM_JOIN)
 	async handleRoomJoin(
 		@ConnectedSocket() client: UserSocket,
@@ -45,6 +45,8 @@ export class ChatGateway {
 			await client.join(dto.roomId);
 		});
 	}
+
+	@UseGuards(WsJWTAccessGuard)
 	@SubscribeMessage(CHAT_EVENTS.RECEIVE.ROOM_LEAVE)
 	async handleRoomLeave(
 		@ConnectedSocket() client: UserSocket,
@@ -55,6 +57,7 @@ export class ChatGateway {
 		});
 	}
 
+	@UseGuards(WsJWTAccessGuard)
 	@SubscribeMessage(CHAT_EVENTS.RECEIVE.MESSAGE_SEND)
 	async handleMessageSend(
 		@ConnectedSocket() client: UserSocket,
@@ -67,6 +70,7 @@ export class ChatGateway {
 		});
 	}
 
+	@UseGuards(WsJWTAccessGuard)
 	@SubscribeMessage(CHAT_EVENTS.RECEIVE.MESSAGE_EDIT)
 	async handleEdit(
 		@ConnectedSocket() client: UserSocket,
@@ -79,6 +83,7 @@ export class ChatGateway {
 		});
 	}
 
+	@UseGuards(WsJWTAccessGuard)
 	@SubscribeMessage(CHAT_EVENTS.RECEIVE.MESSAGE_SOFT_DELETE)
 	async handleMessageSoftDelete(
 		@ConnectedSocket() client: UserSocket,

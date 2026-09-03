@@ -15,7 +15,8 @@ import { ChatMemberService } from '../../members/services/chat-member.service';
 import { APP_EVENTS } from '@/contracts/events/internal';
 import { ChatMessageCreatedEvent } from '@/contracts/events/internal/chat/chat-message-created.event';
 import { ChatMessageSoftDeleteEvent } from '@/contracts/events/internal/chat/chat-message-soft-delete.event';
-import { ChatMessageEditDto } from '../dtos/requests/chat-message-edit';
+import { ChatMessageEditDto } from '../dtos/requests/chat-message-edit.dto';
+import { ChatMessageEditedEvent } from '@/contracts/events/internal/chat/chat-message-edited.event';
 
 @Injectable()
 export class ChatMessageService {
@@ -82,7 +83,6 @@ export class ChatMessageService {
 			attachmentUrls: dto.attachmentUrls ?? [],
 			replyToId: dto.replyToId,
 		});
-
 		this.eventEmitter.emit(
 			APP_EVENTS.CHAT_MESSAGE_CREATED,
 			new ChatMessageCreatedEvent(message),
@@ -111,7 +111,11 @@ export class ChatMessageService {
 		await this.checkPerm(userId, message.senderId, message.roomId, false);
 
 		const updated = await this.repo.edit(messageId, content);
-		this.eventEmitter.emit(APP_EVENTS.CHAT_MESSAGE_EDITED, updated);
+		if (!updated) throw new ChatMessageNotFoundException();
+		this.eventEmitter.emit(
+			APP_EVENTS.CHAT_MESSAGE_EDITED,
+			new ChatMessageEditedEvent(updated),
+		);
 	}
 
 	async checkPerm(

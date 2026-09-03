@@ -11,6 +11,7 @@ const CHAT_EVENTS = {
 		MESSAGE_SOFT_DELETE: `${MESSAGE_PREFIX}:soft-delete`,
 
 		MESSAGE_READ: `${MESSAGE_PREFIX}:read`,
+
 		TYPING_START: `${TYPING_PREFIX}:start`,
 		TYPING_STOP: `${TYPING_PREFIX}:stop`,
 
