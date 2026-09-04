@@ -99,6 +99,7 @@ export class ChatMessageRepository {
 				id: true,
 				roomId: true,
 				senderId: true,
+				attachmentUrls: true,
 			},
 		});
 	}

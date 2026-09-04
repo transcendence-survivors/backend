@@ -17,6 +17,8 @@ import { handleWs } from '@/shared/utils/exceptions.utils';
 import { ChatMessageSoftDeleteDto } from '../message/dtos/requests/chat-message-softdelete';
 import { ChatMessageEditDto } from '../message/dtos/requests/chat-message-edit.dto';
 import { ChatMemberService } from '../members/services/chat-member.service';
+import { ChatBroadcaster } from '../broadcasters/chat.broadcaster';
+import { ChatTypingDto } from '../dtos/requests/chat-typing.dto';
 
 @UseFilters(WsExceptionsFilter)
 @WebSocketGateway()
@@ -27,6 +29,7 @@ export class ChatGateway {
 	constructor(
 		private readonly messagesService: ChatMessageService,
 		private readonly membersService: ChatMemberService,
+		private readonly broadcaster: ChatBroadcaster,
 	) {}
 
 	@UseGuards(WsJWTAccessGuard)
@@ -93,6 +96,41 @@ export class ChatGateway {
 
 		return handleWs(async () => {
 			await this.messagesService.softDelete(dto.messageId, userId);
+		});
+	}
+
+	@UseGuards(WsJWTAccessGuard)
+	@SubscribeMessage(CHAT_EVENTS.RECEIVE.TYPING_START)
+	handleTypingStart(
+		@ConnectedSocket() client: UserSocket,
+		@MessageBody() dto: ChatTypingDto,
+	) {
+		const userId = client.data.user.sub;
+
+		return handleWs(() => {
+			this.broadcaster.typingUpdate(client, {
+				userId,
+				roomId: dto.roomId,
+				displayName: client.data.user.displayName,
+				isTyping: true,
+			});
+		});
+	}
+
+	@UseGuards(WsJWTAccessGuard)
+	@SubscribeMessage(CHAT_EVENTS.RECEIVE.TYPING_STOP)
+	handleTypingStop(
+		@ConnectedSocket() client: UserSocket,
+		@MessageBody() dto: ChatTypingDto,
+	) {
+		const userId = client.data.user.sub;
+		return handleWs(() => {
+			this.broadcaster.typingUpdate(client, {
+				userId,
+				roomId: dto.roomId,
+				displayName: client.data.user.displayName,
+				isTyping: false,
+			});
 		});
 	}
 }

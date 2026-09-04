@@ -5,6 +5,8 @@ import { InjectPresenceStore } from '@/contracts/services/presence/presence-stor
 import { type IPresenceStore } from '@/contracts/services/presence/presence-store.port';
 import { Injectable } from '@nestjs/common';
 import { ChatMessageListItem } from '../message/types/records/chat-message-list-item';
+import { Socket } from 'socket.io';
+import { ChatTypingUpdatePayload } from '../types/records/chat-typing-update.type';
 
 @Injectable()
 export class ChatBroadcaster {
@@ -32,6 +34,10 @@ export class ChatBroadcaster {
 			.get()
 			.to(roomId)
 			.emit(CHAT_EVENTS.SEND.MESSAGE_SOFT_DELETED, { messageId, roomId });
+	}
+
+	typingUpdate(client: Socket, payload: ChatTypingUpdatePayload) {
+		client.to(payload.roomId).emit(CHAT_EVENTS.SEND.TYPING_UPDATE, payload);
 	}
 
 	memberAdded(roomId: string, member: ChatMember) {

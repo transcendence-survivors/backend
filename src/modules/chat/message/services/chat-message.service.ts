@@ -17,6 +17,7 @@ import { ChatMessageCreatedEvent } from '@/contracts/events/internal/chat/chat-m
 import { ChatMessageSoftDeleteEvent } from '@/contracts/events/internal/chat/chat-message-soft-delete.event';
 import { ChatMessageEditDto } from '../dtos/requests/chat-message-edit.dto';
 import { ChatMessageEditedEvent } from '@/contracts/events/internal/chat/chat-message-edited.event';
+import { AttachmentMustBeDeletedEvent } from '@/contracts/events/internal/attachment-must-be-deleted.event';
 
 @Injectable()
 export class ChatMessageService {
@@ -94,8 +95,14 @@ export class ChatMessageService {
 		const message = await this.repo.findById(messageId);
 		if (!message) throw new ChatMessageNotFoundException();
 		await this.checkPerm(userId, message.senderId, message.roomId);
-
 		await this.repo.softDelete(messageId);
+
+		if (message.attachmentUrls?.length > 0) {
+			this.eventEmitter.emit(
+				APP_EVENTS.ATTACHMENTS_MUST_BE_DELETED,
+				new AttachmentMustBeDeletedEvent(message.attachmentUrls),
+			);
+		}
 		this.eventEmitter.emit(
 			APP_EVENTS.CHAT_MESSAGE_SOFT_DELETED,
 			new ChatMessageSoftDeleteEvent(messageId, message.roomId),

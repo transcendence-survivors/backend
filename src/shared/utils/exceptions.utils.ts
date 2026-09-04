@@ -4,7 +4,7 @@ import { AppHttpException } from '../filters/app.http.exception';
 import { ApiError, WsResponse } from '../types/response.type';
 
 export const handleWs = async <T>(
-	fn: () => Promise<T>,
+	fn: () => Promise<T> | T,
 ): Promise<WsResponse<T>> => {
 	try {
 		const data = await fn();

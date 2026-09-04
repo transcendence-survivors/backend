@@ -5,6 +5,7 @@ interface JwtAccessPayload {
 	email: string;
 	role: UserRole;
 	username: string;
+	displayName: string;
 }
 
 interface JwtRefreshPayload {

@@ -92,6 +92,21 @@ export class StorageService {
 			}),
 		);
 	}
+	async deleteMany(fileUrls: string[]): Promise<void> {
+		const prefix = `${this.env.minio.publicEndpoint}/`;
+		const deleteCommands = fileUrls.map((fileUrl) => {
+			const path = fileUrl.replace(prefix, '');
+			const [bucketName, ...keyParts] = path.split('/');
+			const key = keyParts.join('/');
+
+			return new DeleteObjectCommand({
+				Bucket: bucketName,
+				Key: key,
+			});
+		});
+
+		await Promise.all(deleteCommands.map((cmd) => this.s3.send(cmd)));
+	}
 
 	private buildKey(fileName: string): string {
 		const ext = fileName.includes('.')

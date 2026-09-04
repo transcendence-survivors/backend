@@ -25,6 +25,7 @@ const CHAT_EVENTS = {
 		MESSAGE_SOFT_DELETED: `${MESSAGE_PREFIX}:soft-deleted`,
 
 		MESSAGE_READ_UPDATE: `${MESSAGE_PREFIX}:read:update`,
+
 		TYPING_UPDATE: `${TYPING_PREFIX}:update`,
 
 		ROOM_UPDATED: `${ROOM_PREFIX}:updated`,
