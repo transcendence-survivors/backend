@@ -20,6 +20,6 @@ export type PostListItem = Pick<
 	_count: {
 		likes: number;
 		replies: number;
-		reposts: number;
+		quotes: number;
 	};
 };

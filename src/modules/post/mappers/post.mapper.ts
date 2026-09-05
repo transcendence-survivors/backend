@@ -20,7 +20,7 @@ export class PostMapper {
 				...post,
 				likeCount: post._count.likes,
 				commentCount: post._count.replies,
-				repostCount: post._count.reposts,
+				repostCount: post._count.quotes,
 				isLiked: likedPostIds.has(post.id),
 				isReposted: repostedPostIds.has(post.id),
 			},

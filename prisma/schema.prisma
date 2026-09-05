@@ -90,7 +90,6 @@ model User {
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
-    reposts   Repost[]
 }
 
 model Friendship {
@@ -196,13 +195,21 @@ model UserStats {
     user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+enum PostType {
+    POST
+    REPLY
+    QUOTE
+    REPOST
+}
+
 model Post {
     id String @id @default(uuid())
 
     content  String?
     imageUrl String?
     authorId String
-    author   User    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+    author   User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+    type     PostType @default(POST)
 
     likes Like[]
 
@@ -213,9 +220,8 @@ model Post {
     replies      Post[]  @relation("PostReplies")
 
     quotedPostId String?
-    quotedPost   Post?    @relation("PostQuotes", fields: [quotedPostId], references: [id], onDelete: SetNull)
-    quotes       Post[]   @relation("PostQuotes")
-    reposts      Repost[]
+    quotedPost   Post?   @relation("PostQuotes", fields: [quotedPostId], references: [id], onDelete: SetNull)
+    quotes       Post[]  @relation("PostQuotes")
 }
 
 model Like {
@@ -226,19 +232,6 @@ model Like {
 
     user User @relation(fields: [userId], references: [id], onDelete: Cascade)
     post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-
-    createdAt DateTime @default(now())
-
-    @@unique([userId, postId])
-}
-
-model Repost {
-    id String @id @default(uuid())
-
-    userId String
-    postId String
-    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-    post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
 
     createdAt DateTime @default(now())
 
