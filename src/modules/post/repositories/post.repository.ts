@@ -159,6 +159,7 @@ export class PostRepository {
 				authorId,
 				parentPostId: null,
 				...this.searchWhere(search),
+				type: { not: 'REPOST' },
 			},
 			orderBy: this.orderByCursorMapping[orderBy],
 			select: PostRepository.postSelect,
