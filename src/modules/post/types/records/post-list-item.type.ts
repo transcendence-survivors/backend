@@ -5,6 +5,18 @@ export type PostPreview = Pick<Post, 'content'> & {
 	author: UserListItem;
 };
 
+export type QuotedPostPreview = Pick<
+	Post,
+	'id' | 'content' | 'imageUrl' | 'createdAt'
+> & {
+	author: UserListItem;
+	_count: {
+		likes: number;
+		replies: number;
+		quotes: number;
+	};
+};
+
 export type PostListItem = Pick<
 	Post,
 	| 'id'
@@ -16,7 +28,7 @@ export type PostListItem = Pick<
 > & {
 	author: UserListItem;
 	parent: PostPreview | null;
-	quotedPost: PostPreview | null;
+	quotedPost: QuotedPostPreview | null;
 	_count: {
 		likes: number;
 		replies: number;

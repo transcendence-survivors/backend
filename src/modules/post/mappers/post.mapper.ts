@@ -23,6 +23,14 @@ export class PostMapper {
 				repostCount: post._count.quotes,
 				isLiked: likedPostIds.has(post.id),
 				isReposted: repostedPostIds.has(post.id),
+				quotedPost: post.quotedPost && {
+					...post.quotedPost,
+					likeCount: post.quotedPost._count.likes,
+					commentCount: post.quotedPost._count.replies,
+					repostCount: post.quotedPost._count.quotes,
+					isLiked: likedPostIds.has(post.quotedPost.id),
+					isReposted: repostedPostIds.has(post.quotedPost.id),
+				},
 			},
 			{ excludeExtraneousValues: true },
 		);

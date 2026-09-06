@@ -35,9 +35,19 @@ export class PostRepository {
 		quotedPostId: true,
 		quotedPost: {
 			select: {
+				id: true,
 				content: true,
+				imageUrl: true,
+				createdAt: true,
 				author: {
 					select: UserQueryHelper.userSelect,
+				},
+				_count: {
+					select: {
+						likes: true,
+						replies: true,
+						quotes: { where: { type: 'REPOST' } },
+					},
 				},
 			},
 		},
