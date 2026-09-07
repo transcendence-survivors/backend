@@ -18,8 +18,9 @@ import { ApiValidationErrorResponse } from '@/shared/decorators/api-validation-e
 import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
 import { CurrentUser } from '@/core/security/decorators/current-user.decorator';
 import { ChatMessageCountResponseDto } from '../dtos/responses/chat-room-count-response.dto';
+import { ChatRoomMembershipGuard } from '../../members/guards/chat-room-membership.guard';
 
-@UseGuards(JWTAccessGuard)
+@UseGuards(JWTAccessGuard, ChatRoomMembershipGuard)
 @Controller('chat/:roomId/messages')
 export class ChatMessageController {
 	constructor(private readonly service: ChatMessageService) {}

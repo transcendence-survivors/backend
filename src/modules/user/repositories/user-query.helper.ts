@@ -50,14 +50,10 @@ export class UserQueryHelper {
 			};
 		}
 		return {
-			OR: [
-				{
-					displayName: {
-						contains: query,
-						mode: 'insensitive',
-					},
-				},
-			],
+			displayName: {
+				contains: query,
+				mode: 'insensitive',
+			},
 		};
 	}
 

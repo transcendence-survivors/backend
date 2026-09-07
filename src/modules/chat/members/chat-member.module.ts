@@ -3,10 +3,16 @@ import { ChatMemberController } from './controllers/chat-member.controller';
 import { ChatMemberMapper } from './mappers/chat-member.mapper';
 import { ChatMemberRepository } from './repositories/chat-member.repository';
 import { ChatMemberService } from './services/chat-member.service';
+import { ChatRoomMembershipGuard } from './guards/chat-room-membership.guard';
 
 @Module({
 	controllers: [ChatMemberController],
-	providers: [ChatMemberService, ChatMemberRepository, ChatMemberMapper],
-	exports: [ChatMemberService, ChatMemberMapper],
+	providers: [
+		ChatMemberService,
+		ChatMemberRepository,
+		ChatMemberMapper,
+		ChatRoomMembershipGuard,
+	],
+	exports: [ChatMemberService, ChatRoomMembershipGuard],
 })
 export class ChatMemberModule {}
