@@ -7,26 +7,32 @@ import { Injectable } from '@nestjs/common';
 import { ChatMessageListItem } from '../message/types/records/chat-message-list-item';
 import { Socket } from 'socket.io';
 import { ChatTypingUpdatePayload } from '../types/records/chat-typing-update.type';
+import { ChatMessageMapper } from '../message/mappers/chat-message.mapper';
 
 @Injectable()
 export class ChatBroadcaster {
 	constructor(
 		private readonly ws: WsServerProvider,
 		@InjectPresenceStore() private readonly presenceStore: IPresenceStore,
+		private readonly messageMapper: ChatMessageMapper,
 	) {}
 
 	messageNew(message: ChatMessageListItem) {
+		const dto = this.messageMapper.toListItemDto(message);
+
 		this.ws
 			.get()
 			.to(message.roomId)
-			.emit(CHAT_EVENTS.SEND.MESSAGE_NEW, message);
+			.emit(CHAT_EVENTS.SEND.MESSAGE_NEW, dto);
 	}
 
 	messageEdited(message: ChatMessageListItem) {
+		const dto = this.messageMapper.toListItemDto(message);
+
 		this.ws
 			.get()
 			.to(message.roomId)
-			.emit(CHAT_EVENTS.SEND.MESSAGE_EDITED, message);
+			.emit(CHAT_EVENTS.SEND.MESSAGE_EDITED, dto);
 	}
 
 	messageSoftDeleted(messageId: string, roomId: string) {

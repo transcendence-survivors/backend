@@ -10,11 +10,12 @@ export class ChatMessageQueryHelper {
 	public static chatMessageSelect = {
 		id: true,
 		roomId: true,
+		type: true,
 		content: true,
-		attachmentUrls: true,
 		isEdited: true,
 		isDeleted: true,
 		replyToId: true,
+		attachmentUrls: true,
 		createdAt: true,
 		sender: {
 			select: {
@@ -22,6 +23,22 @@ export class ChatMessageQueryHelper {
 				username: true,
 				displayName: true,
 				avatarUrl: true,
+			},
+		},
+		metadata: {
+			select: {
+				oldRole: true,
+				newRole: true,
+				oldValue: true,
+				newValue: true,
+				targetUser: {
+					select: {
+						id: true,
+						username: true,
+						displayName: true,
+						avatarUrl: true,
+					},
+				},
 			},
 		},
 	} as const satisfies Record<

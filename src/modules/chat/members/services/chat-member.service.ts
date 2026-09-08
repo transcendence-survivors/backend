@@ -7,6 +7,29 @@ import { CursorService } from '@/shared/services/cursor.service';
 import { ChatMemberMapper } from '../mappers/chat-member.mapper';
 import { ChatMemberCountDto } from '../dtos/requests/chat-member-count.dto';
 import { ChatMemberCountResponseDto } from '../dtos/responses/chat-member-count-response.dto';
+import { ChatMemberPermissionService } from './chat-member-permission.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { ChatMemberRole } from '@prisma-generated/enums';
+import { ChatMemberListItemResponseDto } from '../dtos/responses/chat-member-list-item-response.dto';
+import {
+	ChatMemberSelfOwnershipException,
+	MemberAlreadyHasRoleException,
+	SelfKickException,
+	SelfRoleModificationException,
+} from '../exceptions/chat-member-bad.exception';
+import { MemberNotFoundInRoomException } from '../exceptions/chat-member-not-found.exception';
+import {
+	ChatMemberNotOwnerException,
+	InsufficientMemberPermissionException,
+} from '../exceptions/chat-member-forbidden.exception';
+import { ChatMemberPermissionEnum } from '../types/enums/chat-member-permission.enum';
+import { ChatMemberRoleUpdatedEvent } from '@/contracts/events/internal/chat/chat-member-role-updated.event';
+import {
+	APP_EVENTS,
+	ChatOwnershipTransferredEvent,
+} from '@/contracts/events/internal';
+import { ChatMemberKickedEvent } from '@/contracts/events/internal/chat/chat-member-kicked.event';
+import { UnitOfWork } from '@/core/database/uow/unit-of-work';
 
 @Injectable()
 export class ChatMemberService {
@@ -14,6 +37,9 @@ export class ChatMemberService {
 		private readonly repo: ChatMemberRepository,
 		private readonly mapper: ChatMemberMapper,
 		private readonly cursor: CursorService,
+		private readonly permissionService: ChatMemberPermissionService,
+		private readonly eventEmitter: EventEmitter2,
+		private readonly uow: UnitOfWork,
 	) {}
 
 	async listMembers(
@@ -56,5 +82,136 @@ export class ChatMemberService {
 				'You are not a member of this chat room',
 			);
 		}
+	}
+
+	async updateMemberRole(
+		roomId: string,
+		actorId: string,
+		targetUserId: string,
+		newRole: ChatMemberRole,
+	): Promise<ChatMemberListItemResponseDto> {
+		if (actorId === targetUserId) throw new SelfRoleModificationException();
+		const [actor, target] = await Promise.all([
+			this.repo.findByRoomAndUser({ roomId, userId: actorId }),
+			this.repo.findByRoomAndUser({ roomId, userId: targetUserId }),
+		]);
+
+		if (!target || !actor) throw new MemberNotFoundInRoomException();
+		if (target.role === newRole) throw new MemberAlreadyHasRoleException();
+
+		const isPromotion =
+			this.permissionService.getRoleRank(newRole) >
+			this.permissionService.getRoleRank(target.role);
+		const requiredPermission = isPromotion
+			? ChatMemberPermissionEnum.MEMBER_PROMOTE
+			: ChatMemberPermissionEnum.MEMBER_DEMOTE;
+		const isAllowed = this.permissionService.canManageMember({
+			actorRole: actor.role,
+			targetRole: target.role,
+			permission: requiredPermission,
+			desiredRole: newRole,
+		});
+
+		if (!isAllowed) {
+			throw new InsufficientMemberPermissionException();
+		}
+
+		const oldRole = target.role;
+		const updatedMember = await this.repo.updateRole({
+			role: newRole,
+			roomId,
+			userId: targetUserId,
+		});
+
+		this.eventEmitter.emit(
+			APP_EVENTS.CHAT_MEMBER_ROLE_UPDATED,
+			new ChatMemberRoleUpdatedEvent(
+				roomId,
+				actorId,
+				targetUserId,
+				oldRole,
+				newRole,
+			),
+		);
+
+		return this.mapper.toListItemDto(updatedMember);
+	}
+
+	async kickMember(
+		roomId: string,
+		actorId: string,
+		targetUserId: string,
+	): Promise<void> {
+		if (actorId === targetUserId) throw new SelfKickException();
+
+		const [actor, target] = await Promise.all([
+			this.repo.findByRoomAndUser({ roomId, userId: actorId }),
+			this.repo.findByRoomAndUser({ roomId, userId: targetUserId }),
+		]);
+
+		if (!target || !actor) throw new MemberNotFoundInRoomException();
+		const isAllowed = this.permissionService.canManageMember({
+			actorRole: actor.role,
+			targetRole: target.role,
+			permission: ChatMemberPermissionEnum.MEMBER_KICK,
+		});
+
+		if (!isAllowed) throw new InsufficientMemberPermissionException();
+		await this.repo.deleteMember({
+			roomId,
+			userId: targetUserId,
+		});
+		this.eventEmitter.emit(
+			APP_EVENTS.CHAT_MEMBER_KICKED,
+			new ChatMemberKickedEvent(roomId, actorId, targetUserId),
+		);
+	}
+
+	async transferOwnership(
+		roomId: string,
+		actorId: string,
+		targetUserId: string,
+	): Promise<void> {
+		if (actorId === targetUserId)
+			throw new ChatMemberSelfOwnershipException();
+		const [actor, target] = await Promise.all([
+			this.repo.findByRoomAndUser({ roomId, userId: actorId }),
+			this.repo.findByRoomAndUser({ roomId, userId: targetUserId }),
+		]);
+
+		if (!target || !actor) throw new MemberNotFoundInRoomException();
+		if (actor.role !== ChatMemberRole.OWNER)
+			throw new ChatMemberNotOwnerException();
+
+		const oldRole = target.role;
+		const newRole = ChatMemberRole.OWNER;
+		await this.uow.run(async (ctx) => {
+			await this.repo.updateRole(
+				{
+					roomId,
+					userId: actorId,
+					role: ChatMemberRole.ADMIN,
+				},
+				ctx,
+			);
+			await this.repo.updateRole(
+				{
+					roomId,
+					userId: targetUserId,
+					role: ChatMemberRole.OWNER,
+				},
+				ctx,
+			);
+		});
+		this.eventEmitter.emit(
+			APP_EVENTS.CHAT_OWNERSHIP_TRANSFERRED,
+			new ChatOwnershipTransferredEvent(
+				roomId,
+				actorId,
+				targetUserId,
+				oldRole,
+				newRole,
+			),
+		);
 	}
 }

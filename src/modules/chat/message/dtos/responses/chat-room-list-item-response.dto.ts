@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ChatMemberRole, ChatMessageType } from '@prisma-generated/enums';
 import { Exclude, Expose, Type } from 'class-transformer';
 
 @Exclude()
@@ -39,6 +40,56 @@ class ChatMessageSenderDto {
 }
 
 @Exclude()
+export class ChatMessageMetadataDto {
+	@ApiPropertyOptional({
+		enum: ChatMemberRole,
+		nullable: true,
+		description: 'Previous role of the target member (for role updates)',
+		example: ChatMemberRole.MEMBER,
+	})
+	@Expose()
+	oldRole!: ChatMemberRole | null;
+
+	@ApiPropertyOptional({
+		enum: ChatMemberRole,
+		nullable: true,
+		description:
+			'New role assigned to the target member (for role updates)',
+		example: ChatMemberRole.ADMIN,
+	})
+	@Expose()
+	newRole!: ChatMemberRole | null;
+
+	@ApiPropertyOptional({
+		type: String,
+		nullable: true,
+		description: 'Previous property value (e.g., previous room title)',
+		example: 'Old Room Name',
+	})
+	@Expose()
+	oldValue!: string | null;
+
+	@ApiPropertyOptional({
+		type: String,
+		nullable: true,
+		description: 'New property value (e.g., updated room title)',
+		example: 'New Room Name',
+	})
+	@Expose()
+	newValue!: string | null;
+
+	@ApiPropertyOptional({
+		type: ChatMessageSenderDto,
+		nullable: true,
+		description:
+			'Target user affected by the system event (e.g., kicked or role-updated member)',
+	})
+	@Expose()
+	@Type(() => ChatMessageSenderDto)
+	targetUser!: ChatMessageSenderDto | null;
+}
+
+@Exclude()
 export class ChatMessageListItemResponseDto {
 	@ApiProperty({
 		type: String,
@@ -59,12 +110,21 @@ export class ChatMessageListItemResponseDto {
 	roomId!: string;
 
 	@ApiProperty({
+		enum: ChatMessageType,
+		description: 'Type of the message (standard text or system event)',
+		example: ChatMessageType.TEXT,
+	})
+	@Expose()
+	type!: ChatMessageType;
+
+	@ApiPropertyOptional({
 		type: String,
-		description: 'Content of the chat message',
+		nullable: true,
+		description: 'Content of the chat message (null for system messages)',
 		example: 'Hello, friend!',
 	})
 	@Expose()
-	content!: string;
+	content!: string | null;
 
 	@ApiPropertyOptional({
 		type: [String],
@@ -98,8 +158,7 @@ export class ChatMessageListItemResponseDto {
 		type: String,
 		format: 'uuid',
 		nullable: true,
-		description:
-			'Unique identifier of the chat message this message is replying to, if any',
+		description: 'Unique identifier of the message replied to, if any',
 		example: 'd4c3b2a1-e5f6-4a5b-8c9d-1e2f3a4b5c6d',
 	})
 	@Expose()
@@ -109,16 +168,27 @@ export class ChatMessageListItemResponseDto {
 		type: String,
 		format: 'date-time',
 		description: 'Timestamp when the chat message was created',
-		example: '2023-01-01T12:00:00Z',
+		example: '2026-01-01T12:00:00Z',
 	})
 	@Expose()
 	createdAt!: Date;
 
-	@ApiProperty({
+	@ApiPropertyOptional({
 		type: ChatMessageSenderDto,
-		description: 'The sender of the chat message',
+		nullable: true,
+		description:
+			'The actor/sender of the message (null if automated system message)',
 	})
 	@Expose()
 	@Type(() => ChatMessageSenderDto)
-	sender!: ChatMessageSenderDto;
+	sender!: ChatMessageSenderDto | null;
+
+	@ApiPropertyOptional({
+		type: ChatMessageMetadataDto,
+		nullable: true,
+		description: 'Event-specific metadata attached to system messages',
+	})
+	@Expose()
+	@Type(() => ChatMessageMetadataDto)
+	metadata!: ChatMessageMetadataDto | null;
 }

@@ -1,0 +1,5 @@
+export enum ChatMemberPermissionEnum {
+	MEMBER_PROMOTE = 'MEMBER_PROMOTE',
+	MEMBER_DEMOTE = 'MEMBER_DEMOTE',
+	MEMBER_KICK = 'MEMBER_KICK',
+}

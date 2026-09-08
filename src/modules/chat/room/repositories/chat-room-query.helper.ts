@@ -9,6 +9,7 @@ import { ChatRoomListItem } from '../types/records/chat-room-list-item.type';
 import { ChatRoomOrderByEnum } from '../types/enums/chat-room-order-by.enum';
 import { ChatRoomFeedEnum } from '../types/enums/chat-room-feed-enum';
 import { UserQueryHelper } from '@/modules/user/user.public-api';
+import { ChatMessageQueryHelper } from '../../message/repositories/chat-message-query.helper';
 
 export class ChatRoomQueryHelper {
 	public static chatRoomSelect(currentUserId: string) {
@@ -22,13 +23,7 @@ export class ChatRoomQueryHelper {
 					createdAt: 'desc',
 				},
 				take: 1,
-				select: {
-					content: true,
-					createdAt: true,
-					sender: {
-						select: { displayName: true },
-					},
-				},
+				select: ChatMessageQueryHelper.chatMessageSelect,
 			},
 			members: {
 				where: {

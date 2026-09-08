@@ -18,6 +18,8 @@ import { ChatMessageSoftDeleteEvent } from '@/contracts/events/internal/chat/cha
 import { ChatMessageEditDto } from '../dtos/requests/chat-message-edit.dto';
 import { ChatMessageEditedEvent } from '@/contracts/events/internal/chat/chat-message-edited.event';
 import { AttachmentMustBeDeletedEvent } from '@/contracts/events/internal/attachment-must-be-deleted.event';
+import { ChatMessageCreateSystemParams } from '../types/params/chat-message-create-system.params';
+import { ChatMessageListItem } from '../types/records/chat-message-list-item';
 
 @Injectable()
 export class ChatMessageService {
@@ -90,10 +92,25 @@ export class ChatMessageService {
 		);
 		return message;
 	}
+	async createSystemMessage(
+		params: ChatMessageCreateSystemParams,
+	): Promise<ChatMessageListItem> {
+		const message = await this.repo.createSystemMessage(params);
+		const messageDto = this.mapper.toListItemDto(message);
+
+		this.eventEmitter.emit(
+			APP_EVENTS.CHAT_MESSAGE_CREATED,
+			new ChatMessageCreatedEvent(messageDto),
+		);
+
+		return messageDto;
+	}
 
 	async softDelete(messageId: string, userId: string): Promise<void> {
 		const message = await this.repo.findById(messageId);
-		if (!message) throw new ChatMessageNotFoundException();
+		if (!message || !message.senderId)
+			throw new ChatMessageNotFoundException();
+
 		await this.checkPerm(userId, message.senderId, message.roomId);
 		await this.repo.softDelete(messageId);
 
@@ -114,14 +131,17 @@ export class ChatMessageService {
 		userId: string,
 	): Promise<void> {
 		const message = await this.repo.findById(messageId);
-		if (!message) throw new ChatMessageNotFoundException();
-		await this.checkPerm(userId, message.senderId, message.roomId, false);
+		if (!message || !message.senderId)
+			throw new ChatMessageNotFoundException();
 
+		await this.checkPerm(userId, message.senderId, message.roomId, false);
 		const updated = await this.repo.edit(messageId, content);
 		if (!updated) throw new ChatMessageNotFoundException();
+
+		const updatedDto = this.mapper.toListItemDto(updated);
 		this.eventEmitter.emit(
 			APP_EVENTS.CHAT_MESSAGE_EDITED,
-			new ChatMessageEditedEvent(updated),
+			new ChatMessageEditedEvent(updatedDto),
 		);
 	}
 

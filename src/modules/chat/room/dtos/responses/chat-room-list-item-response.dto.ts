@@ -1,34 +1,9 @@
+import { ChatMessageListItemResponseDto } from '@/modules/chat/message/dtos/responses/chat-room-list-item-response.dto';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ChatRoomType } from '@prisma-generated/enums';
 import { Exclude, Expose, Transform, Type } from 'class-transformer';
 
-class LastMessageDto {
-	@ApiProperty({
-		type: String,
-		description: 'Text content of the most recent message in the room',
-		example: 'Hey, are we still on for tomorrow?',
-	})
-	@Expose()
-	content!: string;
-
-	@ApiProperty({
-		type: String,
-		format: 'date-time',
-		description: 'Timestamp when the last message was created',
-		example: '2026-07-15T09:32:11.000Z',
-	})
-	@Expose()
-	createdAt!: Date;
-
-	@ApiProperty({
-		type: String,
-		description: 'Display name of the user who sent the last message',
-		example: 'Jane Doe',
-	})
-	@Expose()
-	senderDisplayName!: string;
-}
-
+@Exclude()
 export class ChatRoomMemberDto {
 	@ApiProperty({
 		type: String,
@@ -106,20 +81,19 @@ export class ChatRoomListItemResponseDto {
 	avatarUrl!: string | null;
 
 	@ApiPropertyOptional({
-		type: LastMessageDto,
+		type: ChatMessageListItemResponseDto,
 		nullable: true,
 		description:
 			'The most recent message sent in the room, if any exist yet',
 	})
 	@Expose()
-	@Type(() => LastMessageDto)
-	lastMessage!: LastMessageDto | null;
+	@Type(() => ChatMessageListItemResponseDto)
+	lastMessage!: ChatMessageListItemResponseDto | null;
 
 	@ApiPropertyOptional({
 		type: ChatRoomMemberDto,
 		description:
-			'The other participant in the conversation. \
-            Only present when type is DIRECT',
+			'The other participant in the conversation. Only present when type is DIRECT',
 	})
 	@Expose()
 	@Type(() => ChatRoomMemberDto)
@@ -128,9 +102,7 @@ export class ChatRoomListItemResponseDto {
 	@ApiPropertyOptional({
 		type: [ChatRoomMemberDto],
 		description:
-			'Preview of up to 5 members (excluding the current user), \
-            used to render the avatar stack in the UI. \
-            Only present when type is GROUP',
+			'Preview of up to 5 members (excluding the current user). Only present when type is GROUP',
 	})
 	@Expose()
 	@Type(() => ChatRoomMemberDto)
@@ -140,9 +112,7 @@ export class ChatRoomListItemResponseDto {
 		type: [String],
 		format: 'uuid',
 		description:
-			'IDs of all members in the room (excluding the current user), \
-            used by the client to look up live online status from the presence store. \
-            Only present when type is GROUP',
+			'IDs of all members in the room (excluding the current user). Only present when type is GROUP',
 	})
 	@Expose()
 	memberIds?: string[];
@@ -150,9 +120,7 @@ export class ChatRoomListItemResponseDto {
 	@ApiPropertyOptional({
 		type: Number,
 		description:
-			'Total number of members in the room (excluding the current user). \
-            Only present when type is GROUP. \
-            Equivalent to memberIds.length — exposed separately so clients can render the count without needing the full memberIds array',
+			'Total number of members in the room (excluding the current user). Only present when type is GROUP',
 	})
 	@Expose()
 	@Transform(

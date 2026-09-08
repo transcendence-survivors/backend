@@ -84,13 +84,15 @@ model User {
     blocksGiven    Block[]      @relation("blocker")
     blocksReceived Block[]      @relation("blocked")
 
-    createdChatRooms ChatRoom[]    @relation("RoomCreator")
+    createdChatRooms ChatRoom[]   @relation("RoomCreator")
     chatMemberships  ChatMember[]
-    chatMessages     ChatMessage[]
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
     reposts   Repost[]
+
+    sentMessages     ChatMessage[]         @relation("MessageSender")
+    targetedMessages ChatMessageMetadata[] @relation("MessageTarget")
 }
 
 model Friendship {
@@ -289,10 +291,23 @@ model ChatMember {
     @@index([userId])
 }
 
+enum ChatMessageType {
+    TEXT
+    JOINED
+    LEFT
+    KICKED
+    ROLE_UPDATED
+    OWNERSHIP_TRANSFERRED
+    ROOM_CREATED
+    ROOM_RENAMED
+    ROOM_AVATAR_CHANGED
+}
+
 model ChatMessage {
-    id       String @id @default(uuid())
+    id       String          @id @default(uuid())
     roomId   String
-    senderId String
+    senderId String?
+    type     ChatMessageType @default(TEXT)
 
     content String?
 
@@ -303,8 +318,9 @@ model ChatMessage {
     isEdited  Boolean @default(false)
     isDeleted Boolean @default(false)
 
-    room   ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
-    sender User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+    room     ChatRoom             @relation(fields: [roomId], references: [id], onDelete: Cascade)
+    sender   User?                @relation("MessageSender", fields: [senderId], references: [id], onDelete: SetNull)
+    metadata ChatMessageMetadata?
 
     attachmentUrls String[] @default([])
 
@@ -313,4 +329,22 @@ model ChatMessage {
 
     @@index([roomId, createdAt])
     @@index([senderId])
+}
+
+model ChatMessageMetadata {
+    id        String @id @default(uuid())
+    messageId String @unique
+
+    targetUserId String?
+    targetUser   User?   @relation("MessageTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+
+    oldRole ChatMemberRole?
+    newRole ChatMemberRole?
+
+    oldValue String?
+    newValue String?
+
+    message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+    @@index([targetUserId])
 }

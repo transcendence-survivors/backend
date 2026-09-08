@@ -11,6 +11,7 @@ import {
 } from '../types/params/chat-room-find.params';
 import { ChatRoomCreateParams } from '../types/params/chat-room-create.params';
 import { ChatRoomDeleteParams } from '../types/params/chat-room-delete.params';
+import { ChatRoomUpdateParams } from '../types/params/chat-room-update.params';
 
 interface ChatRoomGroupMemberIdsParams {
 	roomIds: string[];
@@ -87,7 +88,10 @@ export class ChatRoomRepository {
 			},
 			select: {
 				...ChatRoomQueryHelper.chatRoomSelect(createdBy),
-			},
+			} satisfies Record<
+				keyof ChatRoomListItem,
+				ChatRoomSelect[keyof ChatRoomListItem]
+			>,
 		});
 	}
 
@@ -103,6 +107,16 @@ export class ChatRoomRepository {
 					{ members: { some: { userId: userBId } } },
 				],
 			},
+			select: {
+				id: true,
+			},
+		});
+	}
+
+	async update({ roomId, ...data }: ChatRoomUpdateParams): Promise<void> {
+		await this.prisma.chatRoom.update({
+			where: { id: roomId },
+			data,
 			select: {
 				id: true,
 			},

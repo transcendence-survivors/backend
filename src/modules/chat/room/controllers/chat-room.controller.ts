@@ -6,6 +6,7 @@ import {
 	Get,
 	HttpCode,
 	Param,
+	Patch,
 	Post,
 	Query,
 	UseGuards,
@@ -26,12 +27,17 @@ import { CurrentUser } from '@/core/security/decorators/current-user.decorator';
 import { type JwtAccessPayload } from '@/core/security/interfaces/jwt-payload.interface';
 import { ChatRoomListItemResponseDto } from '../dtos/responses/chat-room-list-item-response.dto';
 import { ChatRoomCreateDto } from '../dtos/requests/chat-room-create.dto';
+
+import { ChatRoomUpdateDto } from '../dtos/requests/chat-room-update.dto';
+import { ApiGroupedErrorResponse } from '@/shared/decorators/api-error-response.decorator';
 import {
-	ApiChatRoomDmConflictResponse,
-	ApiChatRoomNotFoundResponse,
-	ApiChatRoomSelfDmResponse,
-	ApiChatUserNotFoundResponse,
-} from '../decorators/chat-room-api-errors.decorator';
+	ChatRoomDirectImmutableException,
+	ChatRoomUpdateEmptyException,
+	SelfChatDmException,
+} from '../exceptions/chat-room-bad.exception';
+import { ChatRoomNotFoundException } from '../exceptions/chat-room-not-found.exceptions';
+import { ChatUserNotFoundException } from '../exceptions/chat-user-not-found.exception';
+import { ChatRoomDmConflictException } from '../exceptions/chat-room-conflict.exception';
 
 @UseGuards(JWTAccessGuard)
 @Controller('chat/rooms')
@@ -63,9 +69,9 @@ export class ChatRoomController {
 		type: ['type must be a valid enum value'],
 		userIds: ['userIds must be an array of strings'],
 	})
-	@ApiChatRoomDmConflictResponse()
-	@ApiChatRoomSelfDmResponse()
-	@ApiChatUserNotFoundResponse()
+	@ApiGroupedErrorResponse([SelfChatDmException])
+	@ApiGroupedErrorResponse([ChatUserNotFoundException])
+	@ApiGroupedErrorResponse([ChatRoomDmConflictException])
 	@ResponseEnvelope('Chat room created successfully')
 	create(
 		@CurrentUser() { sub }: JwtAccessPayload,
@@ -74,10 +80,31 @@ export class ChatRoomController {
 		return this.service.createRoom(body, sub);
 	}
 
+	@Patch(':roomId')
+	@HttpCode(204)
+	@ApiNoContentSuccessResponse()
+	@ApiValidationErrorResponse({
+		name: ['name must be a string'],
+		avatarUrl: ['avatarUrl must be a valid URL'],
+	})
+	@ApiGroupedErrorResponse([
+		ChatRoomDirectImmutableException,
+		ChatRoomUpdateEmptyException,
+	])
+	@ApiGroupedErrorResponse([ChatRoomNotFoundException])
+	@ResponseEnvelope('Chat room updated successfully')
+	update(
+		@CurrentUser() { sub }: JwtAccessPayload,
+		@Param('roomId') roomId: string,
+		@Body() body: ChatRoomUpdateDto,
+	): Promise<void> {
+		return this.service.updateRoom(roomId, sub, body);
+	}
+
 	@Delete(':roomId')
 	@HttpCode(204)
 	@ApiNoContentSuccessResponse()
-	@ApiChatRoomNotFoundResponse()
+	@ApiGroupedErrorResponse([ChatRoomNotFoundException])
 	@ResponseEnvelope('Chat room deleted successfully')
 	delete(
 		@CurrentUser() { sub }: JwtAccessPayload,
@@ -89,7 +116,7 @@ export class ChatRoomController {
 	@Get(':roomId')
 	@HttpCode(200)
 	@ApiSuccessResponse(ChatRoomListItemResponseDto)
-	@ApiChatRoomNotFoundResponse()
+	@ApiGroupedErrorResponse([ChatRoomNotFoundException])
 	@ResponseEnvelope('Chat room retrieved successfully')
 	get(
 		@CurrentUser() { sub }: JwtAccessPayload,

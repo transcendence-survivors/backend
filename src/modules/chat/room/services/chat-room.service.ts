@@ -11,8 +11,20 @@ import { ChatRoomDmConflictException } from '../exceptions/chat-room-conflict.ex
 import { type IUserService } from '@/contracts/services/user/user-service.port';
 import { InjectUserService } from '@/contracts/services/user/user-service.inject';
 import { ChatUserNotFoundException } from '../exceptions/chat-user-not-found.exception';
-import { SelfChatDmException } from '../exceptions/chat-room-bad.exception';
+import {
+	ChatRoomDirectImmutableException,
+	ChatRoomUpdateEmptyException,
+	SelfChatDmException,
+} from '../exceptions/chat-room-bad.exception';
 import { ChatRoomNotFoundException } from '../exceptions/chat-room-not-found.exceptions';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import {
+	APP_EVENTS,
+	ChatRoomAvatarChangedEvent,
+	ChatRoomCreatedEvent,
+	ChatRoomRenamedEvent,
+} from '@/contracts/events/internal';
+import { ChatRoomUpdateDto } from '../dtos/requests/chat-room-update.dto';
 
 @Injectable()
 export class ChatRoomService {
@@ -21,6 +33,7 @@ export class ChatRoomService {
 		private readonly repo: ChatRoomRepository,
 		private readonly mapper: ChatRoomMapper,
 		private readonly cursor: CursorService,
+		private readonly eventEmitter: EventEmitter2,
 	) {}
 
 	async listChatRooms(
@@ -97,7 +110,54 @@ export class ChatRoomService {
 			name: name,
 			userIds: uniqueUserIds,
 		});
+
+		this.eventEmitter.emit(
+			APP_EVENTS.CHAT_ROOM_CREATED,
+			new ChatRoomCreatedEvent(newRoom.id, userId),
+		);
+
 		return this.mapper.toListItemDto(newRoom, usersIds);
+	}
+
+	async updateRoom(
+		roomId: string,
+		userId: string,
+		dto: ChatRoomUpdateDto,
+	): Promise<void> {
+		if (!dto.name && !dto.avatarUrl)
+			throw new ChatRoomUpdateEmptyException();
+
+		const room = await this.repo.findRoom({ roomId, userId });
+		if (!room) throw new ChatRoomNotFoundException();
+		if (room.type === ChatRoomType.DIRECT)
+			throw new ChatRoomDirectImmutableException();
+
+		const oldName = room.name ?? '';
+		const oldAvatarUrl = room.avatarUrl ?? '';
+		await this.repo.update({
+			roomId,
+			avatarUrl: dto.avatarUrl,
+			name: dto.name,
+		});
+
+		if (dto.name && dto.name !== oldName) {
+			this.eventEmitter.emit(
+				APP_EVENTS.CHAT_ROOM_RENAMED,
+				new ChatRoomRenamedEvent(roomId, userId, oldName, dto.name),
+			);
+		}
+
+		if (dto.avatarUrl !== undefined && dto.avatarUrl !== oldAvatarUrl) {
+			this.eventEmitter.emit(
+				APP_EVENTS.CHAT_ROOM_AVATAR_CHANGED,
+				new ChatRoomAvatarChangedEvent(
+					roomId,
+					userId,
+					oldAvatarUrl,
+					dto.avatarUrl,
+				),
+			);
+		}
 	}
 
 	async deleteRoom(roomId: string, userId: string): Promise<void> {
