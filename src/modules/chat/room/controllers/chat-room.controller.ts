@@ -38,6 +38,7 @@ import {
 import { ChatRoomNotFoundException } from '../exceptions/chat-room-not-found.exceptions';
 import { ChatUserNotFoundException } from '../exceptions/chat-user-not-found.exception';
 import { ChatRoomDmConflictException } from '../exceptions/chat-room-conflict.exception';
+import { ChatRoomDetailResponseDto } from '../dtos/responses/chat-room-detail-response.dto';
 
 @UseGuards(JWTAccessGuard)
 @Controller('chat/rooms')
@@ -115,13 +116,13 @@ export class ChatRoomController {
 
 	@Get(':roomId')
 	@HttpCode(200)
-	@ApiSuccessResponse(ChatRoomListItemResponseDto)
+	@ApiSuccessResponse(ChatRoomDetailResponseDto)
 	@ApiGroupedErrorResponse([ChatRoomNotFoundException])
 	@ResponseEnvelope('Chat room retrieved successfully')
 	get(
 		@CurrentUser() { sub }: JwtAccessPayload,
 		@Param('roomId') roomId: string,
-	): Promise<ChatRoomListItemResponseDto> {
+	): Promise<ChatRoomDetailResponseDto> {
 		return this.service.getRoom(roomId, sub);
 	}
 }

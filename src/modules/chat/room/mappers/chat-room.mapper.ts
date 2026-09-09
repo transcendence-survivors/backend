@@ -5,7 +5,8 @@ import { plainToInstance } from 'class-transformer';
 import { ChatRoomCountResponseDto } from '../dtos/responses/chat-room-count-response.dto';
 import { CursorPaginationResult } from '@/shared/services/cursor.service';
 import { ChatRoomPaginatedListResponseDto } from '../dtos/responses/chat-room-paginated-list-response.dto';
-import { ChatRoomType } from '@prisma-generated/enums';
+import { ChatMemberRole, ChatRoomType } from '@prisma-generated/enums';
+import { ChatRoomDetailResponseDto } from '../dtos/responses/chat-room-detail-response.dto';
 
 @Injectable()
 export class ChatRoomMapper {
@@ -27,6 +28,32 @@ export class ChatRoomMapper {
 			memberIds: isDirect ? undefined : memberIds,
 			memberCount: isDirect ? undefined : memberIds.length,
 		});
+	}
+
+	toDetailDto(
+		room: ChatRoomListItem,
+		memberIds: string[],
+		currentUserRole: ChatMemberRole,
+	): ChatRoomDetailResponseDto {
+		const otherMembers = room.members.map((m) => m.user);
+		const isDirect = room.type === ChatRoomType.DIRECT;
+
+		return plainToInstance(
+			ChatRoomDetailResponseDto,
+			{
+				id: room.id,
+				type: room.type,
+				name: room.name,
+				avatarUrl: room.avatarUrl,
+				lastMessage: room.messages[0] ?? null,
+				otherMember: isDirect ? otherMembers[0] : undefined,
+				membersPreview: isDirect ? undefined : otherMembers,
+				memberIds: isDirect ? undefined : memberIds,
+				memberCount: isDirect ? undefined : memberIds.length,
+				currentUserRole,
+			},
+			{ excludeExtraneousValues: true },
+		);
 	}
 
 	toCountDto(count: number): ChatRoomCountResponseDto {

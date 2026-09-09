@@ -4,7 +4,7 @@ import {
 } from '@/shared/filters/app.http.exception';
 import { HttpStatus } from '@nestjs/common';
 
-export class MemberNotFoundInRoomException extends AppHttpException {
+export class ChatMemberNotFoundException extends AppHttpException {
 	static describe(): ApiErrorDescription {
 		return {
 			status: HttpStatus.NOT_FOUND,
@@ -15,7 +15,7 @@ export class MemberNotFoundInRoomException extends AppHttpException {
 
 	constructor() {
 		const { message, messageKey, status } =
-			MemberNotFoundInRoomException.describe();
+			ChatMemberNotFoundException.describe();
 		super(message, messageKey, status);
 	}
 }

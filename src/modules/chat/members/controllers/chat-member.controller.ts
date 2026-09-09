@@ -33,7 +33,7 @@ import {
 	SelfKickException,
 	SelfRoleModificationException,
 } from '../exceptions/chat-member-bad.exception';
-import { MemberNotFoundInRoomException } from '../exceptions/chat-member-not-found.exception';
+import { ChatMemberNotFoundException } from '../exceptions/chat-member-not-found.exception';
 import {
 	ChatMemberNotOwnerException,
 	InsufficientMemberPermissionException,
@@ -90,7 +90,7 @@ export class ChatMemberController {
 		ChatMemberNotOwnerException,
 	])
 	@ApiGroupedErrorResponse([
-		MemberNotFoundInRoomException,
+		ChatMemberNotFoundException,
 		ChatRoomNotFoundException,
 	])
 	@ResponseEnvelope('Room ownership transferred successfully')
@@ -114,7 +114,7 @@ export class ChatMemberController {
 		MemberAlreadyHasRoleException,
 	])
 	@ApiGroupedErrorResponse([InsufficientMemberPermissionException])
-	@ApiGroupedErrorResponse([MemberNotFoundInRoomException])
+	@ApiGroupedErrorResponse([ChatMemberNotFoundException])
 	@ResponseEnvelope('Member role updated successfully')
 	updateRole(
 		@Param('roomId') roomId: string,
@@ -134,7 +134,7 @@ export class ChatMemberController {
 	@HttpCode(204)
 	@ApiGroupedErrorResponse([SelfKickException])
 	@ApiGroupedErrorResponse([InsufficientMemberPermissionException])
-	@ApiGroupedErrorResponse([MemberNotFoundInRoomException])
+	@ApiGroupedErrorResponse([ChatMemberNotFoundException])
 	@ResponseEnvelope('Member kicked successfully')
 	async kickMember(
 		@Param('roomId') roomId: string,

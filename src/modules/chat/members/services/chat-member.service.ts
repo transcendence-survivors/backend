@@ -17,7 +17,7 @@ import {
 	SelfKickException,
 	SelfRoleModificationException,
 } from '../exceptions/chat-member-bad.exception';
-import { MemberNotFoundInRoomException } from '../exceptions/chat-member-not-found.exception';
+import { ChatMemberNotFoundException } from '../exceptions/chat-member-not-found.exception';
 import {
 	ChatMemberNotOwnerException,
 	InsufficientMemberPermissionException,
@@ -96,7 +96,7 @@ export class ChatMemberService {
 			this.repo.findByRoomAndUser({ roomId, userId: targetUserId }),
 		]);
 
-		if (!target || !actor) throw new MemberNotFoundInRoomException();
+		if (!target || !actor) throw new ChatMemberNotFoundException();
 		if (target.role === newRole) throw new MemberAlreadyHasRoleException();
 
 		const isPromotion =
@@ -129,8 +129,8 @@ export class ChatMemberService {
 				roomId,
 				actorId,
 				targetUserId,
-				oldRole,
 				newRole,
+				oldRole,
 			),
 		);
 
@@ -149,7 +149,7 @@ export class ChatMemberService {
 			this.repo.findByRoomAndUser({ roomId, userId: targetUserId }),
 		]);
 
-		if (!target || !actor) throw new MemberNotFoundInRoomException();
+		if (!target || !actor) throw new ChatMemberNotFoundException();
 		const isAllowed = this.permissionService.canManageMember({
 			actorRole: actor.role,
 			targetRole: target.role,
@@ -179,7 +179,7 @@ export class ChatMemberService {
 			this.repo.findByRoomAndUser({ roomId, userId: targetUserId }),
 		]);
 
-		if (!target || !actor) throw new MemberNotFoundInRoomException();
+		if (!target || !actor) throw new ChatMemberNotFoundException();
 		if (actor.role !== ChatMemberRole.OWNER)
 			throw new ChatMemberNotOwnerException();
 

@@ -111,6 +111,17 @@ export class ChatMessageRepository {
 					};
 				}
 				break;
+			case ChatMessageType.OWNERSHIP_TRANSFERRED:
+				metadataData = {
+					targetUserId: params.targetUserId,
+					oldRole: params.oldRole,
+					newRole: params.newRole,
+				};
+				break;
+
+			default:
+				metadataData = null;
+				break;
 		}
 
 		return this.prisma.chatMessage.create({

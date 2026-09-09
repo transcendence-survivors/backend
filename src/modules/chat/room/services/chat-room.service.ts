@@ -25,12 +25,16 @@ import {
 	ChatRoomRenamedEvent,
 } from '@/contracts/events/internal';
 import { ChatRoomUpdateDto } from '../dtos/requests/chat-room-update.dto';
+import { ChatMemberService } from '../../members/services/chat-member.service';
+import { ChatMemberNotFoundException } from '../../members/exceptions/chat-member-not-found.exception';
+import { ChatRoomDetailResponseDto } from '../dtos/responses/chat-room-detail-response.dto';
 
 @Injectable()
 export class ChatRoomService {
 	constructor(
 		@InjectUserService() private readonly userService: IUserService,
 		private readonly repo: ChatRoomRepository,
+		private readonly memberService: ChatMemberService,
 		private readonly mapper: ChatRoomMapper,
 		private readonly cursor: CursorService,
 		private readonly eventEmitter: EventEmitter2,
@@ -72,15 +76,20 @@ export class ChatRoomService {
 	async getRoom(
 		roomId: string,
 		userId: string,
-	): Promise<ChatRoomListItemResponseDto> {
-		const room = await this.repo.findRoom({ roomId, userId });
+	): Promise<ChatRoomDetailResponseDto> {
+		const [room, member] = await Promise.all([
+			this.repo.findRoom({ roomId, userId }),
+			this.memberService.findByRoomAndUser({ roomId, userId }),
+		]);
 		if (!room) throw new ChatRoomNotFoundException();
+		if (!member) throw new ChatMemberNotFoundException();
 		const members = await this.repo.groupMemberIds({
 			roomIds: [roomId],
 			userId,
 		});
 		const memberIds = members.map((m) => m.userId);
-		return this.mapper.toListItemDto(room, memberIds);
+		const currentUserRole = member.role;
+		return this.mapper.toDetailDto(room, memberIds, currentUserRole);
 	}
 
 	async createRoom(
