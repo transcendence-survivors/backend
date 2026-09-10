@@ -9,7 +9,7 @@ import { ChatMessageService } from '../message/services/chat-message.service';
 import { CHAT_EVENTS } from '../chat.events';
 import { Server } from 'socket.io';
 import { ChatMessageCreateDto } from '../message/dtos/requests/chat-message-create.dto';
-import { UseFilters, UseGuards } from '@nestjs/common';
+import { UseFilters, UseGuards, UsePipes } from '@nestjs/common';
 import { WsJWTAccessGuard } from '@/core/security/guards/jwt-access.guard';
 import { type UserSocket } from '@/core/websocket/interface/ws-socket.inteface';
 import { WsExceptionsFilter } from '@/shared/filters/ws-exception.filter';
@@ -19,7 +19,9 @@ import { ChatMessageEditDto } from '../message/dtos/requests/chat-message-edit.d
 import { ChatMemberService } from '../members/services/chat-member.service';
 import { ChatBroadcaster } from '../broadcasters/chat.broadcaster';
 import { ChatTypingDto } from '../dtos/requests/chat-typing.dto';
+import { CustomValidationPipe } from '@/shared/pipes/custom-validation.pipe';
 
+@UsePipes(CustomValidationPipe)
 @UseFilters(WsExceptionsFilter)
 @WebSocketGateway()
 export class ChatGateway {

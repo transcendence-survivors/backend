@@ -148,7 +148,14 @@ export class ChatRoomRepository {
 		return this.prisma.chatRoom.deleteMany({
 			where: {
 				id: roomId,
-				members: { some: { userId, role: ChatMemberRole.OWNER } },
+				OR: [
+					{ type: ChatRoomType.DIRECT },
+					{
+						members: {
+							some: { userId, role: ChatMemberRole.OWNER },
+						},
+					},
+				],
 			},
 		});
 	}

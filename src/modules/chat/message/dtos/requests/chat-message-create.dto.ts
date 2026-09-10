@@ -18,7 +18,7 @@ export class ChatMessageCreateDto {
 
 	@IsOptional()
 	@IsArray()
-	@IsUrl({}, { each: true })
+	@IsUrl({ require_tld: false }, { each: true })
 	attachmentUrls?: string[];
 
 	@IsOptional()

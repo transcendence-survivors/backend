@@ -3,6 +3,7 @@ import { AppModule } from './app.module';
 import cookieParser from 'cookie-parser';
 import { SocketIoAdapter } from './core/websocket/adapters/socket-io.adapter';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { CustomValidationPipe } from './shared/pipes/custom-validation.pipe';
 
 void (async () => {
 	const appV1 = await NestFactory.create(AppModule);
@@ -22,6 +23,7 @@ void (async () => {
 	appV1.setGlobalPrefix('api/v1');
 	appV1.use(cookieParser());
 
+	appV1.useGlobalPipes(new CustomValidationPipe());
 	const document = SwaggerModule.createDocument(
 		appV1,
 		new DocumentBuilder()

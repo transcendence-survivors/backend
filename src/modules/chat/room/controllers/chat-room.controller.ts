@@ -36,9 +36,9 @@ import {
 	SelfChatDmException,
 } from '../exceptions/chat-room-bad.exception';
 import { ChatRoomNotFoundException } from '../exceptions/chat-room-not-found.exceptions';
-import { ChatUserNotFoundException } from '../exceptions/chat-user-not-found.exception';
 import { ChatRoomDmConflictException } from '../exceptions/chat-room-conflict.exception';
 import { ChatRoomDetailResponseDto } from '../dtos/responses/chat-room-detail-response.dto';
+import { ChatMemberNotFoundException } from '../../members/exceptions/chat-member-not-found.exception';
 
 @UseGuards(JWTAccessGuard)
 @Controller('chat/rooms')
@@ -71,7 +71,7 @@ export class ChatRoomController {
 		userIds: ['userIds must be an array of strings'],
 	})
 	@ApiGroupedErrorResponse([SelfChatDmException])
-	@ApiGroupedErrorResponse([ChatUserNotFoundException])
+	@ApiGroupedErrorResponse([ChatMemberNotFoundException])
 	@ApiGroupedErrorResponse([ChatRoomDmConflictException])
 	@ResponseEnvelope('Chat room created successfully')
 	create(
@@ -94,12 +94,12 @@ export class ChatRoomController {
 	])
 	@ApiGroupedErrorResponse([ChatRoomNotFoundException])
 	@ResponseEnvelope('Chat room updated successfully')
-	update(
+	async update(
 		@CurrentUser() { sub }: JwtAccessPayload,
 		@Param('roomId') roomId: string,
 		@Body() body: ChatRoomUpdateDto,
 	): Promise<void> {
-		return this.service.updateRoom(roomId, sub, body);
+		await this.service.updateRoom(roomId, sub, body);
 	}
 
 	@Delete(':roomId')
@@ -107,11 +107,11 @@ export class ChatRoomController {
 	@ApiNoContentSuccessResponse()
 	@ApiGroupedErrorResponse([ChatRoomNotFoundException])
 	@ResponseEnvelope('Chat room deleted successfully')
-	delete(
+	async delete(
 		@CurrentUser() { sub }: JwtAccessPayload,
 		@Param('roomId') roomId: string,
 	): Promise<void> {
-		return this.service.deleteRoom(roomId, sub);
+		await this.service.deleteRoom(roomId, sub);
 	}
 
 	@Get(':roomId')

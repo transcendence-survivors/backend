@@ -6,11 +6,10 @@ import { ChatRoomPaginatedListResponseDto } from '../dtos/responses/chat-room-pa
 import { CursorService } from '@/shared/services/cursor.service';
 import { ChatRoomCreateDto } from '../dtos/requests/chat-room-create.dto';
 import { ChatRoomListItemResponseDto } from '../dtos/responses/chat-room-list-item-response.dto';
-import { ChatRoomType } from '@prisma-generated/client';
+import { ChatMemberRole, ChatRoomType } from '@prisma-generated/client';
 import { ChatRoomDmConflictException } from '../exceptions/chat-room-conflict.exception';
 import { type IUserService } from '@/contracts/services/user/user-service.port';
 import { InjectUserService } from '@/contracts/services/user/user-service.inject';
-import { ChatUserNotFoundException } from '../exceptions/chat-user-not-found.exception';
 import {
 	ChatRoomDirectImmutableException,
 	ChatRoomUpdateEmptyException,
@@ -28,6 +27,7 @@ import { ChatRoomUpdateDto } from '../dtos/requests/chat-room-update.dto';
 import { ChatMemberService } from '../../members/services/chat-member.service';
 import { ChatMemberNotFoundException } from '../../members/exceptions/chat-member-not-found.exception';
 import { ChatRoomDetailResponseDto } from '../dtos/responses/chat-room-detail-response.dto';
+import { InsufficientMemberPermissionException } from '../../members/exceptions/chat-member-forbidden.exception';
 
 @Injectable()
 export class ChatRoomService {
@@ -101,7 +101,7 @@ export class ChatRoomService {
 			await this.userService.getCountIn(uniqueUserIds);
 
 		if (existingUsersCount !== uniqueUserIds.length)
-			throw new ChatUserNotFoundException();
+			throw new ChatMemberNotFoundException();
 
 		if (type === ChatRoomType.DIRECT) {
 			const recipientId = usersIds[0];
@@ -133,37 +133,56 @@ export class ChatRoomService {
 		userId: string,
 		dto: ChatRoomUpdateDto,
 	): Promise<void> {
-		if (!dto.name && !dto.avatarUrl)
+		const isNameProvided = dto.name !== undefined;
+		const isAvatarProvided = dto.avatarUrl !== undefined;
+		if (!isNameProvided && !isAvatarProvided) {
 			throw new ChatRoomUpdateEmptyException();
-
-		const room = await this.repo.findRoom({ roomId, userId });
-		if (!room) throw new ChatRoomNotFoundException();
-		if (room.type === ChatRoomType.DIRECT)
-			throw new ChatRoomDirectImmutableException();
-
-		const oldName = room.name ?? '';
-		const oldAvatarUrl = room.avatarUrl ?? '';
-		await this.repo.update({
-			roomId,
-			avatarUrl: dto.avatarUrl,
-			name: dto.name,
-		});
-
-		if (dto.name && dto.name !== oldName) {
-			this.eventEmitter.emit(
-				APP_EVENTS.CHAT_ROOM_RENAMED,
-				new ChatRoomRenamedEvent(roomId, userId, oldName, dto.name),
-			);
 		}
 
-		if (dto.avatarUrl !== undefined && dto.avatarUrl !== oldAvatarUrl) {
+		const [room, member] = await Promise.all([
+			this.repo.findRoom({ roomId, userId }),
+			this.memberService.findByRoomAndUser({ roomId, userId }),
+		]);
+		if (!room) throw new ChatRoomNotFoundException();
+		if (!member) throw new ChatMemberNotFoundException();
+
+		if (room.type === ChatRoomType.DIRECT)
+			throw new ChatRoomDirectImmutableException();
+		const hasPermission =
+			member.role === ChatMemberRole.OWNER ||
+			member.role === ChatMemberRole.ADMIN;
+
+		if (!hasPermission) {
+			throw new InsufficientMemberPermissionException();
+		}
+
+		const oldName = room.name;
+		const oldAvatarUrl = room.avatarUrl;
+		await this.repo.update({
+			roomId,
+			...(isNameProvided && { name: dto.name }),
+			...(isAvatarProvided && { avatarUrl: dto.avatarUrl }),
+		});
+
+		if (isNameProvided && dto.name !== oldName) {
+			this.eventEmitter.emit(
+				APP_EVENTS.CHAT_ROOM_RENAMED,
+				new ChatRoomRenamedEvent(
+					roomId,
+					userId,
+					oldName ?? '',
+					dto.name ?? '',
+				),
+			);
+		}
+		if (isAvatarProvided && dto.avatarUrl !== oldAvatarUrl) {
 			this.eventEmitter.emit(
 				APP_EVENTS.CHAT_ROOM_AVATAR_CHANGED,
 				new ChatRoomAvatarChangedEvent(
 					roomId,
 					userId,
-					oldAvatarUrl,
-					dto.avatarUrl,
+					oldAvatarUrl ?? '',
+					dto.avatarUrl ?? '',
 				),
 			);
 		}

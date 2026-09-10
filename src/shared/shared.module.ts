@@ -5,6 +5,7 @@ import { ResponseInterceptor } from './interceptors/response.interceptor';
 import { CustomValidationPipe } from './pipes/custom-validation.pipe';
 import { CursorService } from './services/cursor.service';
 import { HealthController } from './health.controller';
+import { WsExceptionsFilter } from './filters/ws-exception.filter';
 
 @Global()
 @Module({

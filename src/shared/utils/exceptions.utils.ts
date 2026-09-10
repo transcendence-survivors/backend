@@ -2,6 +2,7 @@ import { HttpException, HttpStatus } from '@nestjs/common';
 import { ExceptionResponse } from '../types/exception-response.type';
 import { AppHttpException } from '../filters/app.http.exception';
 import { ApiError, WsResponse } from '../types/response.type';
+import { WsException } from '@nestjs/websockets';
 
 export const handleWs = async <T>(
 	fn: () => Promise<T> | T,
@@ -15,6 +16,20 @@ export const handleWs = async <T>(
 };
 
 export const mapExceptionToErrorBody = (exception: unknown): ApiError => {
+	if (exception instanceof WsException) {
+		const error = exception.getError();
+		if (typeof error === 'object' && error !== null) {
+			return error as ApiError;
+		}
+		console.error('Unhandled WsException:', exception);
+		return {
+			status: 'error',
+			message: typeof error === 'string' ? error : 'Validation failed',
+			code: 400,
+			errors: null,
+		};
+	}
+
 	if (!isHttpException(exception)) {
 		console.error('Unhandled exception:', exception);
 		return {
