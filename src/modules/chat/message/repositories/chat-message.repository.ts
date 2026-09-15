@@ -8,6 +8,8 @@ import { ChatMessageSelect } from '@prisma-generated/models';
 import { ChatMessageCountParams } from '../types/params/chat-message-count.params';
 import { ChatMessageCreateSystemParams } from '../types/params/chat-message-create-system.params';
 import { ChatMemberRole, ChatMessageType } from '@prisma-generated/enums';
+import { DbContext } from '@/core/database/uow/db-context';
+import { ChatMessageEditParams } from '../types/params/chat-message-edit.params';
 
 @Injectable()
 export class ChatMessageRepository {
@@ -30,7 +32,7 @@ export class ChatMessageRepository {
 				],
 			},
 			select: {
-				...ChatMessageQueryHelper.chatMessageSelect,
+				...ChatMessageQueryHelper.chatMessageSelect(roomId),
 			} satisfies Record<
 				keyof ChatMessageListItem,
 				ChatMessageSelect[keyof ChatMessageListItem]
@@ -50,14 +52,18 @@ export class ChatMessageRepository {
 		});
 	}
 
-	create({
-		roomId,
-		senderId,
-		content,
-		replyToId,
-		attachmentUrls,
-	}: ChatMessageCreateParams): Promise<ChatMessageListItem> {
-		return this.prisma.chatMessage.create({
+	create(
+		{
+			roomId,
+			senderId,
+			content,
+			replyToId,
+			attachmentUrls,
+		}: ChatMessageCreateParams,
+		ctx?: DbContext,
+	): Promise<ChatMessageListItem> {
+		const client = ctx?.client ?? this.prisma;
+		return client.chatMessage.create({
 			data: {
 				roomId: roomId,
 				senderId: senderId,
@@ -66,7 +72,7 @@ export class ChatMessageRepository {
 				replyToId: replyToId,
 			},
 			select: {
-				...ChatMessageQueryHelper.chatMessageSelect,
+				...ChatMessageQueryHelper.chatMessageSelect(roomId),
 			} satisfies Record<
 				keyof ChatMessageListItem,
 				ChatMessageSelect[keyof ChatMessageListItem]
@@ -76,6 +82,7 @@ export class ChatMessageRepository {
 
 	async createSystemMessage(
 		params: ChatMessageCreateSystemParams,
+		ctx?: DbContext,
 	): Promise<ChatMessageListItem> {
 		const senderId = 'senderId' in params ? params.senderId : null;
 
@@ -118,13 +125,19 @@ export class ChatMessageRepository {
 					newRole: params.newRole,
 				};
 				break;
-
+			case ChatMessageType.JOINED:
+			case ChatMessageType.LEFT:
+				metadataData = {
+					targetUserId: params.targetUserId,
+				};
+				break;
 			default:
 				metadataData = null;
 				break;
 		}
 
-		return this.prisma.chatMessage.create({
+		const client = ctx?.client ?? this.prisma;
+		return client.chatMessage.create({
 			data: {
 				roomId: params.roomId,
 				senderId: senderId ?? null,
@@ -137,11 +150,22 @@ export class ChatMessageRepository {
 				}),
 			},
 			select: {
-				...ChatMessageQueryHelper.chatMessageSelect,
+				...ChatMessageQueryHelper.chatMessageSelect(params.roomId),
 			} satisfies Record<
 				keyof ChatMessageListItem,
 				ChatMessageSelect[keyof ChatMessageListItem]
 			>,
+		});
+	}
+
+	updateLastActivity(roomId: string, ctx?: DbContext): Promise<unknown> {
+		const client = ctx?.client ?? this.prisma;
+		return client.chatRoom.update({
+			where: { id: roomId },
+			data: { lastActivityAt: new Date() },
+			select: {
+				id: true,
+			},
 		});
 	}
 
@@ -152,12 +176,17 @@ export class ChatMessageRepository {
 		});
 	}
 
-	edit(id: string, content?: string): Promise<ChatMessageListItem> {
+	edit({
+		roomId,
+		messageId,
+		userId,
+		content,
+	}: ChatMessageEditParams): Promise<ChatMessageListItem> {
 		return this.prisma.chatMessage.update({
-			where: { id },
+			where: { id: messageId, roomId, senderId: userId },
 			data: { content, isEdited: true },
 			select: {
-				...ChatMessageQueryHelper.chatMessageSelect,
+				...ChatMessageQueryHelper.chatMessageSelect(roomId),
 			} satisfies Record<
 				keyof ChatMessageListItem,
 				ChatMessageSelect[keyof ChatMessageListItem]

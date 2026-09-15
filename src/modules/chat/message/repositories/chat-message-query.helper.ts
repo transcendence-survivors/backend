@@ -7,44 +7,56 @@ import { ChatMessageListItem } from '../types/records/chat-message-list-item';
 import { ChatMessageOrderByEnum } from '../types/enums/chat-message-order-by.enum';
 
 export class ChatMessageQueryHelper {
-	public static chatMessageSelect = {
-		id: true,
-		roomId: true,
-		type: true,
-		content: true,
-		isEdited: true,
-		isDeleted: true,
-		replyToId: true,
-		attachmentUrls: true,
-		createdAt: true,
-		sender: {
-			select: {
-				id: true,
-				username: true,
-				displayName: true,
-				avatarUrl: true,
-			},
-		},
-		metadata: {
-			select: {
-				oldRole: true,
-				newRole: true,
-				oldValue: true,
-				newValue: true,
-				targetUser: {
-					select: {
-						id: true,
-						username: true,
-						displayName: true,
-						avatarUrl: true,
+	public static chatMessageSelect(roomId: string) {
+		return {
+			id: true,
+			roomId: true,
+			type: true,
+			content: true,
+			isEdited: true,
+			isDeleted: true,
+			replyToId: true,
+			attachmentUrls: true,
+			createdAt: true,
+			sender: {
+				select: {
+					id: true,
+					username: true,
+					displayName: true,
+					avatarUrl: true,
+					chatMemberships: {
+						where: { roomId },
+						select: { role: true },
+						take: 1,
 					},
 				},
 			},
-		},
-	} as const satisfies Record<
-		keyof ChatMessageListItem,
-		ChatMessageSelect[keyof ChatMessageListItem]
-	>;
+			metadata: {
+				select: {
+					oldRole: true,
+					newRole: true,
+					oldValue: true,
+					newValue: true,
+					targetUser: {
+						select: {
+							id: true,
+							username: true,
+							displayName: true,
+							avatarUrl: true,
+							chatMemberships: {
+								where: { roomId },
+								select: { role: true },
+								take: 1,
+							},
+						},
+					},
+				},
+			},
+		} as const satisfies Record<
+			keyof ChatMessageListItem,
+			ChatMessageSelect[keyof ChatMessageListItem]
+		>;
+	}
 
 	public static readonly orderBy: Record<
 		ChatMessageOrderByEnum,

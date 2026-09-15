@@ -98,4 +98,18 @@ export class ChatMemberRepository {
 			>,
 		});
 	}
+
+	findRoomWithMember(roomId: string, userId: string) {
+		return this.prisma.chatRoom.findUnique({
+			where: { id: roomId },
+			select: {
+				id: true,
+				type: true,
+				members: {
+					where: { userId },
+					take: 1,
+				},
+			},
+		});
+	}
 }

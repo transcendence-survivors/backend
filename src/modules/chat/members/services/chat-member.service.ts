@@ -9,10 +9,11 @@ import { ChatMemberCountDto } from '../dtos/requests/chat-member-count.dto';
 import { ChatMemberCountResponseDto } from '../dtos/responses/chat-member-count-response.dto';
 import { ChatMemberPermissionService } from './chat-member-permission.service';
 import { EventEmitter2 } from '@nestjs/event-emitter';
-import { ChatMemberRole } from '@prisma-generated/enums';
+import { ChatMemberRole, ChatRoomType } from '@prisma-generated/enums';
 import { ChatMemberListItemResponseDto } from '../dtos/responses/chat-member-list-item-response.dto';
 import {
 	ChatMemberSelfOwnershipException,
+	ChatRoomOwnerCannotLeaveException,
 	MemberAlreadyHasRoleException,
 	SelfKickException,
 	SelfRoleModificationException,
@@ -26,10 +27,13 @@ import { ChatMemberPermissionEnum } from '../types/enums/chat-member-permission.
 import { ChatMemberRoleUpdatedEvent } from '@/contracts/events/internal/chat/chat-member-role-updated.event';
 import {
 	APP_EVENTS,
+	ChatMemberLeftEvent,
 	ChatOwnershipTransferredEvent,
 } from '@/contracts/events/internal';
 import { ChatMemberKickedEvent } from '@/contracts/events/internal/chat/chat-member-kicked.event';
 import { UnitOfWork } from '@/core/database/uow/unit-of-work';
+import { ChatRoomNotFoundException } from '../../room/exceptions/chat-room-not-found.exceptions';
+import { ChatRoomDirectImmutableException } from '../../room/exceptions/chat-room-bad.exception';
 
 @Injectable()
 export class ChatMemberService {
@@ -212,6 +216,23 @@ export class ChatMemberService {
 				oldRole,
 				newRole,
 			),
+		);
+	}
+
+	async leaveRoom(roomId: string, userId: string): Promise<void> {
+		const room = await this.repo.findRoomWithMember(roomId, userId);
+		const member = room?.members[0];
+
+		if (!room || !member) throw new ChatRoomNotFoundException();
+		if (room.type === ChatRoomType.DIRECT)
+			throw new ChatRoomDirectImmutableException();
+		if (member.role === ChatMemberRole.OWNER)
+			throw new ChatRoomOwnerCannotLeaveException();
+
+		await this.repo.deleteMember({ roomId, userId });
+		this.eventEmitter.emit(
+			APP_EVENTS.CHAT_MEMBER_LEFT,
+			new ChatMemberLeftEvent(roomId, userId),
 		);
 	}
 }

@@ -1,4 +1,4 @@
-import { ChatMessageListItemResponseDto } from '@/modules/chat/message/dtos/responses/chat-room-list-item-response.dto';
+import { ChatMessageListItemResponseDto } from '@/modules/chat/message/dtos/responses/chat-message-list-item-response.dto';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ChatRoomType } from '@prisma-generated/enums';
 import { Exclude, Expose, Transform, Type } from 'class-transformer';

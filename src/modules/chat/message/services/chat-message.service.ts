@@ -9,7 +9,7 @@ import { ChatMessageMapper } from '../mappers/chat-message.mapper';
 import { ChatMessagePaginatedListResponseDto } from '../dtos/responses/chat-message-paginated-list-response.dto';
 import { CursorService } from '@/shared/services/cursor.service';
 import { ChatMessageCountDto } from '../dtos/requests/chat-message-count.dto';
-import { ChatMessageCountResponseDto } from '../dtos/responses/chat-room-count-response.dto';
+import { ChatMessageCountResponseDto } from '../dtos/responses/chat-message-count-response.dto';
 import { ChatMessageCreateDto } from '../dtos/requests/chat-message-create.dto';
 import { ChatMemberService } from '../../members/services/chat-member.service';
 import { APP_EVENTS } from '@/contracts/events/internal';
@@ -19,7 +19,7 @@ import { ChatMessageEditDto } from '../dtos/requests/chat-message-edit.dto';
 import { ChatMessageEditedEvent } from '@/contracts/events/internal/chat/chat-message-edited.event';
 import { AttachmentMustBeDeletedEvent } from '@/contracts/events/internal/attachment-must-be-deleted.event';
 import { ChatMessageCreateSystemParams } from '../types/params/chat-message-create-system.params';
-import { ChatMessageListItem } from '../types/records/chat-message-list-item';
+import { UnitOfWork } from '@/core/database/uow/unit-of-work';
 
 @Injectable()
 export class ChatMessageService {
@@ -35,6 +35,7 @@ export class ChatMessageService {
 		private readonly eventEmitter: EventEmitter2,
 		private readonly mapper: ChatMessageMapper,
 		private readonly cursor: CursorService,
+		private readonly uow: UnitOfWork,
 	) {}
 
 	async listMessages(
@@ -70,7 +71,11 @@ export class ChatMessageService {
 		return this.mapper.toCountDto(messages);
 	}
 
-	async create(roomId: string, userId: string, dto: ChatMessageCreateDto) {
+	async create(
+		roomId: string,
+		userId: string,
+		dto: ChatMessageCreateDto,
+	): Promise<void> {
 		await this.checkPerm(userId, userId, roomId);
 
 		if (!dto.content?.trim() && !dto.attachmentUrls?.length) {
@@ -79,31 +84,38 @@ export class ChatMessageService {
 			);
 		}
 
-		const message = await this.repo.create({
-			roomId,
-			senderId: userId,
-			content: dto.content,
-			attachmentUrls: dto.attachmentUrls ?? [],
-			replyToId: dto.replyToId,
+		const message = await this.uow.run(async (ctx) => {
+			const message = await this.repo.create(
+				{
+					roomId,
+					senderId: userId,
+					content: dto.content,
+					attachmentUrls: dto.attachmentUrls ?? [],
+					replyToId: dto.replyToId,
+				},
+				ctx,
+			);
+			await this.repo.updateLastActivity(roomId, ctx);
+			return message;
 		});
 		this.eventEmitter.emit(
 			APP_EVENTS.CHAT_MESSAGE_CREATED,
 			new ChatMessageCreatedEvent(message),
 		);
-		return message;
 	}
 	async createSystemMessage(
 		params: ChatMessageCreateSystemParams,
-	): Promise<ChatMessageListItem> {
-		const message = await this.repo.createSystemMessage(params);
-		const messageDto = this.mapper.toListItemDto(message);
+	): Promise<void> {
+		const message = await this.uow.run(async (ctx) => {
+			const message = await this.repo.createSystemMessage(params, ctx);
+			await this.repo.updateLastActivity(params.roomId, ctx);
+			return message;
+		});
 
 		this.eventEmitter.emit(
 			APP_EVENTS.CHAT_MESSAGE_CREATED,
-			new ChatMessageCreatedEvent(messageDto),
+			new ChatMessageCreatedEvent(message),
 		);
-
-		return messageDto;
 	}
 
 	async softDelete(messageId: string, userId: string): Promise<void> {
@@ -127,7 +139,7 @@ export class ChatMessageService {
 	}
 
 	async edit(
-		{ messageId, content }: ChatMessageEditDto,
+		{ roomId, messageId, content }: ChatMessageEditDto,
 		userId: string,
 	): Promise<void> {
 		const message = await this.repo.findById(messageId);
@@ -135,13 +147,17 @@ export class ChatMessageService {
 			throw new ChatMessageNotFoundException();
 
 		await this.checkPerm(userId, message.senderId, message.roomId, false);
-		const updated = await this.repo.edit(messageId, content);
+		const updated = await this.repo.edit({
+			messageId,
+			roomId,
+			content,
+			userId,
+		});
 		if (!updated) throw new ChatMessageNotFoundException();
 
-		const updatedDto = this.mapper.toListItemDto(updated);
 		this.eventEmitter.emit(
 			APP_EVENTS.CHAT_MESSAGE_EDITED,
-			new ChatMessageEditedEvent(updatedDto),
+			new ChatMessageEditedEvent(updated),
 		);
 	}
 

@@ -37,6 +37,15 @@ class ChatMessageSenderDto {
 	})
 	@Expose()
 	avatarUrl!: string | null;
+
+	@ApiProperty({
+		enum: ChatMemberRole,
+		enumName: 'ChatMemberRole',
+		description: 'Role of the message sender within the room',
+		example: ChatMemberRole.MEMBER,
+	})
+	@Expose()
+	role!: ChatMemberRole | null;
 }
 
 @Exclude()

@@ -1,9 +1,13 @@
 import { ChatMemberRole, ChatMessage, User } from '@prisma-generated/client';
 
-export type ChatMessageUserSummary = Pick<
+type ChatMessageUserSummary = Pick<
 	User,
 	'id' | 'username' | 'displayName' | 'avatarUrl'
->;
+> & {
+	chatMemberships: {
+		role: ChatMemberRole;
+	}[];
+};
 
 export type ChatMessageListItem = Pick<
 	ChatMessage,

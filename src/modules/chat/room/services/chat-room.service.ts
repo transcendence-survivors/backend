@@ -6,7 +6,11 @@ import { ChatRoomPaginatedListResponseDto } from '../dtos/responses/chat-room-pa
 import { CursorService } from '@/shared/services/cursor.service';
 import { ChatRoomCreateDto } from '../dtos/requests/chat-room-create.dto';
 import { ChatRoomListItemResponseDto } from '../dtos/responses/chat-room-list-item-response.dto';
-import { ChatMemberRole, ChatRoomType } from '@prisma-generated/client';
+import {
+	ChatMemberRole,
+	ChatRoom,
+	ChatRoomType,
+} from '@prisma-generated/client';
 import { ChatRoomDmConflictException } from '../exceptions/chat-room-conflict.exception';
 import { type IUserService } from '@/contracts/services/user/user-service.port';
 import { InjectUserService } from '@/contracts/services/user/user-service.inject';
@@ -93,39 +97,50 @@ export class ChatRoomService {
 	}
 
 	async createRoom(
-		{ name, type, usersIds }: ChatRoomCreateDto,
+		dto: ChatRoomCreateDto,
 		userId: string,
 	): Promise<ChatRoomListItemResponseDto> {
-		const uniqueUserIds = Array.from(new Set([userId, ...usersIds]));
-		const existingUsersCount =
-			await this.userService.getCountIn(uniqueUserIds);
-
-		if (existingUsersCount !== uniqueUserIds.length)
-			throw new ChatMemberNotFoundException();
-
-		if (type === ChatRoomType.DIRECT) {
-			const recipientId = usersIds[0];
-			if (recipientId === userId) throw new SelfChatDmException();
-			const existingRoom = await this.repo.findDm({
-				userAId: userId,
-				userBId: recipientId,
-			});
-			if (existingRoom) throw new ChatRoomDmConflictException();
+		const uniqueUserIds = Array.from(new Set([userId, ...dto.usersIds]));
+		await this.verifyUsersExist(uniqueUserIds);
+		if (dto.type === ChatRoomType.DIRECT) {
+			await this.assertValidDmCreation(userId, dto.usersIds[0]);
 		}
+		return this.executeRoomCreation(dto, userId, uniqueUserIds);
+	}
 
-		const newRoom = await this.repo.create({
-			createdBy: userId,
-			type: type,
-			name: name,
-			userIds: uniqueUserIds,
+	async getOrCreateDirectRoom(
+		currentUserId: string,
+		targetUserId: string,
+	): Promise<ChatRoomListItemResponseDto> {
+		if (currentUserId === targetUserId) throw new SelfChatDmException();
+
+		const existingDm = await this.repo.findDm({
+			userAId: currentUserId,
+			userBId: targetUserId,
 		});
 
-		this.eventEmitter.emit(
-			APP_EVENTS.CHAT_ROOM_CREATED,
-			new ChatRoomCreatedEvent(newRoom.id, userId),
-		);
+		if (existingDm) {
+			const room = await this.repo.findRoom({
+				roomId: existingDm.id,
+				userId: currentUserId,
+			});
 
-		return this.mapper.toListItemDto(newRoom, usersIds);
+			if (room) {
+				return this.mapper.toListItemDto(room, [targetUserId]);
+			}
+		}
+
+		const uniqueUserIds = [currentUserId, targetUserId];
+		await this.verifyUsersExist(uniqueUserIds);
+		return this.executeRoomCreation(
+			{
+				type: ChatRoomType.DIRECT,
+				usersIds: [targetUserId],
+				name: '',
+			},
+			currentUserId,
+			uniqueUserIds,
+		);
 	}
 
 	async updateRoom(
@@ -146,8 +161,10 @@ export class ChatRoomService {
 		if (!room) throw new ChatRoomNotFoundException();
 		if (!member) throw new ChatMemberNotFoundException();
 
-		if (room.type === ChatRoomType.DIRECT)
+		if (room.type === ChatRoomType.DIRECT) {
 			throw new ChatRoomDirectImmutableException();
+		}
+
 		const hasPermission =
 			member.role === ChatMemberRole.OWNER ||
 			member.role === ChatMemberRole.ADMIN;
@@ -191,5 +208,43 @@ export class ChatRoomService {
 	async deleteRoom(roomId: string, userId: string): Promise<void> {
 		const res = await this.repo.deleteRoom({ roomId, userId });
 		if (res.count === 0) throw new ChatRoomNotFoundException();
+	}
+
+	findRoomType(roomId: string): Promise<Pick<ChatRoom, 'type'> | null> {
+		return this.repo.findRoomType(roomId);
+	}
+
+	private async verifyUsersExist(userIds: string[]): Promise<void> {
+		const existingUsersCount = await this.userService.getCountIn(userIds);
+		if (existingUsersCount !== userIds.length)
+			throw new ChatMemberNotFoundException();
+	}
+	private async assertValidDmCreation(
+		currentUserId: string,
+		recipientId: string,
+	): Promise<void> {
+		if (recipientId === currentUserId) throw new SelfChatDmException();
+		const existingRoom = await this.repo.findDm({
+			userAId: currentUserId,
+			userBId: recipientId,
+		});
+		if (existingRoom) throw new ChatRoomDmConflictException();
+	}
+	private async executeRoomCreation(
+		dto: ChatRoomCreateDto,
+		currentUserId: string,
+		uniqueUserIds: string[],
+	): Promise<ChatRoomListItemResponseDto> {
+		const newRoom = await this.repo.create({
+			createdBy: currentUserId,
+			type: dto.type,
+			name: dto.name,
+			userIds: uniqueUserIds,
+		});
+		this.eventEmitter.emit(
+			APP_EVENTS.CHAT_ROOM_CREATED,
+			new ChatRoomCreatedEvent(newRoom.id, currentUserId),
+		);
+		return this.mapper.toListItemDto(newRoom, dto.usersIds);
 	}
 }

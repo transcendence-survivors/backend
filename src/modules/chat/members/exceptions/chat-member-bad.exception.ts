@@ -66,3 +66,19 @@ export class ChatMemberSelfOwnershipException extends AppHttpException {
 		super(message, messageKey, status);
 	}
 }
+
+export class ChatRoomOwnerCannotLeaveException extends AppHttpException {
+	static describe(): ApiErrorDescription {
+		return {
+			status: HttpStatus.BAD_REQUEST,
+			message: 'The owner of the chat room cannot leave the room.',
+			messageKey: 'chat_room_owner_cannot_leave',
+		};
+	}
+
+	constructor() {
+		const { message, messageKey, status } =
+			ChatRoomOwnerCannotLeaveException.describe();
+		super(message, messageKey, status);
+	}
+}

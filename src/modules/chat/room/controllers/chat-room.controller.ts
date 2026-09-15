@@ -39,6 +39,7 @@ import { ChatRoomNotFoundException } from '../exceptions/chat-room-not-found.exc
 import { ChatRoomDmConflictException } from '../exceptions/chat-room-conflict.exception';
 import { ChatRoomDetailResponseDto } from '../dtos/responses/chat-room-detail-response.dto';
 import { ChatMemberNotFoundException } from '../../members/exceptions/chat-member-not-found.exception';
+import { ChatRoomDirectCreateDto } from '../dtos/requests/chat-room-direct.dto';
 
 @UseGuards(JWTAccessGuard)
 @Controller('chat/rooms')
@@ -79,6 +80,22 @@ export class ChatRoomController {
 		@Body() body: ChatRoomCreateDto,
 	): Promise<ChatRoomListItemResponseDto> {
 		return this.service.createRoom(body, sub);
+	}
+
+	@Post('direct')
+	@HttpCode(200)
+	@ApiSuccessResponse(ChatRoomListItemResponseDto)
+	@ApiValidationErrorResponse({
+		targetUserId: ['targetUserId must be a UUID'],
+	})
+	@ApiGroupedErrorResponse([SelfChatDmException])
+	@ApiGroupedErrorResponse([ChatMemberNotFoundException])
+	@ResponseEnvelope('Direct chat room retrieved or created successfully')
+	getOrCreateDirectRoom(
+		@CurrentUser() { sub }: JwtAccessPayload,
+		@Body() body: ChatRoomDirectCreateDto,
+	): Promise<ChatRoomListItemResponseDto> {
+		return this.service.getOrCreateDirectRoom(sub, body.targetUserId);
 	}
 
 	@Patch(':roomId')

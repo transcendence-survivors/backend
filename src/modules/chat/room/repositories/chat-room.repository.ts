@@ -12,6 +12,7 @@ import {
 import { ChatRoomCreateParams } from '../types/params/chat-room-create.params';
 import { ChatRoomDeleteParams } from '../types/params/chat-room-delete.params';
 import { ChatRoomUpdateParams } from '../types/params/chat-room-update.params';
+import { ChatRoom } from '@prisma-generated/browser';
 
 interface ChatRoomGroupMemberIdsParams {
 	roomIds: string[];
@@ -57,7 +58,7 @@ export class ChatRoomRepository {
 			},
 			orderBy: ChatRoomQueryHelper.orderBy[orderBy],
 			select: {
-				...ChatRoomQueryHelper.chatRoomSelect(userId),
+				...ChatRoomQueryHelper.chatRoomSelect(userId, ''),
 			} satisfies Record<
 				keyof ChatRoomListItem,
 				ChatRoomSelect[keyof ChatRoomListItem]
@@ -87,7 +88,7 @@ export class ChatRoomRepository {
 				},
 			},
 			select: {
-				...ChatRoomQueryHelper.chatRoomSelect(createdBy),
+				...ChatRoomQueryHelper.chatRoomSelect(createdBy, ''),
 			} satisfies Record<
 				keyof ChatRoomListItem,
 				ChatRoomSelect[keyof ChatRoomListItem]
@@ -133,11 +134,18 @@ export class ChatRoomRepository {
 				members: { some: { userId } },
 			},
 			select: {
-				...ChatRoomQueryHelper.chatRoomSelect(userId),
+				...ChatRoomQueryHelper.chatRoomSelect(userId, roomId),
 			} satisfies Record<
 				keyof ChatRoomListItem,
 				ChatRoomSelect[keyof ChatRoomListItem]
 			>,
+		});
+	}
+
+	findRoomType(roomId: string): Promise<Pick<ChatRoom, 'type'> | null> {
+		return this.prisma.chatRoom.findUnique({
+			where: { id: roomId },
+			select: { type: true },
 		});
 	}
 

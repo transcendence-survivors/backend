@@ -23,6 +23,10 @@ import { WsExceptionsFilter } from './filters/ws-exception.filter';
 			provide: APP_FILTER,
 			useClass: HttpExceptionsFilter,
 		},
+		{
+			provide: APP_FILTER,
+			useClass: WsExceptionsFilter,
+		},
 		CursorService,
 	],
 	exports: [CursorService],

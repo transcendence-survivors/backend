@@ -12,7 +12,7 @@ import { UserQueryHelper } from '@/modules/user/user.public-api';
 import { ChatMessageQueryHelper } from '../../message/repositories/chat-message-query.helper';
 
 export class ChatRoomQueryHelper {
-	public static chatRoomSelect(currentUserId: string) {
+	public static chatRoomSelect(currentUserId: string, roomId: string) {
 		return {
 			id: true,
 			type: true,
@@ -23,7 +23,7 @@ export class ChatRoomQueryHelper {
 					createdAt: 'desc',
 				},
 				take: 1,
-				select: ChatMessageQueryHelper.chatMessageSelect,
+				select: ChatMessageQueryHelper.chatMessageSelect(roomId),
 			},
 			members: {
 				where: {
@@ -46,10 +46,10 @@ export class ChatRoomQueryHelper {
 		ChatRoomOrderByEnum,
 		ChatRoomOrderByWithRelationInput[]
 	> = {
-		'updated-desc': [{ updatedAt: 'desc' }, { id: 'desc' }],
-		'updated-asc': [{ updatedAt: 'asc' }, { id: 'asc' }],
 		'created-desc': [{ createdAt: 'desc' }, { id: 'desc' }],
 		'created-asc': [{ createdAt: 'asc' }, { id: 'asc' }],
+		'activity-desc': [{ lastActivityAt: 'desc' }, { id: 'desc' }],
+		'activity-asc': [{ lastActivityAt: 'asc' }, { id: 'asc' }],
 	};
 
 	public static pagination(limit: number, cursor?: string) {

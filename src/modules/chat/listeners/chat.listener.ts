@@ -76,7 +76,6 @@ export class ChatEventListener {
 	@OnEvent(APP_EVENTS.CHAT_MEMBER_LEFT)
 	async handleMemberLeft(event: ChatMemberLeftEvent) {
 		this.broadcaster.memberRemoved(event.roomId, event.userId);
-
 		await this.messageService.createSystemMessage({
 			type: ChatMessageType.LEFT,
 			roomId: event.roomId,

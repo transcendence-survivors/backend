@@ -21,17 +21,15 @@ export const mapExceptionToErrorBody = (exception: unknown): ApiError => {
 		if (typeof error === 'object' && error !== null) {
 			return error as ApiError;
 		}
-		console.error('Unhandled WsException:', exception);
 		return {
 			status: 'error',
-			message: typeof error === 'string' ? error : 'Validation failed',
-			code: 400,
+			message: 'unknown error',
+			code: 0,
 			errors: null,
 		};
 	}
 
 	if (!isHttpException(exception)) {
-		console.error('Unhandled exception:', exception);
 		return {
 			status: 'error',
 			message: 'Internal server error',

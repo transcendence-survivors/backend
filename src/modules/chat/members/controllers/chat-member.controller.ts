@@ -29,6 +29,7 @@ import { ApiBodyDto } from '@/shared/decorators/api-body-dto.decorator';
 import { ChatMemberListItemResponseDto } from '../dtos/responses/chat-member-list-item-response.dto';
 import {
 	ChatMemberSelfOwnershipException,
+	ChatRoomOwnerCannotLeaveException,
 	MemberAlreadyHasRoleException,
 	SelfKickException,
 	SelfRoleModificationException,
@@ -44,6 +45,7 @@ import { ChatMemberUpdateRoleDto } from '../dtos/requests/chat-member-update-rol
 import { ApiGroupedErrorResponse } from '@/shared/decorators/api-error-response.decorator';
 import { ChatRoomNotFoundException } from '../../room/exceptions/chat-room-not-found.exceptions';
 import { ChatOwnershipTransferDto } from '../dtos/requests/chat-ownership-transfer.dto';
+import { ChatRoomDirectImmutableException } from '../../room/exceptions/chat-room-bad.exception';
 
 @UseGuards(JWTAccessGuard, ChatRoomMembershipGuard)
 @Controller('chat/:roomId/members')
@@ -130,7 +132,23 @@ export class ChatMemberController {
 		);
 	}
 
-	@Delete(':targetUserId')
+	@Delete('leave')
+	@HttpCode(204)
+	@ApiNoContentSuccessResponse()
+	@ApiGroupedErrorResponse([ChatRoomNotFoundException])
+	@ApiGroupedErrorResponse([
+		ChatRoomOwnerCannotLeaveException,
+		ChatRoomDirectImmutableException,
+	])
+	@ResponseEnvelope('Successfully left the room')
+	async leave(
+		@CurrentUser() { sub }: JwtAccessPayload,
+		@Param('roomId') roomId: string,
+	): Promise<void> {
+		await this.service.leaveRoom(roomId, sub);
+	}
+
+	@Delete('kick/:targetUserId')
 	@HttpCode(204)
 	@ApiGroupedErrorResponse([SelfKickException])
 	@ApiGroupedErrorResponse([InsufficientMemberPermissionException])
