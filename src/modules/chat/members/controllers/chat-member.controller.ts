@@ -46,6 +46,7 @@ import { ApiGroupedErrorResponse } from '@/shared/decorators/api-error-response.
 import { ChatRoomNotFoundException } from '../../room/exceptions/chat-room-not-found.exceptions';
 import { ChatOwnershipTransferDto } from '../dtos/requests/chat-ownership-transfer.dto';
 import { ChatRoomDirectImmutableException } from '../../room/exceptions/chat-room-bad.exception';
+import { ChatMembersAddDto } from '../dtos/requests/chat-member-add.dto';
 
 @UseGuards(JWTAccessGuard, ChatRoomMembershipGuard)
 @Controller('chat/:roomId/members')
@@ -79,6 +80,24 @@ export class ChatMemberController {
 		@Param('roomId') roomId: string,
 	): Promise<ChatMemberCountResponseDto> {
 		return this.service.countMembers(query, roomId);
+	}
+
+	@Post()
+	@HttpCode(204)
+	@ApiNoContentSuccessResponse()
+	@ApiBodyDto(ChatMembersAddDto)
+	@ApiValidationErrorResponse({
+		userIds: ['userIds must be an array of valid UUIDs'],
+	})
+	@ApiGroupedErrorResponse([ChatRoomNotFoundException])
+	@ApiGroupedErrorResponse([ChatRoomDirectImmutableException])
+	@ResponseEnvelope('Members added successfully')
+	async addMembers(
+		@Param('roomId') roomId: string,
+		@CurrentUser() { sub }: JwtAccessPayload,
+		@Body() dto: ChatMembersAddDto,
+	): Promise<void> {
+		await this.service.addMembers(roomId, sub, dto);
 	}
 
 	@Post('transfer-ownership')

@@ -9,6 +9,7 @@ import { ChatMemberCountParams } from '../types/params/chat-member-count.params'
 import { ChatMemberRole } from '@prisma-generated/enums';
 import { DbContext } from '@/core/database/uow/db-context';
 import { ChatMemberRoleInfo } from '../types/records/chat-member-role-info';
+import { ChatMembersAddParams } from '../types/params/chat-members-add.params';
 
 interface ChatMembersRoleUpdateParams {
 	roomId: string;
@@ -110,6 +111,38 @@ export class ChatMemberRepository {
 					take: 1,
 				},
 			},
+		});
+	}
+
+	async filterNonMembers(
+		{ roomId, userIds }: ChatMembersAddParams,
+		ctx?: DbContext,
+	): Promise<string[]> {
+		const client = ctx?.prisma ?? this.prisma;
+
+		const existingMembers = await client.chatMember.findMany({
+			where: {
+				roomId,
+				userId: { in: userIds },
+			},
+			select: { userId: true },
+		});
+
+		const existingSet = new Set(existingMembers.map((m) => m.userId));
+		return userIds.filter((id) => !existingSet.has(id));
+	}
+
+	async addMembers(
+		{ roomId, userIds }: ChatMembersAddParams,
+		ctx?: DbContext,
+	): Promise<void> {
+		const client = ctx?.prisma ?? this.prisma;
+
+		await client.chatMember.createMany({
+			data: userIds.map((userId) => ({
+				roomId,
+				userId,
+			})),
 		});
 	}
 }

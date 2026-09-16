@@ -27,6 +27,7 @@ import { ChatMemberPermissionEnum } from '../types/enums/chat-member-permission.
 import { ChatMemberRoleUpdatedEvent } from '@/contracts/events/internal/chat/chat-member-role-updated.event';
 import {
 	APP_EVENTS,
+	ChatMemberJoinedEvent,
 	ChatMemberLeftEvent,
 	ChatOwnershipTransferredEvent,
 } from '@/contracts/events/internal';
@@ -34,6 +35,7 @@ import { ChatMemberKickedEvent } from '@/contracts/events/internal/chat/chat-mem
 import { UnitOfWork } from '@/core/database/uow/unit-of-work';
 import { ChatRoomNotFoundException } from '../../room/exceptions/chat-room-not-found.exceptions';
 import { ChatRoomDirectImmutableException } from '../../room/exceptions/chat-room-bad.exception';
+import { ChatMembersAddDto } from '../dtos/requests/chat-member-add.dto';
 
 @Injectable()
 export class ChatMemberService {
@@ -217,6 +219,34 @@ export class ChatMemberService {
 				newRole,
 			),
 		);
+	}
+
+	async addMembers(
+		roomId: string,
+		userId: string,
+		dto: ChatMembersAddDto,
+	): Promise<void> {
+		const room = await this.repo.findRoomWithMember(roomId, userId);
+		if (!room) throw new ChatRoomNotFoundException();
+		if (room.type !== ChatRoomType.GROUP)
+			throw new ChatRoomDirectImmutableException();
+
+		const addedUserIds = await this.uow.run(async (ctx) => {
+			const filteredIds = await this.repo.filterNonMembers(
+				{ roomId, userIds: dto.userIds },
+				ctx,
+			);
+			if (filteredIds.length === 0) return [];
+			await this.repo.addMembers({ roomId, userIds: filteredIds }, ctx);
+			return filteredIds;
+		});
+
+		addedUserIds.forEach((id) => {
+			this.eventEmitter.emit(
+				APP_EVENTS.CHAT_MEMBER_JOINED,
+				new ChatMemberJoinedEvent(roomId, id, userId),
+			);
+		});
 	}
 
 	async leaveRoom(roomId: string, userId: string): Promise<void> {

@@ -82,3 +82,19 @@ export class ChatRoomOwnerCannotLeaveException extends AppHttpException {
 		super(message, messageKey, status);
 	}
 }
+
+export class ChatAddMemberToDirectRoomException extends AppHttpException {
+	static describe(): ApiErrorDescription {
+		return {
+			status: HttpStatus.BAD_REQUEST,
+			message: 'Cannot add members to a direct message room.',
+			messageKey: 'chat_add_member_to_direct_room',
+		};
+	}
+
+	constructor() {
+		const { message, messageKey, status } =
+			ChatAddMemberToDirectRoomException.describe();
+		super(message, messageKey, status);
+	}
+}
