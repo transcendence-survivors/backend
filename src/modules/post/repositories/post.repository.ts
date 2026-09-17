@@ -6,6 +6,7 @@ import { UserQueryHelper } from '@/modules/user/user.public-api';
 import type { PostSelect } from '@prisma-generated/models';
 import { PostOrderByEnum } from '../types/enums/post-order-by.enum';
 import type { PostCreateParams } from '../types/params/post-create.params';
+import { PostType } from '@prisma-generated/client';
 import type {
 	PostsByAuthorCursorParams,
 	PostsFeedCursorParams,
@@ -34,13 +35,29 @@ export class PostRepository {
 		quotedPostId: true,
 		quotedPost: {
 			select: {
+				id: true,
 				content: true,
+				imageUrl: true,
+				createdAt: true,
 				author: {
 					select: UserQueryHelper.userSelect,
 				},
+				_count: {
+					select: {
+						likes: true,
+						replies: true,
+						quotes: { where: { type: 'REPOST' } },
+					},
+				},
 			},
 		},
-		_count: { select: { likes: true, replies: true, reposts: true } },
+		_count: {
+			select: {
+				likes: true,
+				replies: true,
+				quotes: { where: { type: 'REPOST' } },
+			},
+		},
 	} satisfies PostSelect;
 
 	private readonly orderByCursorMapping: Record<
@@ -77,6 +94,12 @@ export class PostRepository {
 		}: PostCreateParams,
 		ctx?: DbContext,
 	) {
+		const type: PostType = parentPostId
+			? 'REPLY'
+			: quotedPostId
+				? 'QUOTE'
+				: 'POST';
+
 		return (ctx?.client ?? this.prisma).post.create({
 			data: {
 				authorId,
@@ -84,6 +107,7 @@ export class PostRepository {
 				imageUrl,
 				parentPostId,
 				quotedPostId,
+				type,
 			},
 		});
 	}
@@ -145,6 +169,7 @@ export class PostRepository {
 				authorId,
 				parentPostId: null,
 				...this.searchWhere(search),
+				type: { not: 'REPOST' },
 			},
 			orderBy: this.orderByCursorMapping[orderBy],
 			select: PostRepository.postSelect,
@@ -177,7 +202,7 @@ export class PostRepository {
 			...this.pagination(limit, cursor),
 			where: {
 				authorId,
-				quotedPostId: { not: null },
+				type: 'REPOST',
 				...this.searchWhere(search),
 			},
 			orderBy: this.orderByCursorMapping[orderBy],

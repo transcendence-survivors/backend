@@ -211,7 +211,7 @@ export class PostController {
 		@CurrentUser() user: JwtAccessPayload,
 		@UploadedFile() file: Express.Multer.File,
 	): Promise<PostCreatedResponseDto> {
-		if (!content && !file && !quotedPostId)
+		if (!content && !file)
 			throw new BadRequestException('Post must have content or an image');
 		let imageUrl: string | undefined;
 		if (file) {

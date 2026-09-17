@@ -25,6 +25,12 @@ export class PostService {
 		private readonly mapper: PostMapper,
 	) {}
 
+	private idsRequiringInteractionCheck(posts: PostListItem[]): string[] {
+		return posts.flatMap((post) =>
+			post.quotedPost ? [post.id, post.quotedPost.id] : [post.id],
+		);
+	}
+
 	private async viewerInteractions(
 		postIds: string[],
 		viewerId?: string,
@@ -46,7 +52,7 @@ export class PostService {
 		viewerId?: string,
 	): Promise<PostPaginatedListResponseDto> {
 		const { liked, reposted } = await this.viewerInteractions(
-			posts.map((post) => post.id),
+			this.idsRequiringInteractionCheck(posts),
 			viewerId,
 		);
 
@@ -129,7 +135,7 @@ export class PostService {
 		if (!post) throw new PostDoesNotExistException();
 
 		const { liked, reposted } = await this.viewerInteractions(
-			[postId],
+			this.idsRequiringInteractionCheck([post]),
 			viewerId,
 		);
 
