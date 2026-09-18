@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import { SocketIoAdapter } from './core/websocket/adapters/socket-io.adapter';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { CustomValidationPipe } from './shared/pipes/custom-validation.pipe';
+import { ThrottlerFilter } from './shared/filters/throttler.filter.ts';
 
 void (async () => {
 	const appV1 = await NestFactory.create(AppModule);
@@ -22,8 +23,9 @@ void (async () => {
 	appV1.useWebSocketAdapter(new SocketIoAdapter(appV1));
 	appV1.setGlobalPrefix('api/v1');
 	appV1.use(cookieParser());
-
+	appV1.useGlobalFilters(new ThrottlerFilter());
 	appV1.useGlobalPipes(new CustomValidationPipe());
+
 	const document = SwaggerModule.createDocument(
 		appV1,
 		new DocumentBuilder()

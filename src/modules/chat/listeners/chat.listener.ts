@@ -3,6 +3,7 @@ import { ChatBroadcaster } from '../broadcasters/chat.broadcaster';
 import { OnEvent } from '@nestjs/event-emitter';
 import {
 	APP_EVENTS,
+	ChatMemberJoinedEvent,
 	ChatMemberKickedEvent,
 	ChatMemberLeftEvent,
 	ChatMemberRoleUpdatedEvent,
@@ -63,15 +64,15 @@ export class ChatEventListener {
 
 	// !TODO: Add broadcasting for member joined and left events
 
-	// @OnEvent(APP_EVENTS.CHAT_MEMBER_JOINED)
-	// async handleMemberJoined(event: ChatMemberJoinedEvent) {
-	// 	await this.messageService.createSystemMessage({
-	// 		type: ChatMessageType.JOINED,
-	// 		senderId: event.userId,
-	// 		roomId: event.roomId,
-	// 		targetUserId: event.userId,
-	// 	});
-	// }
+	@OnEvent(APP_EVENTS.CHAT_MEMBER_JOINED)
+	async handleMemberJoined(event: ChatMemberJoinedEvent) {
+		await this.messageService.createSystemMessage({
+			type: ChatMessageType.JOINED,
+			senderId: event.senderId,
+			roomId: event.roomId,
+			targetUserId: event.userId,
+		});
+	}
 
 	@OnEvent(APP_EVENTS.CHAT_MEMBER_LEFT)
 	async handleMemberLeft(event: ChatMemberLeftEvent) {

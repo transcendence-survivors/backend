@@ -20,9 +20,14 @@ export class JWTAccessStrategy extends PassportStrategy(
 	constructor(@InjectEnv() readonly env: Env) {
 		super({
 			jwtFromRequest: ExtractJwt.fromExtractors([
-				(req: Request) => req?.cookies?.accessToken as string,
+				(req: Request) => {
+					if (!req?.cookies) return null;
+					const accessToken: unknown = req.cookies?.accessToken;
+					return typeof accessToken === 'string' ? accessToken : null;
+				},
 			]),
 			secretOrKey: env.accessToken.secret,
+			ignoreExpiration: false,
 		});
 	}
 

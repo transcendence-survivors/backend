@@ -1,8 +1,7 @@
-import { HttpException, HttpStatus } from '@nestjs/common';
-import { ExceptionResponse } from '../types/exception-response.type';
-import { AppHttpException } from '../filters/app.http.exception';
-import { ApiError, WsResponse } from '../types/response.type';
+import { HttpStatus } from '@nestjs/common';
 import { WsException } from '@nestjs/websockets';
+import { ExceptionResponse } from '../types/exception-response.type';
+import { ApiError, WsResponse } from '../types/response.type';
 
 export const handleWs = async <T>(
 	fn: () => Promise<T> | T,
@@ -16,6 +15,8 @@ export const handleWs = async <T>(
 };
 
 export const mapExceptionToErrorBody = (exception: unknown): ApiError => {
+	if (isApiError(exception)) return exception;
+
 	if (exception instanceof WsException) {
 		const error = exception.getError();
 		if (typeof error === 'object' && error !== null) {
@@ -23,13 +24,14 @@ export const mapExceptionToErrorBody = (exception: unknown): ApiError => {
 		}
 		return {
 			status: 'error',
-			message: 'unknown error',
+			message: typeof error === 'string' ? error : 'unknown error',
 			code: 0,
 			errors: null,
 		};
 	}
 
-	if (!isHttpException(exception)) {
+	if (!isHttpExceptionLike(exception)) {
+		logNonHttpException(exception);
 		return {
 			status: 'error',
 			message: 'Internal server error',
@@ -65,22 +67,68 @@ const extractErrors = (
 };
 
 const extractMessageKey = (exception: unknown): string | undefined => {
-	if (isCustomHttpException(exception)) return exception.messageKey;
+	if (
+		typeof exception === 'object' &&
+		exception !== null &&
+		'messageKey' in exception &&
+		typeof (exception as { messageKey?: unknown }).messageKey === 'string'
+	) {
+		return (exception as { messageKey: string }).messageKey;
+	}
+
+	if (isHttpExceptionLike(exception)) {
+		const res = exception.getResponse();
+		if (isExceptionResponseObject(res) && 'messageKey' in res) {
+			return String((res as Record<string, unknown>).messageKey);
+		}
+	}
+
 	return undefined;
 };
 
-const isHttpException = (exception: unknown): exception is HttpException => {
-	return exception instanceof HttpException;
-};
-
-const isCustomHttpException = (
+const isHttpExceptionLike = (
 	exception: unknown,
-): exception is AppHttpException => {
-	return exception instanceof AppHttpException;
+): exception is { getResponse: () => unknown; getStatus: () => number } => {
+	return (
+		typeof exception === 'object' &&
+		exception !== null &&
+		'getResponse' in exception &&
+		'getStatus' in exception &&
+		typeof (exception as Record<string, unknown>).getResponse ===
+			'function' &&
+		typeof (exception as Record<string, unknown>).getStatus === 'function'
+	);
 };
 
 const isExceptionResponseObject = (
 	value: unknown,
 ): value is Exclude<ExceptionResponse, string> => {
 	return typeof value === 'object' && value !== null;
+};
+
+const isApiError = (obj: unknown): obj is ApiError => {
+	return (
+		typeof obj === 'object' &&
+		obj !== null &&
+		'status' in obj &&
+		'code' in obj &&
+		'message' in obj
+	);
+};
+
+const logNonHttpException = (exception: unknown): void => {
+	if (exception instanceof Error) {
+		console.error(
+			'Non-HTTP exception occurred:',
+			exception.message,
+			exception.stack,
+		);
+	} else if (typeof exception === 'object' && exception !== null) {
+		console.error(
+			'Non-HTTP exception occurred:',
+			JSON.stringify(exception, null, 2),
+		);
+	} else {
+		console.error('Non-HTTP exception occurred:', String(exception));
+	}
 };
