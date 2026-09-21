@@ -5,6 +5,9 @@ import { ChatMessageListItem } from '../types/records/chat-message-list-item';
 import { ChatMessagePaginatedListResponseDto } from '../dtos/responses/chat-message-paginated-list-response.dto';
 import { CursorPaginationResult } from '@/shared/services/cursor.service';
 import { ChatMessageCountResponseDto } from '../dtos/responses/chat-message-count-response.dto';
+import { ChatMessageSoftDeletedResponseDto } from '../dtos/responses/chat-message-soft-deleted-response.dto';
+import { ChatTypingUpdatePayload } from '../../types/records/chat-typing-update.type';
+import { ChatTypingUpdateResponseDto } from '../dtos/responses/chat-typing-update-response.dto';
 
 @Injectable()
 export class ChatMessageMapper {
@@ -55,6 +58,35 @@ export class ChatMessageMapper {
 		return plainToInstance(
 			ChatMessageCountResponseDto,
 			{ count },
+			{ excludeExtraneousValues: true },
+		);
+	}
+
+	toSoftDeletedDto(
+		messageId: string,
+		roomId: string,
+	): ChatMessageSoftDeletedResponseDto {
+		return plainToInstance(
+			ChatMessageSoftDeletedResponseDto,
+			{
+				messageId,
+				roomId,
+			},
+			{ excludeExtraneousValues: true },
+		);
+	}
+
+	toTypingUpdateDto(
+		payload: ChatTypingUpdatePayload,
+	): ChatTypingUpdateResponseDto {
+		return plainToInstance(
+			ChatTypingUpdateResponseDto,
+			{
+				roomId: payload.roomId,
+				userId: payload.userId,
+				isTyping: payload.isTyping,
+				displayName: payload.displayName,
+			},
 			{ excludeExtraneousValues: true },
 		);
 	}

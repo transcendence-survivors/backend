@@ -16,7 +16,7 @@ import {
 } from '@/contracts/events/internal';
 import { ChatMessageCreatedEvent } from '@/contracts/events/internal';
 import { ChatMessageService } from '../message/services/chat-message.service';
-import { ChatMessageType } from '@prisma-generated/enums';
+import { ChatMemberRole, ChatMessageType } from '@prisma-generated/enums';
 @Injectable()
 export class ChatEventListener {
 	constructor(
@@ -41,6 +41,11 @@ export class ChatEventListener {
 
 	@OnEvent(APP_EVENTS.CHAT_MEMBER_ROLE_UPDATED)
 	async handleMemberRoleUpdated(event: ChatMemberRoleUpdatedEvent) {
+		this.broadcaster.memberRoleUpdated(
+			event.roomId,
+			event.targetUserId,
+			event.newRole,
+		);
 		await this.messageService.createSystemMessage({
 			type: ChatMessageType.ROLE_UPDATED,
 			roomId: event.roomId,
@@ -62,10 +67,9 @@ export class ChatEventListener {
 		});
 	}
 
-	// !TODO: Add broadcasting for member joined and left events
-
 	@OnEvent(APP_EVENTS.CHAT_MEMBER_JOINED)
 	async handleMemberJoined(event: ChatMemberJoinedEvent) {
+		this.broadcaster.memberAdded(event.roomId, event.userId);
 		await this.messageService.createSystemMessage({
 			type: ChatMessageType.JOINED,
 			senderId: event.senderId,
@@ -86,6 +90,16 @@ export class ChatEventListener {
 
 	@OnEvent(APP_EVENTS.CHAT_OWNERSHIP_TRANSFERRED)
 	async handleOwnershipTransferred(event: ChatOwnershipTransferredEvent) {
+		this.broadcaster.memberRoleUpdated(
+			event.roomId,
+			event.targetUserId,
+			ChatMemberRole.OWNER,
+		);
+		this.broadcaster.memberRoleUpdated(
+			event.roomId,
+			event.senderId,
+			ChatMemberRole.ADMIN,
+		);
 		await this.messageService.createSystemMessage({
 			type: ChatMessageType.OWNERSHIP_TRANSFERRED,
 			roomId: event.roomId,
@@ -105,9 +119,9 @@ export class ChatEventListener {
 		});
 	}
 
-	// !TODO: Add broadcasting for room renamed and avatar changed events
 	@OnEvent(APP_EVENTS.CHAT_ROOM_RENAMED)
 	async handleRoomRenamed(event: ChatRoomRenamedEvent) {
+		this.broadcaster.roomRenamed(event.roomId, event.newValue);
 		await this.messageService.createSystemMessage({
 			type: ChatMessageType.ROOM_RENAMED,
 			roomId: event.roomId,
@@ -118,6 +132,7 @@ export class ChatEventListener {
 	}
 	@OnEvent(APP_EVENTS.CHAT_ROOM_AVATAR_CHANGED)
 	async handleRoomAvatarChanged(event: ChatRoomAvatarChangedEvent) {
+		this.broadcaster.roomAvatarChanged(event.roomId, event.newValue);
 		await this.messageService.createSystemMessage({
 			type: ChatMessageType.ROOM_AVATAR_CHANGED,
 			roomId: event.roomId,

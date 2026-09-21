@@ -16,10 +16,12 @@ import { WsExceptionsFilter } from '@/shared/filters/ws-exception.filter';
 import { handleWs } from '@/shared/utils/exceptions.utils';
 import { ChatMessageSoftDeleteDto } from '../message/dtos/requests/chat-message-softdelete';
 import { ChatMessageEditDto } from '../message/dtos/requests/chat-message-edit.dto';
-import { ChatMemberService } from '../members/services/chat-member.service';
+import { ChatMemberService } from '../member/services/chat-member.service';
 import { ChatBroadcaster } from '../broadcasters/chat.broadcaster';
-import { ChatTypingDto } from '../dtos/requests/chat-typing.dto';
+import { ChatTypingDto } from '../message/dtos/requests/chat-typing.dto';
 import { CustomValidationPipe } from '@/shared/pipes/custom-validation.pipe';
+import { ChatRoomLeaveDto } from '../room/dtos/requests/chat-room-leave.dto';
+import { ChatRoomJoinDto } from '../room/dtos/requests/chat-room-join.dto';
 
 @UsePipes(CustomValidationPipe)
 @UseFilters(WsExceptionsFilter)
@@ -38,7 +40,7 @@ export class ChatGateway {
 	@SubscribeMessage(CHAT_EVENTS.RECEIVE.ROOM_JOIN)
 	async handleRoomJoin(
 		@ConnectedSocket() client: UserSocket,
-		@MessageBody() dto: { roomId: string },
+		@MessageBody() dto: ChatRoomJoinDto,
 	) {
 		const userId = client.data.user.sub;
 
@@ -55,7 +57,7 @@ export class ChatGateway {
 	@SubscribeMessage(CHAT_EVENTS.RECEIVE.ROOM_LEAVE)
 	async handleRoomLeave(
 		@ConnectedSocket() client: UserSocket,
-		@MessageBody() dto: { roomId: string },
+		@MessageBody() dto: ChatRoomLeaveDto,
 	) {
 		return handleWs(async () => {
 			await client.leave(dto.roomId);

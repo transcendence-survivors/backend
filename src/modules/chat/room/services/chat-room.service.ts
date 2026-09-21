@@ -28,10 +28,10 @@ import {
 	ChatRoomRenamedEvent,
 } from '@/contracts/events/internal';
 import { ChatRoomUpdateDto } from '../dtos/requests/chat-room-update.dto';
-import { ChatMemberService } from '../../members/services/chat-member.service';
-import { ChatMemberNotFoundException } from '../../members/exceptions/chat-member-not-found.exception';
+import { ChatMemberService } from '../../member/services/chat-member.service';
+import { ChatMemberNotFoundException } from '../../member/exceptions/chat-member-not-found.exception';
 import { ChatRoomDetailResponseDto } from '../dtos/responses/chat-room-detail-response.dto';
-import { InsufficientMemberPermissionException } from '../../members/exceptions/chat-member-forbidden.exception';
+import { InsufficientMemberPermissionException } from '../../member/exceptions/chat-member-forbidden.exception';
 
 @Injectable()
 export class ChatRoomService {

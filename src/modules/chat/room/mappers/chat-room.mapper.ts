@@ -7,6 +7,8 @@ import { CursorPaginationResult } from '@/shared/services/cursor.service';
 import { ChatRoomPaginatedListResponseDto } from '../dtos/responses/chat-room-paginated-list-response.dto';
 import { ChatMemberRole, ChatRoomType } from '@prisma-generated/enums';
 import { ChatRoomDetailResponseDto } from '../dtos/responses/chat-room-detail-response.dto';
+import { ChatRoomRenamedResponseDto } from '../dtos/responses/chat-room-renamed-response.dto';
+import { ChatRoomAvatarChangedResponseDto } from '../dtos/responses/chat-room-avatar-changed-response.dto';
 
 @Injectable()
 export class ChatRoomMapper {
@@ -82,6 +84,34 @@ export class ChatRoomMapper {
 	): ChatRoomListItemResponseDto[] {
 		return chatRooms.map((room) =>
 			this.toListItemDto(room, memberIdsByRoom[room.id] ?? []),
+		);
+	}
+
+	toRoomRenamedResponseDto(
+		roomId: string,
+		newName: string,
+	): ChatRoomRenamedResponseDto {
+		return plainToInstance(
+			ChatRoomRenamedResponseDto,
+			{
+				roomId,
+				newName,
+			},
+			{ excludeExtraneousValues: true },
+		);
+	}
+
+	toRoomAvatarChangedResponseDto(
+		roomId: string,
+		newAvatarUrl: string | null,
+	): ChatRoomAvatarChangedResponseDto {
+		return plainToInstance(
+			ChatRoomAvatarChangedResponseDto,
+			{
+				roomId,
+				newAvatarUrl,
+			},
+			{ excludeExtraneousValues: true },
 		);
 	}
 }

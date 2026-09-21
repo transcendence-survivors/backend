@@ -15,6 +15,6 @@ import { ChatMemberPermissionService } from './services/chat-member-permission.s
 		ChatRoomMembershipGuard,
 		ChatMemberPermissionService,
 	],
-	exports: [ChatMemberService, ChatRoomMembershipGuard],
+	exports: [ChatMemberService, ChatRoomMembershipGuard, ChatMemberMapper],
 })
 export class ChatMemberModule {}

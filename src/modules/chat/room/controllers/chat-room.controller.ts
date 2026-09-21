@@ -38,7 +38,7 @@ import {
 import { ChatRoomNotFoundException } from '../exceptions/chat-room-not-found.exceptions';
 import { ChatRoomDmConflictException } from '../exceptions/chat-room-conflict.exception';
 import { ChatRoomDetailResponseDto } from '../dtos/responses/chat-room-detail-response.dto';
-import { ChatMemberNotFoundException } from '../../members/exceptions/chat-member-not-found.exception';
+import { ChatMemberNotFoundException } from '../../member/exceptions/chat-member-not-found.exception';
 import { ChatRoomDirectCreateDto } from '../dtos/requests/chat-room-direct.dto';
 
 @UseGuards(JWTAccessGuard)
