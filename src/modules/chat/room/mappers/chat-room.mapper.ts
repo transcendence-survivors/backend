@@ -15,6 +15,7 @@ export class ChatRoomMapper {
 	toListItemDto(
 		room: ChatRoomListItem,
 		memberIds: string[],
+		unreadCount: number = 0,
 	): ChatRoomListItemResponseDto {
 		const otherMembers = room.members.map((m) => m.user);
 		const isDirect = room.type === ChatRoomType.DIRECT;
@@ -29,7 +30,34 @@ export class ChatRoomMapper {
 			membersPreview: isDirect ? undefined : otherMembers,
 			memberIds: isDirect ? undefined : memberIds,
 			memberCount: isDirect ? undefined : memberIds.length,
+			unreadCount,
 		});
+	}
+
+	toListItemDtoList(
+		chatRooms: ChatRoomListItem[],
+		memberIdsByRoom: Record<string, string[]>,
+		unreadCountsMap: Record<string, number> = {},
+	): ChatRoomListItemResponseDto[] {
+		return chatRooms.map((room) =>
+			this.toListItemDto(
+				room,
+				memberIdsByRoom[room.id] ?? [],
+				unreadCountsMap[room.id] ?? 0,
+			),
+		);
+	}
+
+	toPaginatedListDto(
+		paginationUsers: CursorPaginationResult<ChatRoomListItemResponseDto>,
+	): ChatRoomPaginatedListResponseDto {
+		return plainToInstance(
+			ChatRoomPaginatedListResponseDto,
+			paginationUsers,
+			{
+				excludeExtraneousValues: true,
+			},
+		);
 	}
 
 	toDetailDto(
@@ -63,27 +91,6 @@ export class ChatRoomMapper {
 			ChatRoomCountResponseDto,
 			{ count },
 			{ excludeExtraneousValues: true },
-		);
-	}
-
-	toPaginatedListDto(
-		paginationUsers: CursorPaginationResult<ChatRoomListItemResponseDto>,
-	): ChatRoomPaginatedListResponseDto {
-		return plainToInstance(
-			ChatRoomPaginatedListResponseDto,
-			paginationUsers,
-			{
-				excludeExtraneousValues: true,
-			},
-		);
-	}
-
-	toListItemDtoList(
-		chatRooms: ChatRoomListItem[],
-		memberIdsByRoom: Record<string, string[]>,
-	): ChatRoomListItemResponseDto[] {
-		return chatRooms.map((room) =>
-			this.toListItemDto(room, memberIdsByRoom[room.id] ?? []),
 		);
 	}
 

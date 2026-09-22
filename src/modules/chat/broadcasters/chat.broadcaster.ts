@@ -10,6 +10,9 @@ import { ChatTypingUpdatePayload } from '../types/records/chat-typing-update.typ
 import { ChatMessageMapper } from '../message/mappers/chat-message.mapper';
 import { ChatMemberMapper } from '../member/mappers/chat-member.mapper';
 import { ChatRoomMapper } from '../room/mappers/chat-room.mapper';
+import { ChatNotificationMapper } from '../notification/mappers/chat-notification.mapper';
+import { ChatNotificationService } from '../notification/services/chat-notification.service';
+import { UserSocket } from '@/core/websocket/interface/ws-socket.inteface';
 
 @Injectable()
 export class ChatBroadcaster {
@@ -19,15 +22,55 @@ export class ChatBroadcaster {
 		private readonly messageMapper: ChatMessageMapper,
 		private readonly memberMapper: ChatMemberMapper,
 		private readonly roomMapper: ChatRoomMapper,
+		private readonly notificationMapper: ChatNotificationMapper,
+		private readonly notificationService: ChatNotificationService,
 	) {}
 
-	messageNew(message: ChatMessageListItem) {
-		const dto = this.messageMapper.toListItemDto(message);
+	async messageNew(message: ChatMessageListItem, memberUserIds: string[]) {
+		const messageDto = this.messageMapper.toListItemDto(message);
+		const notificationDto = this.notificationMapper.toNotificationNewDto(
+			message.roomId,
+		);
 
 		this.ws
 			.get()
 			.to(message.roomId)
-			.emit(CHAT_EVENTS.SEND.MESSAGE_NEW, dto);
+			.emit(CHAT_EVENTS.SEND.MESSAGE_NEW, messageDto);
+
+		const activeSockets = (await this.ws
+			.get()
+			.in(message.roomId)
+			.fetchSockets()) as unknown as UserSocket[];
+
+		const activeUserIdsInRoom = new Set<string>();
+		for (const socket of activeSockets) {
+			const userId = socket.data.user?.sub;
+			if (userId) activeUserIdsInRoom.add(userId);
+		}
+
+		if (message?.sender?.id) activeUserIdsInRoom.add(message.sender.id);
+
+		for (const userId of memberUserIds) {
+			if (activeUserIdsInRoom.has(userId)) continue;
+
+			const socketIds = this.presenceStore.getSocketsByUserId(userId);
+			for (const socketId of socketIds) {
+				this.ws
+					.get()
+					.to(socketId)
+					.emit(
+						CHAT_EVENTS.SEND.NOTIFICATION_MESSAGE_NEW,
+						notificationDto,
+					);
+			}
+		}
+
+		if (activeUserIdsInRoom.size <= 0) return;
+		void this.notificationService.markRoomAsReadForUsers(
+			message.roomId,
+			Array.from(activeUserIdsInRoom),
+			message.createdAt,
+		);
 	}
 
 	messageEdited(message: ChatMessageListItem) {
@@ -100,6 +143,21 @@ export class ChatBroadcaster {
 			.get()
 			.to(roomId)
 			.emit(CHAT_EVENTS.SEND.ROOM_AVATAR_CHANGED, dto);
+	}
+
+	successReadNotification(userId: string, roomId: string, readAt: Date) {
+		const dto = this.notificationMapper.toRoomReadSuccessDto(
+			roomId,
+			readAt,
+		);
+		const socketIds = this.presenceStore.getSocketsByUserId(userId);
+
+		for (const socketId of socketIds) {
+			this.ws
+				.get()
+				.to(socketId)
+				.emit(CHAT_EVENTS.SEND.NOTIFICATION_READ, dto);
+		}
 	}
 
 	private forceLeaveRoom(userId: string, roomId: string) {

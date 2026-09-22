@@ -117,10 +117,8 @@ export class AuthService {
 
 	async refresh(user: JwtRefreshPayload): Promise<AuthRefresh> {
 		await this.tokenService.validateRefresh(user);
-
 		const userData = await this.userService.getAuthData(user.sub);
 		if (!userData) throw new AuthRefreshException();
-
 		const accessToken = await this.tokenService.generateAccess({
 			sub: userData.id,
 			email: userData.email,

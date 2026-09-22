@@ -9,7 +9,8 @@ const CHAT_EVENTS = {
 		MESSAGE_SEND: `${MESSAGE_PREFIX}:send`,
 		MESSAGE_EDIT: `${MESSAGE_PREFIX}:edit`,
 		MESSAGE_SOFT_DELETE: `${MESSAGE_PREFIX}:soft-delete`,
-		MESSAGE_READ: `${MESSAGE_PREFIX}:read`,
+
+		NOTIFICATION_MARK_AS_READ: `${MESSAGE_PREFIX}:notification-mark-as-read`,
 
 		TYPING_START: `${TYPING_PREFIX}:start`,
 		TYPING_STOP: `${TYPING_PREFIX}:stop`,
@@ -22,6 +23,9 @@ const CHAT_EVENTS = {
 		MESSAGE_NEW: `${MESSAGE_PREFIX}:new`,
 		MESSAGE_EDITED: `${MESSAGE_PREFIX}:edited`,
 		MESSAGE_SOFT_DELETED: `${MESSAGE_PREFIX}:soft-deleted`,
+
+		NOTIFICATION_MESSAGE_NEW: `${MESSAGE_PREFIX}:notification-message-new`,
+		NOTIFICATION_READ: `${MESSAGE_PREFIX}:notification-read`,
 
 		TYPING_UPDATE: `${TYPING_PREFIX}:update`,
 

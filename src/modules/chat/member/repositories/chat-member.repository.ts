@@ -100,6 +100,17 @@ export class ChatMemberRepository {
 		});
 	}
 
+	async findUserIdsByRoomId(roomId: string): Promise<string[]> {
+		const members = await this.prisma.chatMember.findMany({
+			where: { roomId },
+			select: {
+				userId: true,
+			},
+		});
+
+		return members.map((m) => m.userId);
+	}
+
 	findRoomWithMember(roomId: string, userId: string) {
 		return this.prisma.chatRoom.findUnique({
 			where: { id: roomId },

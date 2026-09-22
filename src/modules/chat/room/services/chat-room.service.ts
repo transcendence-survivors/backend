@@ -32,13 +32,15 @@ import { ChatMemberService } from '../../member/services/chat-member.service';
 import { ChatMemberNotFoundException } from '../../member/exceptions/chat-member-not-found.exception';
 import { ChatRoomDetailResponseDto } from '../dtos/responses/chat-room-detail-response.dto';
 import { InsufficientMemberPermissionException } from '../../member/exceptions/chat-member-forbidden.exception';
+import { ChatNotificationService } from '../../notification/services/chat-notification.service';
 
 @Injectable()
 export class ChatRoomService {
 	constructor(
 		@InjectUserService() private readonly userService: IUserService,
-		private readonly repo: ChatRoomRepository,
 		private readonly memberService: ChatMemberService,
+		private readonly notificationService: ChatNotificationService,
+		private readonly repo: ChatRoomRepository,
 		private readonly mapper: ChatRoomMapper,
 		private readonly cursor: CursorService,
 		private readonly eventEmitter: EventEmitter2,
@@ -57,13 +59,21 @@ export class ChatRoomService {
 			userId,
 		});
 
+		const allRoomIds = chatRooms.map((room) => room.id);
 		const groupRoomIds = chatRooms
 			.filter((room) => room.type === ChatRoomType.GROUP)
 			.map((room) => room.id);
-		const groupMembers = await this.repo.groupMemberIds({
-			roomIds: groupRoomIds,
-			userId,
-		});
+
+		const [groupMembers, unreadCountsMap] = await Promise.all([
+			this.repo.groupMemberIds({
+				roomIds: groupRoomIds,
+				userId,
+			}),
+			this.notificationService.getUnreadCountsForRooms(
+				userId,
+				allRoomIds,
+			),
+		]);
 		const memberIdsByRoom = groupMembers.reduce<Record<string, string[]>>(
 			(acc, m) => {
 				(acc[m.roomId] ??= []).push(m.userId);
@@ -72,7 +82,11 @@ export class ChatRoomService {
 			{},
 		);
 
-		const dtos = this.mapper.toListItemDtoList(chatRooms, memberIdsByRoom);
+		const dtos = this.mapper.toListItemDtoList(
+			chatRooms,
+			memberIdsByRoom,
+			unreadCountsMap,
+		);
 		const result = this.cursor.create(dtos, dto.limit, (item) => item.id);
 		return this.mapper.toPaginatedListDto(result);
 	}

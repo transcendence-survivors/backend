@@ -5,6 +5,7 @@ import { SocketIoAdapter } from './core/websocket/adapters/socket-io.adapter';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { CustomValidationPipe } from './shared/pipes/custom-validation.pipe';
 import { ThrottlerFilter } from './shared/filters/throttler.filter.ts';
+import { HttpExceptionsFilter } from './shared/filters/http-exception.filter';
 
 const getSwaggerConfig = () => {
 	return new DocumentBuilder()
@@ -28,10 +29,10 @@ void (async () => {
 			credentials: true,
 		});
 	}
+	appV1.use(cookieParser());
 	appV1.useWebSocketAdapter(new SocketIoAdapter(appV1));
 	appV1.setGlobalPrefix('api/v1');
-	appV1.use(cookieParser());
-	appV1.useGlobalFilters(new ThrottlerFilter());
+	appV1.useGlobalFilters(new HttpExceptionsFilter(), new ThrottlerFilter());
 	appV1.useGlobalPipes(new CustomValidationPipe());
 
 	const document = SwaggerModule.createDocument(appV1, getSwaggerConfig(), {

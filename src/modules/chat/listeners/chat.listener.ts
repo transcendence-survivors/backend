@@ -17,16 +17,21 @@ import {
 import { ChatMessageCreatedEvent } from '@/contracts/events/internal';
 import { ChatMessageService } from '../message/services/chat-message.service';
 import { ChatMemberRole, ChatMessageType } from '@prisma-generated/enums';
+import { ChatMemberService } from '../member/services/chat-member.service';
 @Injectable()
 export class ChatEventListener {
 	constructor(
 		private readonly broadcaster: ChatBroadcaster,
 		private readonly messageService: ChatMessageService,
+		private readonly memberService: ChatMemberService,
 	) {}
 
 	@OnEvent(APP_EVENTS.CHAT_MESSAGE_CREATED)
-	handleMessageCreated(event: ChatMessageCreatedEvent) {
-		this.broadcaster.messageNew(event.message);
+	async handleMessageCreated(event: ChatMessageCreatedEvent) {
+		const memberIds = await this.memberService.findUserIdsByRoomId(
+			event.message.roomId,
+		);
+		this.broadcaster.messageNew(event.message, memberIds);
 	}
 
 	@OnEvent(APP_EVENTS.CHAT_MESSAGE_EDITED)

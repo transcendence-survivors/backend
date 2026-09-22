@@ -22,6 +22,9 @@ import { ChatTypingDto } from '../message/dtos/requests/chat-typing.dto';
 import { CustomValidationPipe } from '@/shared/pipes/custom-validation.pipe';
 import { ChatRoomLeaveDto } from '../room/dtos/requests/chat-room-leave.dto';
 import { ChatRoomJoinDto } from '../room/dtos/requests/chat-room-join.dto';
+import { ChatNotificationMarkAsReadDto } from '../notification/dto/requests/chat-notification-mark-as-read.dto';
+import { ChatNotificationService } from '../notification/services/chat-notification.service';
+import { WsResponse } from '@/shared/types/response.type';
 
 @UsePipes(CustomValidationPipe)
 @UseFilters(WsExceptionsFilter)
@@ -32,6 +35,7 @@ export class ChatGateway {
 
 	constructor(
 		private readonly messagesService: ChatMessageService,
+		private readonly notificationService: ChatNotificationService,
 		private readonly membersService: ChatMemberService,
 		private readonly broadcaster: ChatBroadcaster,
 	) {}
@@ -41,7 +45,7 @@ export class ChatGateway {
 	async handleRoomJoin(
 		@ConnectedSocket() client: UserSocket,
 		@MessageBody() dto: ChatRoomJoinDto,
-	) {
+	): Promise<WsResponse<void>> {
 		const userId = client.data.user.sub;
 
 		return handleWs(async () => {
@@ -58,7 +62,7 @@ export class ChatGateway {
 	async handleRoomLeave(
 		@ConnectedSocket() client: UserSocket,
 		@MessageBody() dto: ChatRoomLeaveDto,
-	) {
+	): Promise<WsResponse<void>> {
 		return handleWs(async () => {
 			await client.leave(dto.roomId);
 		});
@@ -69,7 +73,7 @@ export class ChatGateway {
 	async handleMessageSend(
 		@ConnectedSocket() client: UserSocket,
 		@MessageBody() dto: ChatMessageCreateDto,
-	) {
+	): Promise<WsResponse<void>> {
 		const userId = client.data.user.sub;
 
 		return handleWs(async () => {
@@ -82,7 +86,7 @@ export class ChatGateway {
 	async handleEdit(
 		@ConnectedSocket() client: UserSocket,
 		@MessageBody() dto: ChatMessageEditDto,
-	) {
+	): Promise<WsResponse<void>> {
 		const userId = client.data.user.sub;
 
 		return handleWs(async () => {
@@ -95,7 +99,7 @@ export class ChatGateway {
 	async handleMessageSoftDelete(
 		@ConnectedSocket() client: UserSocket,
 		@MessageBody() dto: ChatMessageSoftDeleteDto,
-	) {
+	): Promise<WsResponse<void>> {
 		const userId = client.data.user.sub;
 
 		return handleWs(async () => {
@@ -108,7 +112,7 @@ export class ChatGateway {
 	handleTypingStart(
 		@ConnectedSocket() client: UserSocket,
 		@MessageBody() dto: ChatTypingDto,
-	) {
+	): Promise<WsResponse<void>> {
 		const userId = client.data.user.sub;
 
 		return handleWs(() => {
@@ -126,7 +130,7 @@ export class ChatGateway {
 	handleTypingStop(
 		@ConnectedSocket() client: UserSocket,
 		@MessageBody() dto: ChatTypingDto,
-	) {
+	): Promise<WsResponse<void>> {
 		const userId = client.data.user.sub;
 		return handleWs(() => {
 			this.broadcaster.typingUpdate(client, {
@@ -135,6 +139,28 @@ export class ChatGateway {
 				displayName: client.data.user.displayName,
 				isTyping: false,
 			});
+		});
+	}
+
+	@UseGuards(WsJWTAccessGuard)
+	@SubscribeMessage(CHAT_EVENTS.RECEIVE.NOTIFICATION_MARK_AS_READ)
+	handleMarkAsRead(
+		@ConnectedSocket() client: UserSocket,
+		@MessageBody() payload: ChatNotificationMarkAsReadDto,
+	): Promise<WsResponse<void>> {
+		const userId = client.data.user.sub;
+
+		return handleWs(async () => {
+			const readAt = await this.notificationService.markRoomAsRead(
+				userId,
+				payload.roomId,
+			);
+
+			this.broadcaster.successReadNotification(
+				userId,
+				payload.roomId,
+				readAt,
+			);
 		});
 	}
 }

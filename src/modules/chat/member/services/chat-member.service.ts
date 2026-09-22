@@ -221,6 +221,10 @@ export class ChatMemberService {
 		);
 	}
 
+	findUserIdsByRoomId(roomId: string): Promise<string[]> {
+		return this.repo.findUserIdsByRoomId(roomId);
+	}
+
 	async addMembers(
 		roomId: string,
 		userId: string,
