@@ -13,6 +13,7 @@ import { ChatRoomMapper } from '../room/mappers/chat-room.mapper';
 import { ChatNotificationMapper } from '../notification/mappers/chat-notification.mapper';
 import { ChatNotificationService } from '../notification/services/chat-notification.service';
 import { UserSocket } from '@/core/websocket/interface/ws-socket.inteface';
+import { ChatNotificationMemberMutationEnum } from '../notification/types/enums/chat-notification-member-mutation.enum';
 
 @Injectable()
 export class ChatBroadcaster {
@@ -28,49 +29,13 @@ export class ChatBroadcaster {
 
 	async messageNew(message: ChatMessageListItem, memberUserIds: string[]) {
 		const messageDto = this.messageMapper.toListItemDto(message);
-		const notificationDto = this.notificationMapper.toNotificationNewDto(
-			message.roomId,
-		);
 
 		this.ws
 			.get()
 			.to(message.roomId)
 			.emit(CHAT_EVENTS.SEND.MESSAGE_NEW, messageDto);
 
-		const activeSockets = (await this.ws
-			.get()
-			.in(message.roomId)
-			.fetchSockets()) as unknown as UserSocket[];
-
-		const activeUserIdsInRoom = new Set<string>();
-		for (const socket of activeSockets) {
-			const userId = socket.data.user?.sub;
-			if (userId) activeUserIdsInRoom.add(userId);
-		}
-
-		if (message?.sender?.id) activeUserIdsInRoom.add(message.sender.id);
-
-		for (const userId of memberUserIds) {
-			if (activeUserIdsInRoom.has(userId)) continue;
-
-			const socketIds = this.presenceStore.getSocketsByUserId(userId);
-			for (const socketId of socketIds) {
-				this.ws
-					.get()
-					.to(socketId)
-					.emit(
-						CHAT_EVENTS.SEND.NOTIFICATION_MESSAGE_NEW,
-						notificationDto,
-					);
-			}
-		}
-
-		if (activeUserIdsInRoom.size <= 0) return;
-		void this.notificationService.markRoomAsReadForUsers(
-			message.roomId,
-			Array.from(activeUserIdsInRoom),
-			message.createdAt,
-		);
+		await this.notifyMessageNew(message, memberUserIds);
 	}
 
 	messageEdited(message: ChatMessageListItem) {
@@ -97,16 +62,23 @@ export class ChatBroadcaster {
 		client.to(payload.roomId).emit(CHAT_EVENTS.SEND.TYPING_UPDATE, dto);
 	}
 
-	memberAdded(roomId: string, userId: string) {
+	async memberAdded(roomId: string, userId: string, memberUserIds: string[]) {
 		const dto = this.memberMapper.toAddedDto(roomId, userId);
-
 		this.ws.get().to(roomId).emit(CHAT_EVENTS.SEND.MEMBER_ADDED, dto);
+
+		await this.memberMutation(
+			roomId,
+			userId,
+			ChatNotificationMemberMutationEnum.JOIN,
+			memberUserIds,
+		);
 	}
 
-	memberRoleUpdated(
+	async memberRoleUpdated(
 		roomId: string,
 		targetUserId: string,
 		newRole: ChatMemberRole,
+		memberUserIds: string[],
 	) {
 		const dto = this.memberMapper.toRoleUpdatedDto(
 			roomId,
@@ -118,13 +90,34 @@ export class ChatBroadcaster {
 			.get()
 			.to(roomId)
 			.emit(CHAT_EVENTS.SEND.MEMBER_ROLE_UPDATED, dto);
+
+		await this.memberMutation(
+			roomId,
+			targetUserId,
+			ChatNotificationMemberMutationEnum.ROLE_UPDATE,
+			memberUserIds,
+		);
 	}
 
-	memberRemoved(roomId: string, userId: string) {
+	async memberRemoved(
+		roomId: string,
+		userId: string,
+		memberUserIds: string[],
+		isKicked = false,
+	) {
 		const dto = this.memberMapper.toRemovedDto(roomId, userId);
 
 		this.ws.get().to(roomId).emit(CHAT_EVENTS.SEND.MEMBER_REMOVED, dto);
 		this.forceLeaveRoom(userId, roomId);
+
+		await this.memberMutation(
+			roomId,
+			userId,
+			isKicked
+				? ChatNotificationMemberMutationEnum.KICKED
+				: ChatNotificationMemberMutationEnum.LEAVE,
+			memberUserIds,
+		);
 	}
 
 	roomRenamed(roomId: string, newName: string) {
@@ -157,6 +150,91 @@ export class ChatBroadcaster {
 				.get()
 				.to(socketId)
 				.emit(CHAT_EVENTS.SEND.NOTIFICATION_READ, dto);
+		}
+	}
+
+	private async notifyMessageNew(
+		message: ChatMessageListItem,
+		memberUserIds: string[],
+	) {
+		const notificationDto =
+			this.notificationMapper.toNotificationMessageNewDto(message.roomId);
+
+		const activeUserIdsInRoom = await this.getActiveUserIdsInRoom(
+			message.roomId,
+		);
+
+		if (message?.sender?.id) {
+			activeUserIdsInRoom.add(message.sender.id);
+		}
+
+		this.notifyAbsentMembers(
+			memberUserIds,
+			activeUserIdsInRoom,
+			CHAT_EVENTS.SEND.NOTIFICATION_MESSAGE_NEW,
+			notificationDto,
+		);
+
+		if (activeUserIdsInRoom.size <= 0) return;
+
+		void this.notificationService.markRoomAsReadForUsers(
+			message.roomId,
+			Array.from(activeUserIdsInRoom),
+			message.createdAt,
+		);
+	}
+
+	private async memberMutation(
+		roomId: string,
+		userId: string,
+		type: ChatNotificationMemberMutationEnum,
+		memberUserIds: string[],
+	) {
+		const notificationDto =
+			this.notificationMapper.toNotificationMemberMutationDto(
+				roomId,
+				userId,
+				type,
+			);
+
+		const activeUserIdsInRoom = await this.getActiveUserIdsInRoom(roomId);
+
+		this.notifyAbsentMembers(
+			memberUserIds,
+			activeUserIdsInRoom,
+			CHAT_EVENTS.SEND.NOTIFICATION_MEMBER_MUTATION,
+			notificationDto,
+		);
+	}
+
+	private async getActiveUserIdsInRoom(roomId: string): Promise<Set<string>> {
+		const activeSockets = (await this.ws
+			.get()
+			.in(roomId)
+			.fetchSockets()) as unknown as UserSocket[];
+
+		const activeUserIdsInRoom = new Set<string>();
+		for (const socket of activeSockets) {
+			const userId = socket.data.user?.sub;
+			if (userId) activeUserIdsInRoom.add(userId);
+		}
+
+		return activeUserIdsInRoom;
+	}
+
+	private notifyAbsentMembers(
+		memberUserIds: string[],
+		activeUserIdsInRoom: Set<string>,
+		event: string,
+		payload: unknown,
+	) {
+		for (const userId of memberUserIds) {
+			if (activeUserIdsInRoom.has(userId)) continue;
+
+			const socketIds = this.presenceStore.getSocketsByUserId(userId);
+			for (const socketId of socketIds) {
+				this.ws.get().to(socketId).emit(event, payload);
+			}
 		}
 	}
 
