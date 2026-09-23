@@ -58,12 +58,15 @@ export class UserRepository {
 		const client = ctx?.client ?? this.prisma;
 		return client.user.count({
 			where: {
-				...(search && UserQueryHelper.searchWhere(search)),
-				...(feedParams &&
-					UserQueryHelper.feedWhere(
-						feedParams.userId,
-						feedParams.feed,
-					)),
+				AND: [
+					search ? UserQueryHelper.searchWhere(search) : {},
+					feedParams
+						? UserQueryHelper.feedWhere(
+								feedParams.userId,
+								feedParams.feed,
+							)
+						: {},
+				],
 			},
 		});
 	}

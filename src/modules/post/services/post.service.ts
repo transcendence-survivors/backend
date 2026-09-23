@@ -13,6 +13,7 @@ import { PostCreateParams } from '../types/params/post-create.params';
 import { PostListItemResponseDto } from '../dtos/responses/post-list-item-response.dto';
 import { PostPaginatedListResponseDto } from '../dtos/responses/post-paginated-list-response.dto';
 import { PostCreatedResponseDto } from '../dtos/responses/post-created-response.dto';
+import { PostFeedEnum } from '../types/enums/post-feed.enum';
 
 @Injectable()
 export class PostService {
@@ -66,10 +67,15 @@ export class PostService {
 		viewerId?: string,
 		parentPostId?: string,
 	): Promise<PostPaginatedListResponseDto> {
+		const isFeed = !parentPostId;
 		const posts = await this.postRepository.cursor({
 			...query,
 			parentPostId: parentPostId ?? null,
-			excludeUserId: parentPostId ? undefined : viewerId,
+			excludeUserId: isFeed ? viewerId : undefined,
+			viewerId,
+			feed: isFeed
+				? (query.feed ?? PostFeedEnum.FRIENDS)
+				: PostFeedEnum.ALL_NOT_BLOCKED,
 		});
 
 		return this.toPaginatedListDto(posts, query.limit, viewerId);

@@ -5,6 +5,7 @@ import {
 } from '@/shared/decorators/cursor.decorators';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsOptional } from 'class-validator';
+import { PostFeedEnum } from '../../types/enums/post-feed.enum';
 import { PostOrderByEnum } from '../../types/enums/post-order-by.enum';
 
 export class PostPaginateDto {
@@ -34,4 +35,14 @@ export class PostPaginateDto {
 
 	@IsSearch({})
 	search?: string;
+
+	@ApiPropertyOptional({
+		description: 'Which authors the feed is restricted to',
+		enum: PostFeedEnum,
+		example: PostFeedEnum.FRIENDS,
+		default: PostFeedEnum.FRIENDS,
+	})
+	@IsOptional()
+	@IsEnum(PostFeedEnum)
+	feed?: PostFeedEnum;
 }

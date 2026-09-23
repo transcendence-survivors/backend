@@ -23,7 +23,6 @@ import { PostPaginateDto } from '../dtos/requests/post-paginate.dto';
 import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
 import { ApiConsumes, ApiParam } from '@nestjs/swagger';
 import { StorageService } from '@/core/storage/services/storage.service';
-import { JWTOptionalAccessGuard } from '@/core/security/guards/jwt-optional-access-guard';
 import { InjectUserService } from '@/contracts/services/user/user-service.inject';
 import type { IUserService } from '@/contracts/services/user/user-service.port';
 import { ApiQueryDto } from '@/shared/decorators/api-query-dto.decorator';
@@ -46,7 +45,7 @@ export class PostController {
 		@InjectUserService() private readonly userService: IUserService,
 	) {}
 
-	@UseGuards(JWTOptionalAccessGuard)
+	@UseGuards(JWTAccessGuard)
 	@Get()
 	@HttpCode(200)
 	@ApiQueryDto(PostPaginateDto)
@@ -63,7 +62,7 @@ export class PostController {
 		return this.postService.findCursor(query, user?.sub);
 	}
 
-	@UseGuards(JWTOptionalAccessGuard)
+	@UseGuards(JWTAccessGuard)
 	@Get(':id')
 	@HttpCode(200)
 	@ApiParam({
@@ -81,7 +80,7 @@ export class PostController {
 		return this.postService.findOne(id, user?.sub);
 	}
 
-	@UseGuards(JWTOptionalAccessGuard)
+	@UseGuards(JWTAccessGuard)
 	@Get(':id/replies')
 	@HttpCode(200)
 	@ApiParam({
@@ -101,7 +100,7 @@ export class PostController {
 		return this.postService.findCursor(query, user?.sub, id);
 	}
 
-	@UseGuards(JWTOptionalAccessGuard)
+	@UseGuards(JWTAccessGuard)
 	@Get('user/:username/comments')
 	@HttpCode(200)
 	@ApiParam({
@@ -121,7 +120,7 @@ export class PostController {
 		return this.postService.findUserComments(authorId, query, user?.sub);
 	}
 
-	@UseGuards(JWTOptionalAccessGuard)
+	@UseGuards(JWTAccessGuard)
 	@Get('user/:username/reposts')
 	@HttpCode(200)
 	@ApiParam({
@@ -141,7 +140,7 @@ export class PostController {
 		return this.postService.findUserReposts(authorId, query, user?.sub);
 	}
 
-	@UseGuards(JWTOptionalAccessGuard)
+	@UseGuards(JWTAccessGuard)
 	@Get('user/:username/likes')
 	@HttpCode(200)
 	@ApiParam({
@@ -161,7 +160,7 @@ export class PostController {
 		return this.postService.findUserLikes(userId, query, user?.sub);
 	}
 
-	@UseGuards(JWTOptionalAccessGuard)
+	@UseGuards(JWTAccessGuard)
 	@Get('user/:username/posts')
 	@HttpCode(200)
 	@ApiParam({
