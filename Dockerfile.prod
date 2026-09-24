@@ -1,0 +1,42 @@
+# Stage 1: Build the application
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+RUN npm install -g pnpm@10.15.0
+RUN pnpm config set store-dir /pnpm/store
+
+# Copy local package files
+COPY package.json ./
+
+# Install all dependencies (no workspace filter needed)
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+    pnpm install
+
+# Copy source code
+COPY . .
+
+# Build standard NestJS output (generates ./dist)
+RUN pnpm run build
+
+
+# Stage 2: Run the production server
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+RUN npm install -g pnpm@10.15.0
+
+ENV NODE_ENV=production
+
+COPY package.json ./
+
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+    pnpm install --prod
+
+# Copy the build output locally
+COPY --from=builder /app/dist ./dist
+
+EXPOSE 3001
+
+CMD ["pnpm", "run", "start:prod"]
