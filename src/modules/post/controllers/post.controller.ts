@@ -11,6 +11,7 @@ import {
 	UseInterceptors,
 	UploadedFile,
 	BadRequestException,
+	HttpStatus,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { extname } from 'path';
@@ -48,7 +49,7 @@ export class PostController {
 
 	@UseGuards(JWTOptionalAccessGuard)
 	@Get()
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiQueryDto(PostPaginateDto)
 	@ApiSuccessResponse(PostPaginatedListResponseDto)
 	@ApiValidationErrorResponse({
@@ -65,7 +66,7 @@ export class PostController {
 
 	@UseGuards(JWTOptionalAccessGuard)
 	@Get(':id')
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiParam({
 		name: 'id',
 		description: 'The id of the post to retrieve',
@@ -83,7 +84,7 @@ export class PostController {
 
 	@UseGuards(JWTOptionalAccessGuard)
 	@Get(':id/replies')
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiParam({
 		name: 'id',
 		description: 'The id of the post whose replies are listed',
@@ -103,7 +104,7 @@ export class PostController {
 
 	@UseGuards(JWTOptionalAccessGuard)
 	@Get('user/:username/comments')
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiParam({
 		name: 'username',
 		description: 'The username whose comments are listed',
@@ -123,7 +124,7 @@ export class PostController {
 
 	@UseGuards(JWTOptionalAccessGuard)
 	@Get('user/:username/reposts')
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiParam({
 		name: 'username',
 		description: 'The username whose reposts are listed',
@@ -143,7 +144,7 @@ export class PostController {
 
 	@UseGuards(JWTOptionalAccessGuard)
 	@Get('user/:username/likes')
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiParam({
 		name: 'username',
 		description: 'The username whose liked posts are listed',
@@ -163,7 +164,7 @@ export class PostController {
 
 	@UseGuards(JWTOptionalAccessGuard)
 	@Get('user/:username/posts')
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiParam({
 		name: 'username',
 		description: 'The username whose posts are listed',
@@ -183,7 +184,7 @@ export class PostController {
 
 	@UseGuards(JWTAccessGuard)
 	@Post()
-	@HttpCode(201)
+	@HttpCode(HttpStatus.CREATED)
 	@UseInterceptors(
 		FileInterceptor('file', {
 			limits: { fileSize: 10 * 1024 * 1024 },
@@ -238,7 +239,7 @@ export class PostController {
 
 	@UseGuards(JWTAccessGuard)
 	@Delete(':id')
-	@HttpCode(204)
+	@HttpCode(HttpStatus.NO_CONTENT)
 	@ApiParam({
 		name: 'id',
 		description: 'The id of the post to delete',

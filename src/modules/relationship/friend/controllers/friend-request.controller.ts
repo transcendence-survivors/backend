@@ -12,6 +12,7 @@ import {
 	Param,
 	Patch,
 	UseGuards,
+	HttpStatus,
 } from '@nestjs/common';
 import { FriendService } from '../services/friend.service';
 
@@ -26,21 +27,26 @@ import {
 	ApiSuccessResponse,
 } from '@/shared/decorators/api-success-response.decorator';
 import { ApiValidationErrorResponse } from '@/shared/decorators/api-validation-error-response.decorator';
-import {
-	ApiFriendAlreadyExistsResponse,
-	ApiFriendRequestAlreadySentResponse,
-	ApiFriendRequestNotFoundResponse,
-	ApiFriendRequestSelfAcceptResponse,
-	ApiFriendshipBlockedByUserResponse,
-	ApiFriendshipBlockedByYouResponse,
-	ApiSelfFriendRequestDeleteResponse,
-	ApiSelfFriendRequestSentResponse,
-} from '../decorators/friend-api-errors.decorator';
 import { ApiQueryDto } from '@/shared/decorators/api-query-dto.decorator';
 import { ApiBodyDto } from '@/shared/decorators/api-body-dto.decorator';
 import { ApiNoContentResponse, ApiParam } from '@nestjs/swagger';
 import { RelationshipSearchThrottle } from '@/core/rate-limit/decorators/throttle-presets.decorator';
 import { FriendShipListItemResponseDto } from '../dtos/responses/friendship-list-item-response.dto';
+import { ApiGroupedErrorResponse } from '@/shared/decorators/api-error-response.decorator';
+import { FriendRequestSelfAcceptException } from '../exceptions/friend-unprocessable.exception';
+import {
+	SelfFriendRequestDeleteException,
+	SelfFriendRequestSentException,
+} from '../exceptions/friend-bad.exception';
+import {
+	FriendshipBlockedByUserException,
+	FriendshipBlockedByYouException,
+} from '../exceptions/friend-forbidden.exception';
+import {
+	FriendAlreadyExistsException,
+	FriendRequestAlreadySentException,
+} from '../exceptions/friend-conflict.exception';
+import { FriendRequestDoesNotExistException } from '../exceptions/friend-not-found.exception';
 
 @Controller('friends/requests')
 @UseGuards(JWTAccessGuard)
@@ -49,7 +55,7 @@ export class FriendRequestController {
 
 	@RelationshipSearchThrottle()
 	@Get()
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiQueryDto(FriendRequestPaginateDto)
 	@ApiSuccessResponse(FriendshipPaginatedResponseDto)
 	@ApiValidationErrorResponse({
@@ -67,7 +73,7 @@ export class FriendRequestController {
 
 	@RelationshipSearchThrottle()
 	@Get('count')
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiQueryDto(FriendRequestCountDto)
 	@ApiSuccessResponse(FriendshipCountResponseDto)
 	@ApiValidationErrorResponse({
@@ -82,15 +88,19 @@ export class FriendRequestController {
 	}
 
 	@Post()
-	@HttpCode(201)
+	@HttpCode(HttpStatus.CREATED)
 	@ApiBodyDto(FriendRequestAddDto)
 	@ApiCreatedSuccessResponse(FriendShipListItemResponseDto)
 	@ApiValidationErrorResponse({ friendId: ['friendId must be a string'] })
-	@ApiSelfFriendRequestSentResponse()
-	@ApiFriendshipBlockedByUserResponse()
-	@ApiFriendshipBlockedByYouResponse()
-	@ApiFriendAlreadyExistsResponse()
-	@ApiFriendRequestAlreadySentResponse()
+	@ApiGroupedErrorResponse([SelfFriendRequestSentException])
+	@ApiGroupedErrorResponse([
+		FriendshipBlockedByUserException,
+		FriendshipBlockedByYouException,
+	])
+	@ApiGroupedErrorResponse([
+		FriendAlreadyExistsException,
+		FriendRequestAlreadySentException,
+	])
 	@ResponseEnvelope('Friend request sent successfully')
 	send(
 		@CurrentUser() user: JwtAccessPayload,
@@ -100,7 +110,7 @@ export class FriendRequestController {
 	}
 
 	@Patch(':friendId')
-	@HttpCode(204)
+	@HttpCode(HttpStatus.NO_CONTENT)
 	@ApiParam({
 		name: 'friendId',
 		description: 'The UUID of the user to accept the friend request from',
@@ -111,12 +121,16 @@ export class FriendRequestController {
 	@ApiNoContentResponse({
 		description: 'Friend request accepted successfully',
 	})
-	@ApiSelfFriendRequestSentResponse()
-	@ApiFriendshipBlockedByUserResponse()
-	@ApiFriendshipBlockedByYouResponse()
-	@ApiFriendRequestSelfAcceptResponse()
-	@ApiFriendRequestNotFoundResponse()
-	@ApiFriendAlreadyExistsResponse()
+	@ApiGroupedErrorResponse([FriendRequestSelfAcceptException])
+	@ApiGroupedErrorResponse([
+		FriendshipBlockedByUserException,
+		FriendshipBlockedByYouException,
+	])
+	@ApiGroupedErrorResponse([
+		FriendAlreadyExistsException,
+		FriendRequestAlreadySentException,
+	])
+	@ApiGroupedErrorResponse([FriendRequestDoesNotExistException])
 	@ResponseEnvelope('Friend request accepted successfully')
 	async accept(
 		@CurrentUser() user: JwtAccessPayload,
@@ -126,7 +140,7 @@ export class FriendRequestController {
 	}
 
 	@Delete(':friendId')
-	@HttpCode(204)
+	@HttpCode(HttpStatus.NO_CONTENT)
 	@ApiParam({
 		name: 'friendId',
 		description: 'The UUID of the user to delete the friend request for',
@@ -134,11 +148,11 @@ export class FriendRequestController {
 		type: String,
 		format: 'uuid',
 	})
+	@ApiGroupedErrorResponse([SelfFriendRequestDeleteException])
+	@ApiGroupedErrorResponse([FriendRequestDoesNotExistException])
 	@ApiNoContentResponse({
 		description: 'Friend request deleted successfully',
 	})
-	@ApiSelfFriendRequestDeleteResponse()
-	@ApiFriendRequestNotFoundResponse()
 	async delete(
 		@CurrentUser() user: JwtAccessPayload,
 		@Param('friendId') friendId: string,

@@ -1,15 +1,17 @@
-import { IsBio } from '@/shared/validators/fields/user/is-bio';
-import { IsDisplayName } from '@/shared/validators/fields/user/is-display-name';
-import { LocalePreference, UserGender } from '@prisma-generated/client';
-import { IsLocalePreference } from '@/shared/validators/fields/user/is-locale-preference';
-import { IsBirthDate } from '@/shared/validators/fields/user/is-birth-date';
-import { IsLastName } from '@/shared/validators/fields/user/is-last-name';
-import { IsFirstName } from '@/shared/validators/fields/user/is-first-name';
-import { IsGender } from '@/shared/validators/fields/user/is-gender';
-import { IsUsername } from '@/shared/validators/fields/user/is-username';
-import { IsEmail } from '@/shared/validators/fields/user/is-email';
-import { IsPassword } from '@/shared/validators/fields/user/is-password';
+import {
+	IsBio,
+	IsBirthDate,
+	IsDisplayName,
+	IsEmail,
+	IsFirstName,
+	IsGender,
+	IsLastName,
+	IsLocalePreference,
+	IsPassword,
+	IsUsername,
+} from '@/shared/validators/fields/users';
 import { ApiProperty } from '@nestjs/swagger';
+import { LocalePreference, UserGender } from '@prisma-generated/enums';
 
 export class AuthSignUpDto {
 	@ApiProperty({
@@ -20,6 +22,7 @@ export class AuthSignUpDto {
 	})
 	@IsEmail()
 	email!: string;
+
 	@ApiProperty({
 		description: 'The username of the user',
 		example: 'john_doe',
@@ -35,6 +38,7 @@ export class AuthSignUpDto {
 	})
 	@IsGender()
 	gender!: UserGender;
+
 	@ApiProperty({
 		description: 'The first name of the user',
 		example: 'John',
@@ -42,6 +46,7 @@ export class AuthSignUpDto {
 	})
 	@IsFirstName()
 	firstName!: string;
+
 	@ApiProperty({
 		description: 'The last name of the user',
 		example: 'Doe',
@@ -49,6 +54,7 @@ export class AuthSignUpDto {
 	})
 	@IsLastName()
 	lastName!: string;
+
 	@ApiProperty({
 		description: 'The date of birth of the user',
 		example: '1990-01-01',
@@ -57,6 +63,7 @@ export class AuthSignUpDto {
 	})
 	@IsBirthDate()
 	dateOfBirth!: Date;
+
 	@ApiProperty({
 		description: 'The preferred locale of the user',
 		example: LocalePreference.EN,
@@ -64,6 +71,7 @@ export class AuthSignUpDto {
 	})
 	@IsLocalePreference()
 	localePreference!: LocalePreference;
+
 	@ApiProperty({
 		description: 'The display name of the user',
 		example: 'John Doe',
@@ -71,6 +79,7 @@ export class AuthSignUpDto {
 	})
 	@IsDisplayName()
 	displayName!: string;
+
 	@ApiProperty({
 		description: 'The bio of the user',
 		example: 'Hello, I am John Doe!',

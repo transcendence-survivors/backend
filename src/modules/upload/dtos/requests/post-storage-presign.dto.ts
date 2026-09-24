@@ -9,7 +9,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { ALLOWED_CONTENT_TYPES } from '@/core/storage/storage.mime';
 
-export class StoragePresignDto {
+class PostStoragePresignDto {
 	@ApiProperty({
 		description: 'The name of the file to be uploaded',
 		example: 'example.jpg',
@@ -22,14 +22,14 @@ export class StoragePresignDto {
 		example: 'image/jpeg',
 	})
 	@IsString()
-	@IsIn(ALLOWED_CONTENT_TYPES.chat)
+	@IsIn(ALLOWED_CONTENT_TYPES.post)
 	mimeType!: string;
 }
 
-export class StoragePresignBatchDto {
+export class PostStoragePresignBatchDto {
 	@IsArray()
-	@ArrayMaxSize(9)
+	@ArrayMaxSize(5)
 	@ValidateNested({ each: true })
-	@Type(() => StoragePresignDto)
-	files!: StoragePresignDto[];
+	@Type(() => PostStoragePresignDto)
+	files!: PostStoragePresignDto[];
 }

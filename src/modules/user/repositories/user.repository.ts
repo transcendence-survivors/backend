@@ -13,6 +13,8 @@ import type { UserEmailOrUsernameParams } from '../types/params/user-email-or-us
 import type { UserSelect } from '@prisma-generated/models';
 import type { AuhtUserData } from '@/contracts/types/user/user-token-data.type';
 import { UserCreateParams } from '@/contracts/types/user/user-create.params';
+import { UserSettingsRecord } from '../types/records/user-settings.type';
+import { UserSettingsPatchParams } from '../types/params/user-settings-patch.params';
 
 @Injectable()
 export class UserRepository {
@@ -198,6 +200,40 @@ export class UserRepository {
 			where: {
 				id: { in: ids },
 			},
+		});
+	}
+
+	findUserSettingsById(userId: string): Promise<UserSettingsRecord | null> {
+		return this.prisma.user.findUnique({
+			where: { id: userId },
+			select: {
+				id: true,
+				username: true,
+				email: true,
+				gender: true,
+				firstName: true,
+				lastName: true,
+				birthDate: true,
+				displayName: true,
+				bio: true,
+				avatarUrl: true,
+				coverImageUrl: true,
+				localePreference: true,
+				createdAt: true,
+			} satisfies Record<
+				keyof UserSettingsRecord,
+				UserSelect[keyof UserSettingsRecord]
+			>,
+		});
+	}
+
+	async updateUserSettings(
+		userId: string,
+		params: UserSettingsPatchParams,
+	): Promise<{ count: number }> {
+		return await this.prisma.user.updateMany({
+			where: { id: userId },
+			data: params,
 		});
 	}
 }

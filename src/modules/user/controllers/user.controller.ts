@@ -4,11 +4,10 @@ import {
 	Param,
 	HttpCode,
 	Query,
+	Patch,
+	HttpStatus,
+	Body,
 	UseGuards,
-	Post,
-	UseInterceptors,
-	BadRequestException,
-	UploadedFile,
 } from '@nestjs/common';
 import { UserService } from '../services/user.service';
 import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
@@ -17,23 +16,25 @@ import { UserPaginateDto } from '../dtos/requests/user-paginate.dto';
 import { UserProfileResponseDto } from '../dtos/responses/user-profile.dto';
 import { UserPaginatedListResponseDto } from '../dtos/responses/user-paginated-response.dto';
 import { UserCountResponseDto } from '../dtos/responses/user-count-response.dto';
-import {
-	ApiUserNotFoundResponse,
-	ApiUsernameConflictResponse,
-	ApiEmailConflictResponse,
-} from '../decorators/user-api-errors.decorator';
 import { ApiValidationErrorResponse } from '@/shared/decorators/api-validation-error-response.decorator';
 import { ApiNoContentResponse, ApiParam } from '@nestjs/swagger';
 import { ApiQueryDto } from '@/shared/decorators/api-query-dto.decorator';
 import { SearchThrottle } from '@/core/rate-limit/decorators/throttle-presets.decorator';
-
-import { FileInterceptor } from '@nestjs/platform-express';
-import { extname } from 'path';
-import { JWTAccessGuard } from '@/core/security/guards/jwt-access.guard';
-import type { JwtAccessPayload } from '@/core/security/interfaces/jwt-payload.interface';
-import { CurrentUser } from '@/core/security/decorators/current-user.decorator';
 import { StorageService } from '@/core/storage/services/storage.service';
 import { UserCountDto } from '../dtos/requests/user-count.dto';
+import { type JwtAccessPayload } from '@/core/security/interfaces/jwt-payload.interface';
+import { CurrentUser } from '@/core/security/decorators/current-user.decorator';
+import { UserSettingsResponseDto } from '../dtos/responses/user-settings-response.dto';
+import { ApiGroupedErrorResponse } from '@/shared/decorators/api-error-response.decorator';
+import { UserSettingsUpdateEmptyException } from '../exceptions/user.bad.exception';
+import { UserSettingsPatchDto } from '../dtos/requests/user-settings-patch.dto';
+import { UserNotFoundException } from '../exceptions/user.not-found.exception';
+import {
+	UserEmailConflictException,
+	UserUsernameConflictException,
+} from '../exceptions/user.conflict.exception';
+import { ApiBodyDto } from '@/shared/decorators/api-body-dto.decorator';
+import { JWTAccessGuard } from '@/core/security/guards/jwt-access.guard';
 
 @Controller('users')
 export class UserController {
@@ -44,7 +45,7 @@ export class UserController {
 
 	@SearchThrottle()
 	@Get()
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiQueryDto(UserPaginateDto)
 	@ApiSuccessResponse(UserPaginatedListResponseDto)
 	@ApiValidationErrorResponse({
@@ -60,7 +61,7 @@ export class UserController {
 
 	@SearchThrottle()
 	@Get('count')
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiQueryDto(UserCountDto)
 	@ApiSuccessResponse(UserCountResponseDto)
 	@ApiValidationErrorResponse({
@@ -72,20 +73,23 @@ export class UserController {
 	}
 
 	@Get('check-username/:username')
-	@HttpCode(204)
+	@HttpCode(HttpStatus.NO_CONTENT)
 	@ApiParam({
 		name: 'username',
 		description: 'The username to check for availability',
 		example: 'johndoe',
 		type: String,
 	})
-	@ApiUsernameConflictResponse()
+	@ApiGroupedErrorResponse([UserUsernameConflictException])
+	@ApiNoContentResponse({
+		description: 'Username is available',
+	})
 	checkUsername(@Param('username') username: string): Promise<void> {
 		return this.userService.checkUsernameAvailability(username);
 	}
 
 	@Get('check-email/:email')
-	@HttpCode(204)
+	@HttpCode(HttpStatus.NO_CONTENT)
 	@ApiParam({
 		name: 'email',
 		description: 'The email to check for availability',
@@ -96,20 +100,21 @@ export class UserController {
 	@ApiNoContentResponse({
 		description: 'Email is available',
 	})
-	@ApiEmailConflictResponse()
+	@ApiGroupedErrorResponse([UserEmailConflictException])
 	checkEmail(@Param('email') email: string): Promise<void> {
 		return this.userService.checkEmailAvailability(email);
 	}
 
 	@Get('profile/:username')
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiParam({
 		name: 'username',
 		description: 'The username to look up',
 		example: 'johndoe',
+		type: String,
 	})
 	@ApiSuccessResponse(UserProfileResponseDto)
-	@ApiUserNotFoundResponse()
+	@ApiGroupedErrorResponse([UserNotFoundException])
 	@ResponseEnvelope('User found successfully')
 	findProfile(
 		@Param('username') username: string,
@@ -118,34 +123,28 @@ export class UserController {
 	}
 
 	@UseGuards(JWTAccessGuard)
-	@Post('me/avatar')
-	@UseInterceptors(
-		FileInterceptor('file', {
-			limits: { fileSize: 5 * 1024 * 1024 },
-			fileFilter: (_req, file, callback) => {
-				if (!file.mimetype.startsWith('image/')) {
-					callback(
-						new BadRequestException('File must be an image'),
-						false,
-					);
-					return;
-				}
-				callback(null, true);
-			},
-		}),
-	)
-	@ResponseEnvelope('Avatar uploaded successfully')
-	async uploadAvatar(
-		@UploadedFile() file: Express.Multer.File,
+	@Get('me/settings')
+	@HttpCode(HttpStatus.OK)
+	@ApiSuccessResponse(UserSettingsResponseDto)
+	@ApiGroupedErrorResponse([UserNotFoundException])
+	@ResponseEnvelope('User settings retrieved successfully')
+	getMySettings(
 		@CurrentUser() user: JwtAccessPayload,
-	) {
-		const key = `avatars/${user.sub}-${Date.now()}${extname(file.originalname)}`;
-		const url = await this.storageService.upload({
-			fileName: key,
-			body: file.buffer,
-			contentType: file.mimetype,
-			bucket: 'avatar',
-		});
-		return { url };
+	): Promise<UserSettingsResponseDto> {
+		return this.userService.getUserSettings(user.sub);
+	}
+
+	@UseGuards(JWTAccessGuard)
+	@Patch('me/settings')
+	@HttpCode(HttpStatus.NO_CONTENT)
+	@ApiBodyDto(UserSettingsPatchDto)
+	@ApiGroupedErrorResponse([UserSettingsUpdateEmptyException])
+	@ApiGroupedErrorResponse([UserNotFoundException])
+	@ApiNoContentResponse({ description: 'Settings successfully updated' })
+	async updateMySettings(
+		@CurrentUser() user: JwtAccessPayload,
+		@Body() dto: UserSettingsPatchDto,
+	): Promise<void> {
+		await this.userService.updateUserSettings(user.sub, dto);
 	}
 }

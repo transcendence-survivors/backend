@@ -7,6 +7,7 @@ import {
 	seedSendFriendRequests,
 } from './friends';
 import { seedBlocksBlocked, seedBlocksBlocker } from './blocks';
+import { seedChatRooms } from './chats';
 
 const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
 const prisma = new PrismaClient({ adapter });
@@ -52,6 +53,22 @@ const main = async () => {
 		),
 	]);
 
+	const unblockedUsers = [
+		user,
+		...firstFifthUsers,
+		...secondFifthUsers,
+		...thirdFifthUsers,
+	];
+
+	await seedChatRooms(
+		prisma,
+		user.id,
+		unblockedUsers.map((u) => u.id),
+		{
+			totalRooms: 100,
+			maxMessagesPerRoom: 1000,
+		},
+	);
 	console.log(
 		`✅ Seeding completed successfully. Total users added: ${totalAdded}`,
 	);

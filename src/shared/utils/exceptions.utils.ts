@@ -31,7 +31,6 @@ export const mapExceptionToErrorBody = (exception: unknown): ApiError => {
 	}
 
 	if (!isHttpExceptionLike(exception)) {
-		logNonHttpException(exception);
 		return {
 			status: 'error',
 			message: 'Internal server error',
@@ -114,21 +113,4 @@ const isApiError = (obj: unknown): obj is ApiError => {
 		'code' in obj &&
 		'message' in obj
 	);
-};
-
-const logNonHttpException = (exception: unknown): void => {
-	if (exception instanceof Error) {
-		console.error(
-			'Non-HTTP exception occurred:',
-			exception.message,
-			exception.stack,
-		);
-	} else if (typeof exception === 'object' && exception !== null) {
-		console.error(
-			'Non-HTTP exception occurred:',
-			JSON.stringify(exception, null, 2),
-		);
-	} else {
-		console.error('Non-HTTP exception occurred:', String(exception));
-	}
 };

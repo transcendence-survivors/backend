@@ -1,5 +1,12 @@
 import { JWTAccessGuard } from '@/core/security/guards/jwt-access.guard';
-import { Controller, Get, HttpCode, Query, UseGuards } from '@nestjs/common';
+import {
+	Controller,
+	Get,
+	HttpCode,
+	HttpStatus,
+	Query,
+	UseGuards,
+} from '@nestjs/common';
 import { UserService } from '../services/user.service';
 import { ApiQueryDto } from '@/shared/decorators/api-query-dto.decorator';
 import { ApiSuccessResponse } from '@/shared/decorators/api-success-response.decorator';
@@ -20,7 +27,7 @@ export class UserFeedController {
 
 	@SearchThrottle()
 	@Get()
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiQueryDto(UserFeedPaginateDto)
 	@ApiSuccessResponse(UserPaginatedListResponseDto)
 	@ApiValidationErrorResponse({
@@ -36,7 +43,7 @@ export class UserFeedController {
 	}
 
 	@Get('count')
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiQueryDto(UserFeedCountDto)
 	@ApiSuccessResponse(UserCountResponseDto)
 	@ApiValidationErrorResponse({

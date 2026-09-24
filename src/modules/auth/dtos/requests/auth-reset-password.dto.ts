@@ -1,4 +1,4 @@
-import { IsPassword } from '@/shared/validators/fields/user/is-password';
+import { IsPassword } from '@/shared/validators/fields/users';
 import { ApiProperty } from '@nestjs/swagger';
 import { MinLength, IsString, MaxLength } from 'class-validator';
 

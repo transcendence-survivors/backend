@@ -4,6 +4,7 @@ import {
 	Delete,
 	Get,
 	HttpCode,
+	HttpStatus,
 	Param,
 	Patch,
 	Post,
@@ -55,7 +56,7 @@ export class ChatMemberController {
 
 	@SearchThrottle()
 	@Get()
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiQueryDto(ChatMemberPaginateDto)
 	@ApiSuccessResponse(ChatMemberPaginatedListResponseDto)
 	@ApiValidationErrorResponse({
@@ -71,7 +72,7 @@ export class ChatMemberController {
 	}
 
 	@Get('count')
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiQueryDto(ChatMemberCountDto)
 	@ApiSuccessResponse(ChatMemberCountResponseDto)
 	@ResponseEnvelope('Chat members count retrieved successfully')
@@ -83,7 +84,7 @@ export class ChatMemberController {
 	}
 
 	@Post()
-	@HttpCode(204)
+	@HttpCode(HttpStatus.NO_CONTENT)
 	@ApiNoContentSuccessResponse()
 	@ApiBodyDto(ChatMembersAddDto)
 	@ApiValidationErrorResponse({
@@ -101,7 +102,7 @@ export class ChatMemberController {
 	}
 
 	@Post('transfer-ownership')
-	@HttpCode(204)
+	@HttpCode(HttpStatus.NO_CONTENT)
 	@ApiNoContentSuccessResponse()
 	@ApiValidationErrorResponse({
 		targetUserId: ['targetUserId must be a valid UUID'],
@@ -124,7 +125,7 @@ export class ChatMemberController {
 	}
 
 	@Patch(':targetUserId/role')
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiBodyDto(ChatMemberUpdateRoleDto)
 	@ApiSuccessResponse(ChatMemberListItemResponseDto)
 	@ApiValidationErrorResponse({
@@ -152,7 +153,7 @@ export class ChatMemberController {
 	}
 
 	@Delete('leave')
-	@HttpCode(204)
+	@HttpCode(HttpStatus.NO_CONTENT)
 	@ApiNoContentSuccessResponse()
 	@ApiGroupedErrorResponse([ChatRoomNotFoundException])
 	@ApiGroupedErrorResponse([
@@ -168,7 +169,7 @@ export class ChatMemberController {
 	}
 
 	@Delete('kick/:targetUserId')
-	@HttpCode(204)
+	@HttpCode(HttpStatus.NO_CONTENT)
 	@ApiGroupedErrorResponse([SelfKickException])
 	@ApiGroupedErrorResponse([InsufficientMemberPermissionException])
 	@ApiGroupedErrorResponse([ChatMemberNotFoundException])

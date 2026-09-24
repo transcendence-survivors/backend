@@ -7,6 +7,7 @@ import { UserListItem } from '../../../contracts/types/user/user-list-item.type'
 import { UserCountResponseDto } from '../dtos/responses/user-count-response.dto';
 import { UserPaginatedListResponseDto } from '../dtos/responses/user-paginated-response.dto';
 import { CursorPaginationResult } from '@/shared/services/cursor.service';
+import { UserSettingsResponseDto } from '../dtos/responses/user-settings-response.dto';
 
 @Injectable()
 export class UserMapper {
@@ -38,6 +39,12 @@ export class UserMapper {
 
 	toProfileDto(user: UserProfileRecord): UserProfileResponseDto {
 		return plainToInstance(UserProfileResponseDto, user, {
+			excludeExtraneousValues: true,
+		});
+	}
+
+	toSettingsDto(user: UserProfileRecord): UserSettingsResponseDto {
+		return plainToInstance(UserSettingsResponseDto, user, {
 			excludeExtraneousValues: true,
 		});
 	}

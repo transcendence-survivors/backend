@@ -2,6 +2,7 @@ import {
 	Controller,
 	Get,
 	HttpCode,
+	HttpStatus,
 	Param,
 	Query,
 	UseGuards,
@@ -27,7 +28,7 @@ export class ChatMessageController {
 
 	@SearchThrottle()
 	@Get()
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiQueryDto(ChatMessagePaginateDto)
 	@ApiSuccessResponse(ChatMessagePaginatedListResponseDto)
 	@ApiValidationErrorResponse({
@@ -44,7 +45,7 @@ export class ChatMessageController {
 	}
 
 	@Get('count')
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiQueryDto(ChatMessagePaginateDto)
 	@ApiSuccessResponse(ChatMessageCountResponseDto)
 	@ApiValidationErrorResponse({
