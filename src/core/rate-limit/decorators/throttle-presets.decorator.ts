@@ -28,9 +28,9 @@ export const PostThrottle = () =>
 
 export const SearchThrottle = () =>
 	Throttle({
-		burst: { limit: 5, ttl: 1_000 },
-		sustained: { limit: 40, ttl: 60_000 },
-		daily: { limit: 2_000, ttl: 86_400_000 },
+		burst: { limit: 20, ttl: 1_000 },
+		sustained: { limit: 100, ttl: 60_000 },
+		daily: { limit: 10_000, ttl: 86_400_000 },
 	});
 
 export const RelationshipSearchThrottle = () =>

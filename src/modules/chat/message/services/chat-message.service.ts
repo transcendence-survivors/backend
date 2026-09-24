@@ -11,7 +11,7 @@ import { CursorService } from '@/shared/services/cursor.service';
 import { ChatMessageCountDto } from '../dtos/requests/chat-message-count.dto';
 import { ChatMessageCountResponseDto } from '../dtos/responses/chat-message-count-response.dto';
 import { ChatMessageCreateDto } from '../dtos/requests/chat-message-create.dto';
-import { ChatMemberService } from '../../members/services/chat-member.service';
+import { ChatMemberService } from '../../member/services/chat-member.service';
 import { APP_EVENTS } from '@/contracts/events/internal';
 import { ChatMessageCreatedEvent } from '@/contracts/events/internal/chat/chat-message-created.event';
 import { ChatMessageSoftDeleteEvent } from '@/contracts/events/internal/chat/chat-message-soft-delete.event';

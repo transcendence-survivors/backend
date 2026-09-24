@@ -4,6 +4,16 @@ import cookieParser from 'cookie-parser';
 import { SocketIoAdapter } from './core/websocket/adapters/socket-io.adapter';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { CustomValidationPipe } from './shared/pipes/custom-validation.pipe';
+import { ThrottlerFilter } from './shared/filters/throttler.filter.ts';
+import { HttpExceptionsFilter } from './shared/filters/http-exception.filter';
+
+const getSwaggerConfig = () => {
+	return new DocumentBuilder()
+		.setTitle('Light Keepers API')
+		.setDescription('API documentation')
+		.setVersion('1.0')
+		.build();
+};
 
 void (async () => {
 	const appV1 = await NestFactory.create(AppModule);
@@ -19,22 +29,15 @@ void (async () => {
 			credentials: true,
 		});
 	}
+	appV1.use(cookieParser());
 	appV1.useWebSocketAdapter(new SocketIoAdapter(appV1));
 	appV1.setGlobalPrefix('api/v1');
-	appV1.use(cookieParser());
-
+	appV1.useGlobalFilters(new HttpExceptionsFilter(), new ThrottlerFilter());
 	appV1.useGlobalPipes(new CustomValidationPipe());
-	const document = SwaggerModule.createDocument(
-		appV1,
-		new DocumentBuilder()
-			.setTitle('My API')
-			.setDescription('API documentation')
-			.setVersion('1.0')
-			.build(),
-		{
-			deepScanRoutes: true,
-		},
-	);
+
+	const document = SwaggerModule.createDocument(appV1, getSwaggerConfig(), {
+		deepScanRoutes: true,
+	});
 	SwaggerModule.setup('docs', appV1, document);
 	await appV1.listen(process.env.NEST_PORT!, '0.0.0.0');
 })();

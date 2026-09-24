@@ -80,6 +80,16 @@ export class ChatRoomListItemResponseDto {
 	@Expose()
 	avatarUrl!: string | null;
 
+	@ApiProperty({
+		type: Number,
+		description:
+			'Number of unread messages in this room for the requesting user',
+		example: 3,
+		default: 0,
+	})
+	@Expose()
+	unreadCount!: number;
+
 	@ApiPropertyOptional({
 		type: ChatMessageListItemResponseDto,
 		nullable: true,

@@ -5,6 +5,7 @@ import {
 	Delete,
 	Get,
 	HttpCode,
+	HttpStatus,
 	Param,
 	Patch,
 	Post,
@@ -38,7 +39,7 @@ import {
 import { ChatRoomNotFoundException } from '../exceptions/chat-room-not-found.exceptions';
 import { ChatRoomDmConflictException } from '../exceptions/chat-room-conflict.exception';
 import { ChatRoomDetailResponseDto } from '../dtos/responses/chat-room-detail-response.dto';
-import { ChatMemberNotFoundException } from '../../members/exceptions/chat-member-not-found.exception';
+import { ChatMemberNotFoundException } from '../../member/exceptions/chat-member-not-found.exception';
 import { ChatRoomDirectCreateDto } from '../dtos/requests/chat-room-direct.dto';
 
 @UseGuards(JWTAccessGuard)
@@ -48,7 +49,7 @@ export class ChatRoomController {
 
 	@SearchThrottle()
 	@Get()
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiQueryDto(ChatRoomPaginateDto)
 	@ApiSuccessResponse(ChatRoomPaginatedListResponseDto)
 	@ApiValidationErrorResponse({
@@ -64,7 +65,7 @@ export class ChatRoomController {
 	}
 
 	@Post()
-	@HttpCode(201)
+	@HttpCode(HttpStatus.CREATED)
 	@ApiCreatedSuccessResponse(ChatRoomListItemResponseDto)
 	@ApiValidationErrorResponse({
 		name: ['name must be a string'],
@@ -83,7 +84,7 @@ export class ChatRoomController {
 	}
 
 	@Post('direct')
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiSuccessResponse(ChatRoomListItemResponseDto)
 	@ApiValidationErrorResponse({
 		targetUserId: ['targetUserId must be a UUID'],
@@ -99,7 +100,7 @@ export class ChatRoomController {
 	}
 
 	@Patch(':roomId')
-	@HttpCode(204)
+	@HttpCode(HttpStatus.NO_CONTENT)
 	@ApiNoContentSuccessResponse()
 	@ApiValidationErrorResponse({
 		name: ['name must be a string'],
@@ -120,7 +121,7 @@ export class ChatRoomController {
 	}
 
 	@Delete(':roomId')
-	@HttpCode(204)
+	@HttpCode(HttpStatus.NO_CONTENT)
 	@ApiNoContentSuccessResponse()
 	@ApiGroupedErrorResponse([ChatRoomNotFoundException])
 	@ResponseEnvelope('Chat room deleted successfully')
@@ -132,7 +133,7 @@ export class ChatRoomController {
 	}
 
 	@Get(':roomId')
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiSuccessResponse(ChatRoomDetailResponseDto)
 	@ApiGroupedErrorResponse([ChatRoomNotFoundException])
 	@ResponseEnvelope('Chat room retrieved successfully')

@@ -20,6 +20,10 @@ import { UserCreateParams } from '@/contracts/types/user/user-create.params';
 import { UsersCursorParams } from '../types/params/user-cursor.params';
 import { UsersCountParams } from '../types/params/user-count.params';
 import { UserCountDto } from '../dtos/requests/user-count.dto';
+import { UserSettingsResponseDto } from '../dtos/responses/user-settings-response.dto';
+import { UserSettingsPatchDto } from '../dtos/requests/user-settings-patch.dto';
+import { UserSettingsPatchParams } from '../types/params/user-settings-patch.params';
+import { UserSettingsUpdateEmptyException } from '../exceptions/user.bad.exception';
 
 @Injectable()
 export class UserService implements IUserService {
@@ -131,6 +135,41 @@ export class UserService implements IUserService {
 	async checkEmailAvailability(email: string): Promise<void> {
 		const exist = await this.repo.isByEmail(email);
 		if (exist) throw new UserEmailConflictException();
+	}
+
+	async getUserSettings(userId: string): Promise<UserSettingsResponseDto> {
+		const user = await this.repo.findUserSettingsById(userId);
+		if (!user) throw new UserNotFoundException();
+		return this.mapper.toSettingsDto(user);
+	}
+
+	async updateUserSettings(
+		userId: string,
+		dto: UserSettingsPatchDto,
+	): Promise<void> {
+		const updateParams: UserSettingsPatchParams = {
+			...(dto.gender !== undefined && { gender: dto.gender }),
+			...(dto.firstName !== undefined && { firstName: dto.firstName }),
+			...(dto.lastName !== undefined && { lastName: dto.lastName }),
+			...(dto.birthDate !== undefined && {
+				birthDate: new Date(dto.birthDate),
+			}),
+			...(dto.displayName !== undefined && {
+				displayName: dto.displayName,
+			}),
+			...(dto.bio !== undefined && { bio: dto.bio }),
+			...(dto.localePreference !== undefined && {
+				localePreference: dto.localePreference,
+			}),
+			...(dto.avatarUrl !== undefined && { avatarUrl: dto.avatarUrl }),
+			...(dto.coverImageUrl !== undefined && {
+				coverImageUrl: dto.coverImageUrl,
+			}),
+		};
+		if (Object.keys(updateParams).length === 0)
+			throw new UserSettingsUpdateEmptyException();
+		const result = await this.repo.updateUserSettings(userId, updateParams);
+		if (result.count === 0) throw new UserNotFoundException();
 	}
 
 	delete(id: string): Promise<void> {

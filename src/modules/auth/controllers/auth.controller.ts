@@ -2,6 +2,7 @@ import {
 	Body,
 	Controller,
 	HttpCode,
+	HttpStatus,
 	Post,
 	Res,
 	UseGuards,
@@ -26,8 +27,6 @@ import {
 } from '@/shared/decorators/api-success-response.decorator';
 import { ApiValidationErrorResponse } from '@/shared/decorators/api-validation-error-response.decorator';
 import { ApiBodyDto } from '@/shared/decorators/api-body-dto.decorator';
-import { ApiTokenNotFoundResponse } from '../token/decorators/token-api-errors.decorators';
-import { ApiAuthProviderCredentialsResponse } from '../auth-provider/decorators/auth-provider-api-errors';
 import { ApiGroupedErrorResponse } from '@/shared/decorators/api-error-response.decorator';
 import { AuthRefreshException } from '../exceptions/auth-refresh-exception';
 import { TokenNotFoundException } from '../token/exceptions/token-not-found.exception';
@@ -53,7 +52,7 @@ export class AuthController {
 
 	@AuthThrottle()
 	@Post('login')
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiBodyDto(AuthSignInDto)
 	@ApiSuccessResponse(AuthUserResponseDto)
 	@ApiValidationErrorResponse({
@@ -78,7 +77,7 @@ export class AuthController {
 
 	@AuthThrottle()
 	@Post('register')
-	@HttpCode(201)
+	@HttpCode(HttpStatus.CREATED)
 	@ApiBodyDto(AuthSignUpDto)
 	@ApiCreatedSuccessResponse(AuthUserResponseDto)
 	@ApiValidationErrorResponse({
@@ -108,7 +107,7 @@ export class AuthController {
 	@TokenRefreshThrottle()
 	@UseGuards(JWTRefreshGuard)
 	@Post('refresh')
-	@HttpCode(204)
+	@HttpCode(HttpStatus.NO_CONTENT)
 	@ApiNoContentSuccessResponse({
 		description: 'Token refreshed successfully',
 	})
@@ -128,11 +127,11 @@ export class AuthController {
 
 	@UseGuards(JWTRefreshGuard)
 	@Post('logout')
-	@HttpCode(204)
+	@HttpCode(HttpStatus.NO_CONTENT)
 	@ApiNoContentSuccessResponse({
 		description: 'User logged out successfully',
 	})
-	@ApiAuthProviderCredentialsResponse()
+	@ApiGroupedErrorResponse([AuthProviderCredentialsException])
 	async logout(
 		@CurrentUserRefresh() user: JwtRefreshPayload,
 		@Res({ passthrough: true }) res: Response,
@@ -144,7 +143,7 @@ export class AuthController {
 
 	@StrictAuthThrottle()
 	@Post('forgot-password')
-	@HttpCode(204)
+	@HttpCode(HttpStatus.NO_CONTENT)
 	@ApiBodyDto(AuthForgotPasswordDto)
 	@ApiNoContentSuccessResponse({
 		description: 'Password reset email sent successfully',
@@ -156,7 +155,7 @@ export class AuthController {
 
 	@StrictAuthThrottle()
 	@Post('reset-password')
-	@HttpCode(204)
+	@HttpCode(HttpStatus.NO_CONTENT)
 	@ApiBodyDto(AuthResetPasswordDto)
 	@ApiNoContentSuccessResponse({
 		description: 'Password reset successfully',
@@ -165,7 +164,7 @@ export class AuthController {
 		token: ['Token is required'],
 		newPassword: ['New password must be contained 1 uppercase letter.'],
 	})
-	@ApiTokenNotFoundResponse()
+	@ApiGroupedErrorResponse([TokenNotFoundException])
 	async resetPassword(@Body() dto: AuthResetPasswordDto): Promise<void> {
 		await this.authService.resetPassword(dto);
 	}

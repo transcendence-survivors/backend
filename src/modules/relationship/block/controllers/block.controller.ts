@@ -5,6 +5,7 @@ import {
 	Delete,
 	Get,
 	HttpCode,
+	HttpStatus,
 	Param,
 	Post,
 	Query,
@@ -24,19 +25,18 @@ import {
 } from '@/shared/decorators/api-success-response.decorator';
 import { ApiValidationErrorResponse } from '@/shared/decorators/api-validation-error-response.decorator';
 import { BlockCountDto } from '../dtos/requests/block-count.dto';
-import {
-	ApiBlockNotFoundResponse,
-	ApiSelfBlockResponse,
-	ApiSelfUnblockResponse,
-} from '../decorators/block-api-error.decorators';
-import {
-	ApiConflictResponse,
-	ApiNoContentResponse,
-	ApiParam,
-} from '@nestjs/swagger';
+
+import { ApiNoContentResponse, ApiParam } from '@nestjs/swagger';
 import { ApiQueryDto } from '@/shared/decorators/api-query-dto.decorator';
 import { ApiBodyDto } from '@/shared/decorators/api-body-dto.decorator';
 import { RelationshipSearchThrottle } from '@/core/rate-limit/decorators/throttle-presets.decorator';
+import { ApiGroupedErrorResponse } from '@/shared/decorators/api-error-response.decorator';
+import {
+	SelfBlockBadException,
+	SelfUnblockBadException,
+} from '../exceptions/block-bad.exception';
+import { BlockNotFoundException } from '../exceptions/block-not-found.exceptions';
+import { BlockConflictException } from '../exceptions/block-conflict.exception';
 
 @Controller('blocks')
 @UseGuards(JWTAccessGuard)
@@ -45,7 +45,7 @@ export class BlockController {
 
 	@RelationshipSearchThrottle()
 	@Get()
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiQueryDto(BlockPaginateDto)
 	@ApiSuccessResponse(BlockPaginatedResponseDto)
 	@ApiValidationErrorResponse({
@@ -63,7 +63,7 @@ export class BlockController {
 
 	@RelationshipSearchThrottle()
 	@Get('count')
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiQueryDto(BlockCountDto)
 	@ApiSuccessResponse(BlockCountDto)
 	@ApiValidationErrorResponse({ search: ['search must be a string'] })
@@ -76,13 +76,13 @@ export class BlockController {
 	}
 
 	@Post()
-	@HttpCode(201)
+	@HttpCode(HttpStatus.CREATED)
 	@ApiBodyDto(BlockAddDto)
-	@ApiSelfBlockResponse()
-	@ApiConflictResponse()
 	@ApiValidationErrorResponse({
 		blockedId: ['blockedId must be a valid uuid'],
 	})
+	@ApiGroupedErrorResponse([SelfBlockBadException])
+	@ApiGroupedErrorResponse([BlockConflictException])
 	@ApiCreatedSuccessResponse(BlockCreatedResponseDto)
 	@ResponseEnvelope('User blocked successfully')
 	add(
@@ -93,7 +93,7 @@ export class BlockController {
 	}
 
 	@Delete(':blockedId')
-	@HttpCode(204)
+	@HttpCode(HttpStatus.NO_CONTENT)
 	@ApiParam({
 		name: 'blockedId',
 		description: 'The UUID of the user to unblock',
@@ -101,9 +101,9 @@ export class BlockController {
 		type: String,
 		format: 'uuid',
 	})
+	@ApiGroupedErrorResponse([SelfUnblockBadException])
+	@ApiGroupedErrorResponse([BlockNotFoundException])
 	@ApiNoContentResponse({ description: 'User unblocked successfully' })
-	@ApiSelfUnblockResponse()
-	@ApiBlockNotFoundResponse()
 	async delete(
 		@CurrentUser() { sub }: JwtAccessPayload,
 		@Param('blockedId') blockedId: string,

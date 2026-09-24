@@ -11,6 +11,7 @@ import {
 	Post,
 	Query,
 	Get,
+	HttpStatus,
 } from '@nestjs/common';
 import { FriendService } from '../services/friend.service';
 import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
@@ -22,14 +23,13 @@ import { FriendshipPaginatedResponseDto } from '../dtos/responses/friend-paginat
 import { FriendshipCountResponseDto } from '../dtos/responses/friendship-count-response.dto';
 import { ApiValidationErrorResponse } from '@/shared/decorators/api-validation-error-response.decorator';
 import { ApiSuccessResponse } from '@/shared/decorators/api-success-response.decorator';
-import {
-	ApiFriendNotFoundResponse,
-	ApiSelfFriendDeleteResponse,
-} from '../decorators/friend-api-errors.decorator';
 import { ApiQueryDto } from '@/shared/decorators/api-query-dto.decorator';
 import { ApiBodyDto } from '@/shared/decorators/api-body-dto.decorator';
 import { ApiNoContentResponse, ApiParam } from '@nestjs/swagger';
 import { RelationshipSearchThrottle } from '@/core/rate-limit/decorators/throttle-presets.decorator';
+import { ApiGroupedErrorResponse } from '@/shared/decorators/api-error-response.decorator';
+import { FriendDoesNotExistException } from '../exceptions/friend-not-found.exception';
+import { SelfFriendDeleteException } from '../exceptions/friend-bad.exception';
 
 @Controller('friends')
 @UseGuards(JWTAccessGuard)
@@ -38,7 +38,7 @@ export class FriendController {
 
 	@RelationshipSearchThrottle()
 	@Get()
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiQueryDto(FriendPaginateDto)
 	@ApiSuccessResponse(FriendshipPaginatedResponseDto)
 	@ApiValidationErrorResponse({
@@ -56,7 +56,7 @@ export class FriendController {
 
 	@RelationshipSearchThrottle()
 	@Get('count')
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiQueryDto(FriendCountDto)
 	@ApiSuccessResponse(FriendshipCountResponseDto)
 	@ApiValidationErrorResponse({
@@ -72,7 +72,7 @@ export class FriendController {
 
 	@RelationshipSearchThrottle()
 	@Post('ids')
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiBodyDto(FriendIdsPaginateDto)
 	@ApiSuccessResponse(FriendshipPaginatedResponseDto)
 	@ApiValidationErrorResponse({
@@ -91,7 +91,7 @@ export class FriendController {
 
 	@RelationshipSearchThrottle()
 	@Post('ids/count')
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiBodyDto(FriendIdsCountDto)
 	@ApiSuccessResponse(FriendshipCountResponseDto)
 	@ApiValidationErrorResponse({
@@ -106,7 +106,7 @@ export class FriendController {
 	}
 
 	@Delete(':friendId')
-	@HttpCode(204)
+	@HttpCode(HttpStatus.NO_CONTENT)
 	@ApiParam({
 		name: 'friendId',
 		description: 'The UUID of the user to remove from friends',
@@ -114,11 +114,9 @@ export class FriendController {
 		type: String,
 		format: 'uuid',
 	})
-	@ApiNoContentResponse({
-		description: 'Friend removed successfully',
-	})
-	@ApiSelfFriendDeleteResponse()
-	@ApiFriendNotFoundResponse()
+	@ApiGroupedErrorResponse([SelfFriendDeleteException])
+	@ApiGroupedErrorResponse([FriendDoesNotExistException])
+	@ApiNoContentResponse({ description: 'Friend removed successfully' })
 	async remove(
 		@CurrentUser() user: JwtAccessPayload,
 		@Param('friendId') friendId: string,
