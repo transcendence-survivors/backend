@@ -3,6 +3,7 @@ import * as z from 'zod';
 const envSchema = z.object({
 	JWT_REFRESH_TOKEN_SECRET: z.string().min(10),
 	JWT_ACCESS_TOKEN_SECRET: z.string().min(10),
+	JWT_GAME_TOKEN_SECRET: z.string().min(10),
 
 	JWT_REFRESH_TOKEN_EXPIRATION_S: z.coerce.number().min(60),
 	JWT_ACCESS_TOKEN_EXPIRATION_S: z.coerce.number().min(60),

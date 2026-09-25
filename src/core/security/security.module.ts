@@ -6,6 +6,7 @@ import {
 } from './strategies/jwt-access.strategy';
 import { JWTRefreshStrategy } from './strategies/jwt-refresh.strategy';
 import { JwtService } from '@nestjs/jwt';
+import { JWTGameStrategy } from './strategies/jwt-game-access.strategy';
 
 @Module({
 	imports: [],
@@ -15,6 +16,7 @@ import { JwtService } from '@nestjs/jwt';
 		JWTRefreshStrategy,
 		WsJWTAccessStrategy,
 		JwtService,
+		JWTGameStrategy,
 	],
 	exports: [WsJWTAccessStrategy],
 })

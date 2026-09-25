@@ -35,6 +35,7 @@ type PasswordResetToken = Omit<Token, 'secret'>;
 export interface Env {
 	accessToken: Token;
 	refreshToken: Token;
+	gameSecret: string;
 	passwordResetToken: PasswordResetToken;
 	smtp: Smtp;
 	minio: Minio;
@@ -50,6 +51,7 @@ export const ENV = Symbol('ENV');
 export const EnvProvider: Provider<Env> = {
 	provide: ENV,
 	useValue: {
+		gameSecret: env.JWT_GAME_TOKEN_SECRET,
 		smtp: {
 			host: env.SMTP_HOST,
 			port: env.SMTP_PORT,
