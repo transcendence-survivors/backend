@@ -15,14 +15,18 @@ export class SocketIoAdapter extends IoAdapter {
 		const env = this.appContext.get<Env>(ENV);
 		const authMiddleware = this.appContext.get(SocketAuthMiddleware);
 
+		const sanitizedFrontEndUrl = env.frontEndUrl
+			? env.frontEndUrl.replace(/\/$/, '')
+			: 'http://localhost:8080';
 		const cors: ServerOptions['cors'] = {
 			...options?.cors,
-			origin: [env.frontEndUrl],
+			origin: [sanitizedFrontEndUrl],
 			credentials: true,
 		};
 
 		const server = super.createIOServer(port, {
 			...options,
+			path: '/socket.io/',
 			cors,
 		}) as Server;
 

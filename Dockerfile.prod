@@ -1,42 +1,73 @@
-# Stage 1: Build the application
-FROM node:20-alpine AS builder
-
+# ---------------------------------------------------
+# 1. Base Stage: Install PNPM
+# ---------------------------------------------------
+FROM node:20-alpine AS base
 WORKDIR /app
-
 RUN npm install -g pnpm@10.15.0
 RUN pnpm config set store-dir /pnpm/store
 
-# Copy local package files
-COPY package.json ./
-
-# Install all dependencies (no workspace filter needed)
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
-    pnpm install
-
-# Copy source code
-COPY . .
-
-# Build standard NestJS output (generates ./dist)
-RUN pnpm run build
-
-
-# Stage 2: Run the production server
-FROM node:20-alpine AS runner
-
+# ---------------------------------------------------
+# 2. Dependencies Stage
+# ---------------------------------------------------
+FROM base AS deps
 WORKDIR /app
 
-RUN npm install -g pnpm@10.15.0
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
+COPY apps/network/server/package.json ./apps/network/server/package.json
+
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+    pnpm install --frozen-lockfile
+
+# ---------------------------------------------------
+# 3. Builder Stage
+# ---------------------------------------------------
+FROM base AS builder
+WORKDIR /app
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/apps/network/server/node_modules ./apps/network/server/node_modules
+
+COPY . .
+
+WORKDIR /app/apps/network/server
+
+# Generate Prisma Client
+RUN pnpm exec prisma generate
+
+# Build NestJS application
+RUN pnpm build
+
+# Re-install ONLY production dependencies
+WORKDIR /app
+RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
+    pnpm install --prod --frozen-lockfile
+
+# ---------------------------------------------------
+# 4. Production Runner Stage
+# ---------------------------------------------------
+FROM node:20-alpine AS production
+WORKDIR /app
 
 ENV NODE_ENV=production
 
-COPY package.json ./
+RUN apk add --no-cache openssl
 
-RUN --mount=type=cache,id=pnpm-store,target=/pnpm/store \
-    pnpm install --prod
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nestjs
 
-# Copy the build output locally
-COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/apps/network/server/node_modules ./apps/network/server/node_modules
+
+# Copy entire dist directory to preserve monorepo nest structure
+COPY --from=builder /app/apps/network/server/dist ./apps/network/server/dist
+COPY --from=builder /app/apps/network/server/package.json ./apps/network/server/package.json
+COPY --from=builder /app/apps/network/server/prisma ./apps/network/server/prisma
+
+COPY --from=builder /app/apps/network/server/prisma ./apps/network/server/prisma
+COPY --from=builder /app/apps/network/server/prisma.config.cjs ./apps/network/server/prisma.config.cjs
+
+USER nestjs
 
 EXPOSE 3001
 
-CMD ["pnpm", "run", "start:prod"]
+CMD ["node", "apps/network/server/dist/src/main.js"]
