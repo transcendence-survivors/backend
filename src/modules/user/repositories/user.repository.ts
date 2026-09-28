@@ -198,6 +198,21 @@ export class UserRepository {
 		return user?.id ?? null;
 	}
 
+	findListItemByUsername(
+		username: string,
+		ctx?: DbContext,
+	): Promise<UserListItem | null> {
+		return (ctx?.client ?? this.prisma).user.findFirst({
+			where: { username },
+			select: {
+				...UserRepository.select,
+			} satisfies Record<
+				keyof UserListItem,
+				UserSelect[keyof UserListItem]
+			>,
+		});
+	}
+
 	getCountIn(ids: string[], ctx?: DbContext): Promise<number> {
 		return (ctx?.client ?? this.prisma).user.count({
 			where: {

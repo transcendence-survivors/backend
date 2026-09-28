@@ -7,9 +7,10 @@ import { UserModule } from '@/modules/user/user.module';
 import { ChatMemberModule } from '../member/chat-member.module';
 import { ChatNotificationRepository } from '../notification/repositories/chat-notification.repository';
 import { ChatNotificationService } from '../notification/services/chat-notification.service';
+import { BlockModule } from '@/modules/relationship/block/block.module';
 
 @Module({
-	imports: [UserModule, ChatMemberModule],
+	imports: [UserModule, ChatMemberModule, BlockModule],
 	controllers: [ChatRoomController],
 	providers: [
 		ChatRoomService,

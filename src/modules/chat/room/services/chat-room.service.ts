@@ -33,11 +33,18 @@ import { ChatMemberNotFoundException } from '../../member/exceptions/chat-member
 import { ChatRoomDetailResponseDto } from '../dtos/responses/chat-room-detail-response.dto';
 import { InsufficientMemberPermissionException } from '../../member/exceptions/chat-member-forbidden.exception';
 import { ChatNotificationService } from '../../notification/services/chat-notification.service';
+import { type IBlockService } from '@/contracts/services/block/block-service.port';
+import { InjectBlockService } from '@/contracts/services/block/block-service.inject';
+import {
+	ChatRoomDMUserBlockedByYou,
+	ChatRoomDMUserBlockedYou,
+} from '../exceptions/chat-room.forbidden';
 
 @Injectable()
 export class ChatRoomService {
 	constructor(
 		@InjectUserService() private readonly userService: IUserService,
+		@InjectBlockService() private readonly blockService: IBlockService,
 		private readonly memberService: ChatMemberService,
 		private readonly notificationService: ChatNotificationService,
 		private readonly repo: ChatRoomRepository,
@@ -243,7 +250,9 @@ export class ChatRoomService {
 			userBId: recipientId,
 		});
 		if (existingRoom) throw new ChatRoomDmConflictException();
+		await this.validateBlock(currentUserId, recipientId);
 	}
+
 	private async executeRoomCreation(
 		dto: ChatRoomCreateDto,
 		currentUserId: string,
@@ -260,5 +269,16 @@ export class ChatRoomService {
 			new ChatRoomCreatedEvent(newRoom.id, currentUserId),
 		);
 		return this.mapper.toListItemDto(newRoom, dto.usersIds);
+	}
+
+	private async validateBlock(
+		userId: string,
+		friendId: string,
+	): Promise<void> {
+		const [blocker, blocked] =
+			await this.blockService.findBlockerBlockedById(userId, friendId);
+
+		if (blocked) throw new ChatRoomDMUserBlockedYou();
+		if (blocker) throw new ChatRoomDMUserBlockedByYou();
 	}
 }

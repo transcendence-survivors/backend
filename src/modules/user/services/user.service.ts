@@ -24,6 +24,7 @@ import { UserSettingsResponseDto } from '../dtos/responses/user-settings-respons
 import { UserSettingsPatchDto } from '../dtos/requests/user-settings-patch.dto';
 import { UserSettingsPatchParams } from '../types/params/user-settings-patch.params';
 import { UserSettingsUpdateEmptyException } from '../exceptions/user.bad.exception';
+import { UserListItem } from '../user.public-api';
 
 @Injectable()
 export class UserService implements IUserService {
@@ -52,10 +53,19 @@ export class UserService implements IUserService {
 		return user;
 	}
 
-	async getIdByUsername(username: string): Promise<string> {
+	public async getIdByUsername(username: string): Promise<string> {
 		const id = await this.repo.findIdByUsername(username);
 		if (!id) throw new UserNotFoundException();
 		return id;
+	}
+
+	public async getItemByUsername(
+		username: string,
+		ctx?: DbContext,
+	): Promise<UserListItem> {
+		const user = await this.repo.findListItemByUsername(username, ctx);
+		if (!user) throw new UserNotFoundException();
+		return user;
 	}
 
 	public async createUserOrThrow(
