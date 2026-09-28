@@ -7,6 +7,7 @@ import {
 	IsEnum,
 	IsInt,
 	IsNumber,
+	IsString,
 	ValidateNested,
 } from 'class-validator';
 
@@ -64,6 +65,9 @@ class GamePlayerStatsDto {
 	@ValidateNested({ each: true })
 	@Type(() => GameWeaponDto)
 	weapons!: GameWeaponDto[];
+
+	@IsString()
+	userId!: string;
 }
 
 export class GameStatsDto {
