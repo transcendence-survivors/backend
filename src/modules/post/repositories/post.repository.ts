@@ -47,7 +47,7 @@ export class PostRepository {
 					select: {
 						likes: true,
 						replies: true,
-						quotes: { where: { type: 'REPOST' } },
+						quotes: { where: { type: { in: ['REPOST', 'QUOTE'] } } },
 					},
 				},
 			},
@@ -56,7 +56,7 @@ export class PostRepository {
 			select: {
 				likes: true,
 				replies: true,
-				quotes: { where: { type: 'REPOST' } },
+				quotes: { where: { type: { in: ['REPOST', 'QUOTE'] } } },
 			},
 		},
 	} satisfies PostSelect;
