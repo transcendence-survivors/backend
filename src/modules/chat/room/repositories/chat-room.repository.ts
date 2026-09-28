@@ -167,4 +167,22 @@ export class ChatRoomRepository {
 			},
 		});
 	}
+
+	deleteDmRoom({
+		userAId,
+		userBId,
+	}: {
+		userAId: string;
+		userBId: string;
+	}): Promise<{ count: number }> {
+		return this.prisma.chatRoom.deleteMany({
+			where: {
+				type: ChatRoomType.DIRECT,
+				AND: [
+					{ members: { some: { userId: userAId } } },
+					{ members: { some: { userId: userBId } } },
+				],
+			},
+		});
+	}
 }
