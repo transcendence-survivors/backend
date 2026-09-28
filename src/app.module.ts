@@ -11,6 +11,7 @@ import { LikeModule } from './modules/like/like.module';
 import { ChatModule } from './modules/chat/chat.module';
 import { RepostModule } from './modules/repost/repost.module';
 import { UploadModule } from './modules/upload/upload.module';
+import { GameModule } from './modules/game/game.module';
 
 @Module({
 	imports: [
@@ -26,6 +27,7 @@ import { UploadModule } from './modules/upload/upload.module';
 		RepostModule,
 		ChatModule,
 		UploadModule,
+		GameModule,
 	],
 })
 export class AppModule {}

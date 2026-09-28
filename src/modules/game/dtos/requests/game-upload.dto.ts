@@ -7,6 +7,7 @@ import {
 	IsEnum,
 	IsInt,
 	IsNumber,
+	ValidateNested,
 } from 'class-validator';
 
 class GameWeaponDto {
@@ -33,22 +34,22 @@ class GamePlayerStatsDto {
 	@IsInt()
 	attackDamage!: number;
 
-	@IsInt()
+	@IsNumber({ maxDecimalPlaces: 2 })
 	luck!: number;
 
 	@IsInt()
 	killAmount!: number;
 
-	@IsInt()
+	@IsNumber({ maxDecimalPlaces: 2 })
 	lifesteal!: number;
 
-	@IsInt()
+	@IsNumber({ maxDecimalPlaces: 2 })
 	range!: number;
 
-	@IsInt()
+	@IsNumber({ maxDecimalPlaces: 2 })
 	size!: number;
 
-	@IsInt()
+	@IsNumber({ maxDecimalPlaces: 2 })
 	duration!: number;
 
 	@IsInt()
@@ -60,6 +61,7 @@ class GamePlayerStatsDto {
 	@IsArray()
 	@ArrayMaxSize(3)
 	@ArrayMinSize(1)
+	@ValidateNested({ each: true })
 	@Type(() => GameWeaponDto)
 	weapons!: GameWeaponDto[];
 }
@@ -71,6 +73,7 @@ export class GameStatsDto {
 	@IsArray()
 	@ArrayMaxSize(4)
 	@ArrayMinSize(1)
+	@ValidateNested({ each: true })
 	@Type(() => GamePlayerStatsDto)
-	playerStats!: GamePlayerStatsDto;
+	players!: GamePlayerStatsDto[];
 }

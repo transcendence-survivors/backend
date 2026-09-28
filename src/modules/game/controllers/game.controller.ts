@@ -10,6 +10,6 @@ export class GameController {
 	@UseGuards(JWTGameGuard)
 	@Post()
 	upload(@Body() dto: GameStatsDto) {
-		console.log(dto);
+		console.log(JSON.stringify(dto, null, 2));
 	}
 }
