@@ -1,0 +1,33 @@
+{
+	"welcome": {
+		"subject": "Bienvenido a Transcendence Survivor",
+
+		"title": "Bienvenido a Transcendence Survivor",
+		"greeting": "Hola {{firstName}} {{lastName}}",
+		"intro": "Nos alegra verte en Transcendence Survivor 👾",
+		"account_confirmed": "Cuenta confirmada como {{username}} con {{email}}",
+
+		"next_title": "¿Y ahora qué?",
+		"step_1": "Explora el mundo",
+		"step_2": "Completa tu primera misión",
+		"step_3": "Haz evolucionar tu perfil de superviviente",
+
+		"footer_text": "Has recibido este correo porque acabas de confirmar la configuración de tu cuenta."
+	},
+	"resetPassword": {
+		"subject": "Solicitud de restablecimiento de contraseña",
+
+		"headerSub": "Centro de seguridad",
+		"title": "Solicitud de restablecimiento de contraseña",
+		"message": "Haz clic abajo para restablecer tu contraseña:",
+		"button": "Restablecer contraseña",
+		"expires": "Este enlace caduca en 15 minutos.",
+		"ignoreWarning": "Si no has solicitado este cambio, puedes ignorar este correo sin problema.",
+		"troubleClicking": "¿El botón no funciona? Copia y pega este enlace en tu navegador:",
+		"automatedEmailText": "Este es un mensaje de seguridad automático.",
+		"supportText": "Contactar con soporte"
+	},
+	"footer": {
+		"rights_reserved": "Todos los derechos reservados."
+	}
+}
