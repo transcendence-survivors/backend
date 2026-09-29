@@ -224,6 +224,8 @@ model Post {
     quotedPostId String?
     quotedPost   Post?   @relation("PostQuotes", fields: [quotedPostId], references: [id], onDelete: SetNull)
     quotes       Post[]  @relation("PostQuotes")
+
+    sharedInMessages ChatMessage[]
 }
 
 model Like {
@@ -257,8 +259,8 @@ model ChatRoom {
     name      String?
     avatarUrl String?
 
-    createdBy String
-    creator   User   @relation("RoomCreator", fields: [createdBy], references: [id])
+    createdBy String?
+    creator   User?   @relation("RoomCreator", fields: [createdBy], references: [id], onDelete: SetNull)
 
     members  ChatMember[]
     messages ChatMessage[]
@@ -295,6 +297,7 @@ enum ChatMessageType {
     ROOM_CREATED
     ROOM_RENAMED
     ROOM_AVATAR_CHANGED
+    POST_SHARE
 }
 
 model ChatMessage {
@@ -306,7 +309,7 @@ model ChatMessage {
     content String?
 
     replyToId String?
-    replyTo   ChatMessage?  @relation("MessageReplies", fields: [replyToId], references: [id])
+    replyTo   ChatMessage?  @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
     replies   ChatMessage[] @relation("MessageReplies")
 
     isEdited  Boolean @default(false)
@@ -317,6 +320,8 @@ model ChatMessage {
     metadata ChatMessageMetadata?
 
     attachmentUrls String[] @default([])
+    sharedPostId   String?
+    sharedPost     Post?    @relation(fields: [sharedPostId], references: [id], onDelete: SetNull)
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt

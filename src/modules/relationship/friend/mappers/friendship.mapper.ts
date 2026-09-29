@@ -5,9 +5,21 @@ import { FriendShipListItemResponseDto } from '../dtos/responses/friendship-list
 import { FriendShipListItem } from '../types/records/friendship-list-item.type';
 import { CursorPaginationResult } from '@/shared/services/cursor.service';
 import { FriendshipPaginatedResponseDto } from '../dtos/responses/friend-paginated-response.dto';
+import { FriendRequestResponseDto } from '../dtos/responses/friend-request-response.dto';
+import { UserListItem } from '@/modules/user/user.public-api';
 
 @Injectable()
 export class FriendshipMapper {
+	toFriendRequestDto(sender: UserListItem): FriendRequestResponseDto {
+		return plainToInstance(
+			FriendRequestResponseDto,
+			{
+				user: sender,
+			},
+			{ excludeExtraneousValues: true },
+		);
+	}
+
 	toListItemDto(
 		friendship: FriendShipListItem,
 	): FriendShipListItemResponseDto {

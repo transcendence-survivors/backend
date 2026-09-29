@@ -26,13 +26,13 @@ import { type JwtAccessPayload } from '@/core/security/interfaces/jwt-payload.in
 import { CurrentUser } from '@/core/security/decorators/current-user.decorator';
 import { UserSettingsResponseDto } from '../dtos/responses/user-settings-response.dto';
 import { ApiGroupedErrorResponse } from '@/shared/decorators/api-error-response.decorator';
-import { UserSettingsUpdateEmptyException } from '../exceptions/user.bad.exception';
+import { UserSettingsUpdateEmptyException } from '../exceptions/user-bad.exception';
 import { UserSettingsPatchDto } from '../dtos/requests/user-settings-patch.dto';
-import { UserNotFoundException } from '../exceptions/user.not-found.exception';
+import { UserNotFoundException } from '../exceptions/user-not-found.exception';
 import {
 	UserEmailConflictException,
 	UserUsernameConflictException,
-} from '../exceptions/user.conflict.exception';
+} from '../exceptions/user-conflict.exception';
 import { ApiBodyDto } from '@/shared/decorators/api-body-dto.decorator';
 import { JWTAccessGuard } from '@/core/security/guards/jwt-access.guard';
 

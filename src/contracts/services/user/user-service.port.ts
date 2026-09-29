@@ -21,9 +21,11 @@ export interface IUserService {
 	): Promise<UserLocalePreference | null>;
 
 	validateUserId(userId: string, ctx?: DbContext): Promise<void>;
+	delete(userId: string, ctx?: DbContext): Promise<void>;
 
 	getCountIn(ids: string[], ctx?: DbContext): Promise<number>;
 
 	getIdByUsername(username: string): Promise<string>;
 	getItemByUsername(username: string, ctx?: DbContext): Promise<UserListItem>;
+	getItemById(userId: string, ctx?: DbContext): Promise<UserListItem>;
 }

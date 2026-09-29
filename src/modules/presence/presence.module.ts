@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { PresenceGateway } from './gateways/presence.gateway';
 import { PresenceStoreService } from './services/presence-store.service';
 import { PresenceService } from './services/presence.service';
@@ -10,7 +10,7 @@ import { PresenceListener } from './listeners/presence.listener';
 import { PRESENCE_STORE } from '@/contracts/services/presence/presence-store.port';
 
 @Module({
-	imports: [FriendModule],
+	imports: [forwardRef(() => FriendModule)],
 	providers: [
 		PresenceStoreService,
 		PresenceService,

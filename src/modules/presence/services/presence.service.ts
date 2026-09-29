@@ -11,6 +11,7 @@ import { PresenceUpdate } from '../types/records/presence-update.type';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { APP_EVENTS } from '@/contracts/events/internal';
 import { PresenceWentOfflineEvent } from '@/contracts/events/internal/presence/presence-went-offline';
+import { UserListItem } from '@/contracts/types/user/user-list-item.type';
 
 @Injectable()
 export class PresenceService implements OnModuleDestroy {
@@ -114,6 +115,16 @@ export class PresenceService implements OnModuleDestroy {
 			broadcastCount: false,
 			newConnection: false,
 			status,
+		};
+	}
+
+	async getPublicUser(userId: string): Promise<UserListItem> {
+		const status = await this.repo.getPresenceStatus(userId);
+		return {
+			id: status?.id ?? userId,
+			avatarUrl: status?.avatarUrl ?? '',
+			username: status?.username ?? '',
+			displayName: status?.displayName ?? '',
 		};
 	}
 

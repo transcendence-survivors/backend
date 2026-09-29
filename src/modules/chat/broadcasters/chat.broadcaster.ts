@@ -38,22 +38,43 @@ export class ChatBroadcaster {
 		await this.notifyMessageNew(message, memberUserIds);
 	}
 
-	messageEdited(message: ChatMessageListItem) {
+	async messageEdited(message: ChatMessageListItem, memberUserIds: string[]) {
 		const dto = this.messageMapper.toListItemDto(message);
-
 		this.ws
 			.get()
 			.to(message.roomId)
 			.emit(CHAT_EVENTS.SEND.MESSAGE_EDITED, dto);
+
+		const activeUserIdsInRoom = await this.getActiveUserIdsInRoom(
+			message.roomId,
+		);
+		this.notifyAbsentMembers(
+			memberUserIds,
+			activeUserIdsInRoom,
+			CHAT_EVENTS.SEND.MESSAGE_EDITED,
+			dto,
+		);
 	}
 
-	messageSoftDeleted(messageId: string, roomId: string) {
+	async messageSoftDeleted(
+		messageId: string,
+		roomId: string,
+		memberUserIds: string[],
+	) {
 		const dto = this.messageMapper.toSoftDeletedDto(messageId, roomId);
 
 		this.ws
 			.get()
 			.to(roomId)
 			.emit(CHAT_EVENTS.SEND.MESSAGE_SOFT_DELETED, dto);
+
+		const activeUserIdsInRoom = await this.getActiveUserIdsInRoom(roomId);
+		this.notifyAbsentMembers(
+			memberUserIds,
+			activeUserIdsInRoom,
+			CHAT_EVENTS.SEND.MESSAGE_SOFT_DELETED,
+			dto,
+		);
 	}
 
 	typingUpdate(client: Socket, payload: ChatTypingUpdatePayload) {

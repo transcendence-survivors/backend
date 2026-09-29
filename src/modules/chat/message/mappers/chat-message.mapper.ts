@@ -8,6 +8,8 @@ import { ChatMessageCountResponseDto } from '../dtos/responses/chat-message-coun
 import { ChatMessageSoftDeletedResponseDto } from '../dtos/responses/chat-message-soft-deleted-response.dto';
 import { ChatTypingUpdatePayload } from '../../types/records/chat-typing-update.type';
 import { ChatTypingUpdateResponseDto } from '../dtos/responses/chat-typing-update-response.dto';
+import { ChatMessageSharePostResponseDto } from '../dtos/responses/chat-message-share-post-response.dto';
+import { ChatMessageShare } from '../types/records/chat-message-share';
 
 @Injectable()
 export class ChatMessageMapper {
@@ -31,6 +33,9 @@ export class ChatMessageMapper {
 								?.role ?? null,
 					},
 				},
+				sharedPost: message.sharedPost
+					? { ...message.sharedPost }
+					: null,
 			},
 			{
 				excludeExtraneousValues: true,
@@ -58,6 +63,20 @@ export class ChatMessageMapper {
 		return plainToInstance(
 			ChatMessageCountResponseDto,
 			{ count },
+			{ excludeExtraneousValues: true },
+		);
+	}
+
+	toSharePostResponseDto(
+		result: ChatMessageShare,
+	): ChatMessageSharePostResponseDto {
+		return plainToInstance(
+			ChatMessageSharePostResponseDto,
+			{
+				postId: result.postId,
+				successfulRoomIds: result.successfulRoomIds,
+				failedRoomIds: result.failedRoomIds,
+			},
 			{ excludeExtraneousValues: true },
 		);
 	}

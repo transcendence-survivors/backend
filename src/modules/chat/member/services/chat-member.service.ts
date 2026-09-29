@@ -1,6 +1,9 @@
 import { ForbiddenException, Injectable } from '@nestjs/common';
 import { ChatMemberRepository } from '../repositories/chat-member.repository';
-import { ChatMemberFindParams } from '../types/params/chat-member-find.params';
+import {
+	ChatMemberFindParams,
+	ChatMembershipsInRoomsParams,
+} from '../types/params/chat-member-find.params';
 import { ChatMemberPaginateDto } from '../dtos/requests/chat-member-paginate.dto';
 import { ChatMemberPaginatedListResponseDto } from '../dtos/responses/chat-member-paginated-list-response.dto';
 import { CursorService } from '@/shared/services/cursor.service';
@@ -36,6 +39,7 @@ import { UnitOfWork } from '@/core/database/uow/unit-of-work';
 import { ChatRoomNotFoundException } from '../../room/exceptions/chat-room-not-found.exceptions';
 import { ChatRoomDirectImmutableException } from '../../room/exceptions/chat-room-bad.exception';
 import { ChatMembersAddDto } from '../dtos/requests/chat-member-add.dto';
+import { ChatMembership } from '../types/records/chat-membership.type';
 
 @Injectable()
 export class ChatMemberService {
@@ -268,5 +272,11 @@ export class ChatMemberService {
 			APP_EVENTS.CHAT_MEMBER_LEFT,
 			new ChatMemberLeftEvent(roomId, userId),
 		);
+	}
+
+	async findUserMembershipsInRooms(
+		params: ChatMembershipsInRoomsParams,
+	): Promise<ChatMembership[]> {
+		return this.repo.findUserMembershipsInRooms(params);
 	}
 }

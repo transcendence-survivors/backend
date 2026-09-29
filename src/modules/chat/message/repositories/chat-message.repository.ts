@@ -10,6 +10,7 @@ import { ChatMessageCreateSystemParams } from '../types/params/chat-message-crea
 import { ChatMemberRole, ChatMessageType } from '@prisma-generated/enums';
 import { DbContext } from '@/core/database/uow/db-context';
 import { ChatMessageEditParams } from '../types/params/chat-message-edit.params';
+import { ChatMessageSharePostParams } from '../types/params/chat-message-share-post.params';
 
 @Injectable()
 export class ChatMessageRepository {
@@ -148,6 +149,28 @@ export class ChatMessageRepository {
 						create: metadataData,
 					},
 				}),
+			},
+			select: {
+				...ChatMessageQueryHelper.chatMessageSelect(params.roomId),
+			} satisfies Record<
+				keyof ChatMessageListItem,
+				ChatMessageSelect[keyof ChatMessageListItem]
+			>,
+		});
+	}
+
+	async sharePost(
+		params: ChatMessageSharePostParams,
+		ctx?: DbContext,
+	): Promise<ChatMessageListItem> {
+		const client = ctx?.client ?? this.prisma;
+		return client.chatMessage.create({
+			data: {
+				type: ChatMessageType.POST_SHARE,
+				roomId: params.roomId,
+				senderId: params.senderId,
+				sharedPostId: params.sharedPostId,
+				content: params.content ?? null,
 			},
 			select: {
 				...ChatMessageQueryHelper.chatMessageSelect(params.roomId),

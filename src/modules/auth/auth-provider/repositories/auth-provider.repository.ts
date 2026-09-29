@@ -9,6 +9,7 @@ import { AuthProviderUpdateLocalePasswordParams } from '../types/params/auth-pro
 import { AuthProviderLocaleCreated } from '../types/records/auth-provider-locale-created.type';
 import { AuthProviderLocaleWithPassword } from '../types/records/auth-provider-locale-with-password.type';
 import { AuthProviderId } from '../types/records/auth-provider-id.type';
+import { AuthProvider } from '@prisma-generated/browser';
 
 @Injectable()
 export class AuthProviderRepository {
@@ -57,6 +58,21 @@ export class AuthProviderRepository {
 				keyof AuthProviderLocaleWithPassword,
 				AuthProviderSelect[keyof AuthProviderLocaleWithPassword]
 			>,
+		});
+	}
+
+	findLocalePasswordByUserId(
+		userId: string,
+		ctx?: DbContext,
+	): Promise<Pick<AuthProvider, 'password'> | null> {
+		return (ctx?.client ?? this.prisma).authProvider.findFirst({
+			where: {
+				userId: userId,
+				provider: AuthProviderType.LOCAL,
+			},
+			select: {
+				password: true,
+			},
 		});
 	}
 

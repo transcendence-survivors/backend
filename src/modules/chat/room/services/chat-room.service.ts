@@ -153,6 +153,7 @@ export class ChatRoomService {
 
 		const uniqueUserIds = [currentUserId, targetUserId];
 		await this.verifyUsersExist(uniqueUserIds);
+		await this.validateBlock(currentUserId, targetUserId);
 		return this.executeRoomCreation(
 			{
 				type: ChatRoomType.DIRECT,
@@ -229,6 +230,10 @@ export class ChatRoomService {
 	async deleteRoom(roomId: string, userId: string): Promise<void> {
 		const res = await this.repo.deleteRoom({ roomId, userId });
 		if (res.count === 0) throw new ChatRoomNotFoundException();
+	}
+
+	async deleteDmRoom(user1: string, user2: string): Promise<void> {
+		await this.repo.deleteDmRoom({ userAId: user1, userBId: user2 });
 	}
 
 	findRoomType(roomId: string): Promise<Pick<ChatRoom, 'type'> | null> {

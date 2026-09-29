@@ -37,6 +37,12 @@ import { FriendshipCountResponseDto } from '../dtos/responses/friendship-count-r
 import { FriendShipListItemResponseDto } from '../dtos/responses/friendship-list-item-response.dto';
 import { UnitOfWork } from '@/core/database/uow/unit-of-work';
 import { IFriendService } from '@/contracts/services/friend/friend-service.port';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import {
+	APP_EVENTS,
+	FriendRequestAcceptedEvent,
+	FriendRequestCreatedEvent,
+} from '@/contracts/events/internal';
 
 @Injectable()
 export class FriendService implements IFriendService {
@@ -47,6 +53,7 @@ export class FriendService implements IFriendService {
 		private readonly cursor: CursorService,
 		private readonly mapper: FriendshipMapper,
 		private readonly uow: UnitOfWork,
+		private readonly eventEmitter: EventEmitter2,
 	) {}
 
 	public async getAllFriendsIds(userId: string): Promise<string[]> {
@@ -134,6 +141,20 @@ export class FriendService implements IFriendService {
 			}
 			return await this.repo.save({ userId, friendId }, ctx);
 		});
+
+		if (result.state === FriendshipState.ACCEPTED) {
+			this.eventEmitter.emit(
+				APP_EVENTS.FRIEND_REQUEST_ACCEPTED,
+				new FriendRequestAcceptedEvent(userId, friendId),
+			);
+		}
+		if (result.state === FriendshipState.PENDING) {
+			this.eventEmitter.emit(
+				APP_EVENTS.FRIEND_REQUEST_SENT,
+				new FriendRequestCreatedEvent(userId, friendId),
+			);
+		}
+
 		const [listItem] = this.toFriendShipListItem([result], userId);
 		return this.mapper.toListItemDto(listItem);
 	}
@@ -150,6 +171,10 @@ export class FriendService implements IFriendService {
 			throw new FriendAlreadyExistsException();
 
 		await this.repo.accept({ userId, friendId });
+		this.eventEmitter.emit(
+			APP_EVENTS.FRIEND_REQUEST_ACCEPTED,
+			new FriendRequestAcceptedEvent(userId, friendId),
+		);
 	}
 	async removeRequest(userId: string, friendId: string): Promise<void> {
 		if (userId === friendId) throw new SelfFriendRequestDeleteException();

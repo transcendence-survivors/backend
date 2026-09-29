@@ -19,8 +19,18 @@ import { AuthMapper } from '../mappers/auth.mapper';
 import { AuthSignIn } from '../types/records/auth-signin.type';
 import { AuthSignUp } from '../types/records/auth-signup.type';
 import { AuthRefresh } from '../types/records/auth-refresh.type';
-import { AuthRefreshException } from '../exceptions/auth-refresh-exception';
-import { AuthLoginException } from '../exceptions/auth-login-exception.exceptions';
+import {
+	AuthInvalidCurrentPasswordException,
+	AuthSamePasswordException,
+} from '../exceptions/auth-bad.exceptions';
+import {
+	AuthLoginException,
+	AuthRefreshException,
+	AuthUserNotFoundException,
+} from '../exceptions/auth-unauthorized.exceptions';
+import { AuthPasswordChangeDto } from '../dtos/requests/aut-password-change.dto';
+import { AuthTokenPair } from '../token/types/records/auth-token-pair.type';
+import { AuthDeleteAccountDto } from '../dtos/requests/auth-delete-account.dto';
 
 @Injectable()
 export class AuthService {
@@ -156,6 +166,57 @@ export class AuthService {
 			await this.localAuth.updatePassword(userId, dto.newPassword, ctx);
 			await this.tokenService.usePasswordResetToken(id, ctx);
 			await this.tokenService.revokeUserRefresh(userId, ctx);
+		});
+	}
+
+	async changePassword(
+		userId: string,
+		dto: AuthPasswordChangeDto,
+	): Promise<AuthTokenPair> {
+		if (dto.currentPassword === dto.newPassword)
+			throw new AuthSamePasswordException();
+
+		const isCurrentPasswordValid = await this.localAuth.verifyPassword(
+			userId,
+			dto.currentPassword,
+		);
+		if (!isCurrentPasswordValid)
+			throw new AuthInvalidCurrentPasswordException();
+
+		await this.uow.run(async (ctx) => {
+			await this.localAuth.updatePassword(userId, dto.newPassword, ctx);
+			await this.tokenService.revokeUserRefresh(userId, ctx);
+		});
+
+		const user = await this.userService.getAuthData(userId);
+		if (!user) throw new AuthUserNotFoundException();
+
+		return this.tokenService.buildJWT({
+			sub: user.id,
+			username: user.username,
+			displayName: user.displayName,
+			email: user.email,
+			role: user.role,
+		});
+	}
+
+	async deleteAccount(
+		userId: string,
+		dto: AuthDeleteAccountDto,
+	): Promise<void> {
+		await this.userService.validateUserId(userId);
+		const isPasswordValid = await this.localAuth.verifyPassword(
+			userId,
+			dto.password,
+		);
+
+		if (!isPasswordValid) {
+			throw new AuthInvalidCurrentPasswordException();
+		}
+
+		await this.uow.run(async (ctx) => {
+			await this.tokenService.revokeUserRefresh(userId, ctx);
+			await this.userService.delete(userId, ctx);
 		});
 	}
 }

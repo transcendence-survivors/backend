@@ -3,6 +3,7 @@ import {
 	Controller,
 	HttpCode,
 	HttpStatus,
+	Patch,
 	Post,
 	Res,
 	UseGuards,
@@ -10,14 +11,20 @@ import {
 import { AuthService } from '../services/auth.service';
 import { AuthSignInDto } from '@/modules/auth/dtos/requests/auth-signin.dto';
 import { InjectEnv } from '@/core/config/env/injects/env.inject';
-import { CurrentUserRefresh } from '@/core/security/decorators/current-user.decorator';
+import {
+	CurrentUser,
+	CurrentUserRefresh,
+} from '@/core/security/decorators/current-user.decorator';
 import { AuthForgotPasswordDto } from '../dtos/requests/auth-forgot-password.dto';
 import { AuthResetPasswordDto } from '../dtos/requests/auth-reset-password.dto';
 import { AuthSignUpDto } from '@/modules/auth/dtos/requests/auth-signup.dto';
 import { JWTRefreshGuard } from '@/core/security/guards/jwt-refresh.guard';
 import { type Response } from 'express';
 import { type Env } from '@/core/config/env/providers/env.provider';
-import { type JwtRefreshPayload } from '@/core/security/interfaces/jwt-payload.interface';
+import {
+	type JwtAccessPayload,
+	type JwtRefreshPayload,
+} from '@/core/security/interfaces/jwt-payload.interface';
 import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
 import { AuthUserResponseDto } from '../dtos/responses/auth-user-response.dto';
 import {
@@ -28,17 +35,28 @@ import {
 import { ApiValidationErrorResponse } from '@/shared/decorators/api-validation-error-response.decorator';
 import { ApiBodyDto } from '@/shared/decorators/api-body-dto.decorator';
 import { ApiGroupedErrorResponse } from '@/shared/decorators/api-error-response.decorator';
-import { AuthRefreshException } from '../exceptions/auth-refresh-exception';
 import { TokenNotFoundException } from '../token/exceptions/token-not-found.exception';
 import { TokenRevokedException } from '../token/exceptions/token-revoked.exception';
 import { TokenExpiredException } from '../token/exceptions/token-expired.exception';
 import { AuthProviderCredentialsException } from '../auth-provider/exceptions/auth-provider-credentials.exception';
-import { AuthLoginException } from '../exceptions/auth-login-exception.exceptions';
+import {
+	AuthLoginException,
+	AuthRefreshException,
+	AuthUserNotFoundException,
+} from '../exceptions/auth-unauthorized.exceptions';
 import {
 	AuthThrottle,
 	StrictAuthThrottle,
 	TokenRefreshThrottle,
 } from '@/core/rate-limit/decorators/throttle-presets.decorator';
+import { AuthPasswordChangeDto } from '../dtos/requests/aut-password-change.dto';
+import { JWTAccessGuard } from '@/core/security/guards/jwt-access.guard';
+import {
+	AuthInvalidCurrentPasswordException,
+	AuthSamePasswordException,
+} from '../exceptions/auth-bad.exceptions';
+import { AuthDeleteAccountDto } from '../dtos/requests/auth-delete-account.dto';
+import { UserNotFoundException } from '@/modules/user/exceptions/user-not-found.exception';
 
 @Controller('auth')
 export class AuthController {
@@ -167,6 +185,62 @@ export class AuthController {
 	@ApiGroupedErrorResponse([TokenNotFoundException])
 	async resetPassword(@Body() dto: AuthResetPasswordDto): Promise<void> {
 		await this.authService.resetPassword(dto);
+	}
+
+	@AuthThrottle()
+	@UseGuards(JWTAccessGuard)
+	@Patch('change-password')
+	@HttpCode(HttpStatus.NO_CONTENT)
+	@ApiNoContentSuccessResponse({
+		description: 'Password changed successfully',
+	})
+	@ApiValidationErrorResponse({
+		password: ['Current password is required'],
+		newPassword: ['New password must be contained 1 uppercase letter.'],
+	})
+	@ApiGroupedErrorResponse([
+		AuthUserNotFoundException,
+		AuthProviderCredentialsException,
+	])
+	@ApiGroupedErrorResponse([
+		AuthInvalidCurrentPasswordException,
+		AuthSamePasswordException,
+	])
+	async changePassword(
+		@CurrentUser() user: JwtAccessPayload,
+		@Body() dto: AuthPasswordChangeDto,
+		@Res({ passthrough: true }) res: Response,
+	): Promise<void> {
+		const { accessToken, refreshToken } =
+			await this.authService.changePassword(user.sub, dto);
+		this.setAccessTokenCookie(res, accessToken);
+		this.setRefreshTokenCookie(res, refreshToken);
+	}
+
+	@AuthThrottle()
+	@UseGuards(JWTAccessGuard)
+	@Post('account')
+	@HttpCode(HttpStatus.NO_CONTENT)
+	@ApiNoContentSuccessResponse({
+		description: 'Account deleted successfully',
+	})
+	@ApiValidationErrorResponse({
+		password: ['Password is required'],
+	})
+	@ApiBodyDto(AuthDeleteAccountDto)
+	@ApiGroupedErrorResponse([
+		AuthUserNotFoundException,
+		AuthProviderCredentialsException,
+	])
+	@ApiGroupedErrorResponse([UserNotFoundException])
+	async deleteAccount(
+		@CurrentUser() user: JwtAccessPayload,
+		@Body() dto: AuthDeleteAccountDto,
+		@Res({ passthrough: true }) res: Response,
+	): Promise<void> {
+		await this.authService.deleteAccount(user.sub, dto);
+		res.clearCookie(this.REFRESH_TOKEN);
+		res.clearCookie(this.ACCESS_TOKEN);
 	}
 
 	private setAccessTokenCookie(res: Response, accessToken: string): void {

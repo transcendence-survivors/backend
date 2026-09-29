@@ -3,7 +3,7 @@ import { UserRepository } from '../repositories/user.repository';
 import {
 	UserEmailConflictException,
 	UserUsernameConflictException,
-} from '../exceptions/user.conflict.exception';
+} from '../exceptions/user-conflict.exception';
 import { IUserService } from '@/contracts/services/user/user-service.port';
 import { DbContext } from '@/core/database/uow/db-context';
 import { CursorService } from '@/shared/services/cursor.service';
@@ -15,7 +15,7 @@ import { UserCountResponseDto } from '../dtos/responses/user-count-response.dto'
 import { AuhtUserData } from '@/contracts/types/user/user-token-data.type';
 import { UserLocalePreference } from '../types/records/user-locale-preference.type';
 import { UserCreated } from '../types/records/user-created.type';
-import { UserNotFoundException } from '../exceptions/user.not-found.exception';
+import { UserNotFoundException } from '../exceptions/user-not-found.exception';
 import { UserCreateParams } from '@/contracts/types/user/user-create.params';
 import { UsersCursorParams } from '../types/params/user-cursor.params';
 import { UsersCountParams } from '../types/params/user-count.params';
@@ -23,7 +23,7 @@ import { UserCountDto } from '../dtos/requests/user-count.dto';
 import { UserSettingsResponseDto } from '../dtos/responses/user-settings-response.dto';
 import { UserSettingsPatchDto } from '../dtos/requests/user-settings-patch.dto';
 import { UserSettingsPatchParams } from '../types/params/user-settings-patch.params';
-import { UserSettingsUpdateEmptyException } from '../exceptions/user.bad.exception';
+import { UserSettingsUpdateEmptyException } from '../exceptions/user-bad.exception';
 import { UserListItem } from '../user.public-api';
 
 @Injectable()
@@ -68,6 +68,15 @@ export class UserService implements IUserService {
 		return user;
 	}
 
+	public async getItemById(
+		userId: string,
+		ctx?: DbContext,
+	): Promise<UserListItem> {
+		const user = await this.repo.findListItemById(userId, ctx);
+		if (!user) throw new UserNotFoundException();
+		return user;
+	}
+
 	public async createUserOrThrow(
 		input: UserCreateParams,
 		ctx?: DbContext,
@@ -101,6 +110,10 @@ export class UserService implements IUserService {
 	): Promise<void> {
 		const user = await this.repo.isByUserId(userId, ctx);
 		if (!user) throw new UserNotFoundException();
+	}
+
+	public async delete(userId: string, ctx?: DbContext): Promise<void> {
+		await this.repo.delete(userId, ctx);
 	}
 
 	async listUsers(
@@ -180,9 +193,5 @@ export class UserService implements IUserService {
 			throw new UserSettingsUpdateEmptyException();
 		const result = await this.repo.updateUserSettings(userId, updateParams);
 		if (result.count === 0) throw new UserNotFoundException();
-	}
-
-	delete(id: string): Promise<void> {
-		return this.repo.delete(id);
 	}
 }

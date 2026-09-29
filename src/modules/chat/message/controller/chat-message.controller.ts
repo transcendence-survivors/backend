@@ -1,4 +1,5 @@
 import {
+	Body,
 	Controller,
 	Get,
 	HttpCode,
@@ -44,6 +45,7 @@ export class ChatMessageController {
 		return this.service.listMessages(query, sub, roomId);
 	}
 
+	@SearchThrottle()
 	@Get('count')
 	@HttpCode(HttpStatus.OK)
 	@ApiQueryDto(ChatMessagePaginateDto)

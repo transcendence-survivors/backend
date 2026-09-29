@@ -213,6 +213,21 @@ export class UserRepository {
 		});
 	}
 
+	findListItemById(
+		userId: string,
+		ctx?: DbContext,
+	): Promise<UserListItem | null> {
+		return (ctx?.client ?? this.prisma).user.findUnique({
+			where: { id: userId },
+			select: {
+				...UserRepository.select,
+			} satisfies Record<
+				keyof UserListItem,
+				UserSelect[keyof UserListItem]
+			>,
+		});
+	}
+
 	getCountIn(ids: string[], ctx?: DbContext): Promise<number> {
 		return (ctx?.client ?? this.prisma).user.count({
 			where: {

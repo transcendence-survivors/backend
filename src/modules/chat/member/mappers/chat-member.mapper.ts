@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ChatMemberListItem } from '../types/records/chat-member-list-item';
+import { ChatMemberListItem } from '../types/records/chat-member-list-item.type';
 import { ChatMemberListItemResponseDto } from '../dtos/responses/chat-member-list-item-response.dto';
 import { plainToInstance } from 'class-transformer';
 import { ChatMemberCountResponseDto } from '../dtos/responses/chat-member-count-response.dto';

@@ -3,6 +3,7 @@ import { ChatBroadcaster } from '../broadcasters/chat.broadcaster';
 import { OnEvent } from '@nestjs/event-emitter';
 import {
 	APP_EVENTS,
+	BlockCreatedEvent,
 	ChatMemberJoinedEvent,
 	ChatMemberKickedEvent,
 	ChatMemberLeftEvent,
@@ -18,12 +19,14 @@ import { ChatMessageCreatedEvent } from '@/contracts/events/internal';
 import { ChatMessageService } from '../message/services/chat-message.service';
 import { ChatMemberRole, ChatMessageType } from '@prisma-generated/enums';
 import { ChatMemberService } from '../member/services/chat-member.service';
+import { ChatRoomService } from '../room/services/chat-room.service';
 @Injectable()
 export class ChatEventListener {
 	constructor(
 		private readonly broadcaster: ChatBroadcaster,
 		private readonly messageService: ChatMessageService,
 		private readonly memberService: ChatMemberService,
+		private readonly roomService: ChatRoomService,
 	) {}
 
 	@OnEvent(APP_EVENTS.CHAT_MESSAGE_CREATED)
@@ -33,13 +36,19 @@ export class ChatEventListener {
 	}
 
 	@OnEvent(APP_EVENTS.CHAT_MESSAGE_EDITED)
-	handleMessageEdited(event: ChatMessageEditedEvent) {
-		this.broadcaster.messageEdited(event.message);
+	async handleMessageEdited(event: ChatMessageEditedEvent) {
+		const memberIds = await this.getRoomMemberIds(event.message.roomId);
+		await this.broadcaster.messageEdited(event.message, memberIds);
 	}
 
 	@OnEvent(APP_EVENTS.CHAT_MESSAGE_SOFT_DELETED)
-	handleMessageSoftDeleted(event: ChatMessageSoftDeleteEvent) {
-		this.broadcaster.messageSoftDeleted(event.messageId, event.roomId);
+	async handleMessageSoftDeleted(event: ChatMessageSoftDeleteEvent) {
+		const memberIds = await this.getRoomMemberIds(event.roomId);
+		await this.broadcaster.messageSoftDeleted(
+			event.messageId,
+			event.roomId,
+			memberIds,
+		);
 	}
 
 	@OnEvent(APP_EVENTS.CHAT_MEMBER_ROLE_UPDATED)
@@ -176,6 +185,14 @@ export class ChatEventListener {
 			oldValue: event.oldValue,
 			newValue: event.newValue,
 		});
+	}
+
+	@OnEvent(APP_EVENTS.BLOCK_CREATED)
+	async handleBlockCreated(event: BlockCreatedEvent) {
+		await this.roomService.deleteDmRoom(
+			event.blockerUserId,
+			event.blockedUserId,
+		);
 	}
 
 	private getRoomMemberIds(roomId: string): Promise<string[]> {

@@ -50,6 +50,13 @@ export class LocalAuthProviderService {
 		);
 	}
 
+	async verifyPassword(userId: string, password: string): Promise<boolean> {
+		const provider =
+			await this.providerRepo.findLocalePasswordByUserId(userId);
+		if (!provider?.password) throw new AuthProviderCredentialsException();
+		return compare(password, provider.password);
+	}
+
 	private hashPassword(password: string): Promise<string> {
 		return hash(password, this.SALT);
 	}

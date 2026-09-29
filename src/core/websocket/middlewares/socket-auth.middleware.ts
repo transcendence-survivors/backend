@@ -7,12 +7,15 @@ export class SocketAuthMiddleware {
 	constructor(private readonly wsJwtStrategy: WsJWTAccessStrategy) {}
 
 	use(client: ClientSocket, next: (err?: Error) => void) {
-		try {
-			const userPayload = this.wsJwtStrategy.validateSocket(client);
-			client.data.user = userPayload;
-		} catch {
-			client.data.user = null;
-		}
-		next();
+		this.wsJwtStrategy
+			.validateSocket(client)
+			.then((userPayload) => {
+				client.data.user = userPayload;
+				next();
+			})
+			.catch(() => {
+				client.data.user = null;
+				next();
+			});
 	}
 }

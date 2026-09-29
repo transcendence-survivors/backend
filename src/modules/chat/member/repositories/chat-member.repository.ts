@@ -1,15 +1,19 @@
 import { PrismaService } from '@/core/database/services/prisma.service';
 import { Injectable } from '@nestjs/common';
-import { ChatMemberFindParams } from '../types/params/chat-member-find.params';
-import { ChatMemberListItem } from '../types/records/chat-member-list-item';
+import {
+	ChatMemberFindParams,
+	ChatMembershipsInRoomsParams,
+} from '../types/params/chat-member-find.params';
+import { ChatMemberListItem } from '../types/records/chat-member-list-item.type';
 import { ChatMembersCursorParams } from '../types/params/chat-members-cursor.params';
 import { ChatMemberQueryHelper } from './chat-member-query.helper';
 import { ChatMemberSelect } from '@prisma-generated/models';
 import { ChatMemberCountParams } from '../types/params/chat-member-count.params';
 import { ChatMemberRole } from '@prisma-generated/enums';
 import { DbContext } from '@/core/database/uow/db-context';
-import { ChatMemberRoleInfo } from '../types/records/chat-member-role-info';
+import { ChatMemberRoleInfo } from '../types/records/chat-member-role-info.type';
 import { ChatMembersAddParams } from '../types/params/chat-members-add.params';
+import { ChatMembership } from '../types/records/chat-membership.type';
 
 interface ChatMembersRoleUpdateParams {
 	roomId: string;
@@ -141,6 +145,24 @@ export class ChatMemberRepository {
 
 		const existingSet = new Set(existingMembers.map((m) => m.userId));
 		return userIds.filter((id) => !existingSet.has(id));
+	}
+
+	async findUserMembershipsInRooms({
+		userId,
+		roomIds,
+	}: ChatMembershipsInRoomsParams): Promise<ChatMembership[]> {
+		if (!roomIds.length) return [];
+
+		return this.prisma.chatMember.findMany({
+			where: {
+				userId,
+				roomId: { in: roomIds },
+			},
+			select: {
+				roomId: true,
+				role: true,
+			},
+		});
 	}
 
 	async addMembers(

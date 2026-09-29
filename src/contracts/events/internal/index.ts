@@ -16,7 +16,7 @@ export * from './chat/chat-room-avatar-changed.event';
 export * from './chat/chat-room-created.event';
 
 const FRIEND_PREFIX = 'friend.' as const;
-const FriendEvents = {
+const FriendRequestsEvents = {
 	FRIEND_REQUEST_SENT: `${FRIEND_PREFIX}request.sent`,
 	FRIEND_REQUEST_ACCEPTED: `${FRIEND_PREFIX}request.accepted`,
 } as const;
@@ -48,7 +48,7 @@ export const APP_EVENTS = {
 	PASSWORD_RESET_REQUESTED: 'password.reset.requested',
 	BLOCK_CREATED: 'block.created',
 	ATTACHMENTS_MUST_BE_DELETED: 'attachments.must-be-deleted',
-	...FriendEvents,
+	...FriendRequestsEvents,
 	...PresenceEvents,
 	...ChatEvents,
 } as const;

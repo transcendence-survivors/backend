@@ -8,15 +8,18 @@ import { BlockModule } from '../block/block.module';
 import { FriendListener } from './listeners/friend.listener';
 import { FriendshipMapper } from './mappers/friendship.mapper';
 import { FRIEND_SERVICE } from '@/contracts/services/friend/friend-service.port';
+import { FriendBroadcaster } from './broadcaster/friend.broadcaster';
+import { PresenceModule } from '@/modules/presence/presence.module';
 
 @Module({
-	imports: [UserModule, BlockModule],
+	imports: [UserModule, BlockModule, PresenceModule],
 	controllers: [FriendController, FriendRequestController],
 	providers: [
 		FriendService,
 		FriendRepository,
 		FriendListener,
 		FriendshipMapper,
+		FriendBroadcaster,
 		{
 			provide: FRIEND_SERVICE,
 			useExisting: FriendService,

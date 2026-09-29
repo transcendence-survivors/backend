@@ -60,4 +60,37 @@ export class PresenceBroadcaster {
 
 		this.ws.get().emit(PRESENCE_EVENTS.SEND.GLOBAL_COUNT, dto);
 	}
+
+	syncNewFriendship(
+		userA: { profile: UserListItem; status: PresenceStatusEnum },
+		userB: { profile: UserListItem; status: PresenceStatusEnum },
+	) {
+		const server = this.ws.get();
+
+		if (
+			userB.status !== PresenceStatusEnum.OFFLINE &&
+			userB.status !== PresenceStatusEnum.INVISIBLE
+		) {
+			const dtoB = this.mapper.toConnectedDto(
+				userB.profile,
+				userB.status,
+			);
+			server
+				.to(`user:${userA.profile.id}`)
+				.emit(PRESENCE_EVENTS.SEND.CONNECTED, dtoB);
+		}
+
+		if (
+			userA.status !== PresenceStatusEnum.OFFLINE &&
+			userA.status !== PresenceStatusEnum.INVISIBLE
+		) {
+			const dtoA = this.mapper.toConnectedDto(
+				userA.profile,
+				userA.status,
+			);
+			server
+				.to(`user:${userB.profile.id}`)
+				.emit(PRESENCE_EVENTS.SEND.CONNECTED, dtoA);
+		}
+	}
 }
