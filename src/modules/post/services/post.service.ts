@@ -13,6 +13,7 @@ import { PostCreateParams } from '../types/params/post-create.params';
 import { PostListItemResponseDto } from '../dtos/responses/post-list-item-response.dto';
 import { PostPaginatedListResponseDto } from '../dtos/responses/post-paginated-list-response.dto';
 import { PostCreatedResponseDto } from '../dtos/responses/post-created-response.dto';
+import { PostFeedEnum } from '../types/enums/post-feed.enum';
 
 @Injectable()
 export class PostService {
@@ -24,6 +25,12 @@ export class PostService {
 		private readonly storageService: StorageService,
 		private readonly mapper: PostMapper,
 	) {}
+
+	private idsRequiringInteractionCheck(posts: PostListItem[]): string[] {
+		return posts.flatMap((post) =>
+			post.quotedPost ? [post.id, post.quotedPost.id] : [post.id],
+		);
+	}
 
 	private async viewerInteractions(
 		postIds: string[],
@@ -46,7 +53,7 @@ export class PostService {
 		viewerId?: string,
 	): Promise<PostPaginatedListResponseDto> {
 		const { liked, reposted } = await this.viewerInteractions(
-			posts.map((post) => post.id),
+			this.idsRequiringInteractionCheck(posts),
 			viewerId,
 		);
 
@@ -60,10 +67,15 @@ export class PostService {
 		viewerId?: string,
 		parentPostId?: string,
 	): Promise<PostPaginatedListResponseDto> {
+		const isFeed = !parentPostId;
 		const posts = await this.postRepository.cursor({
 			...query,
 			parentPostId: parentPostId ?? null,
-			excludeUserId: parentPostId ? undefined : viewerId,
+			excludeUserId: isFeed ? viewerId : undefined,
+			viewerId,
+			feed: isFeed
+				? (query.feed ?? PostFeedEnum.FRIENDS)
+				: PostFeedEnum.ALL_NOT_BLOCKED,
 		});
 
 		return this.toPaginatedListDto(posts, query.limit, viewerId);
@@ -129,7 +141,7 @@ export class PostService {
 		if (!post) throw new PostDoesNotExistException();
 
 		const { liked, reposted } = await this.viewerInteractions(
-			[postId],
+			this.idsRequiringInteractionCheck([post]),
 			viewerId,
 		);
 

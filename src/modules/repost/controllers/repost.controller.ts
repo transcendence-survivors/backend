@@ -8,6 +8,7 @@ import {
 	Delete,
 	Get,
 	HttpCode,
+	HttpStatus,
 	Param,
 	Post,
 	UseGuards,
@@ -22,6 +23,7 @@ export class RepostController {
 	constructor(private readonly repostService: RepostService) {}
 
 	@Post(':postId')
+	@HttpCode(HttpStatus.CREATED)
 	@ApiParam({
 		name: 'postId',
 		description: 'The id of the post to repost',
@@ -29,14 +31,15 @@ export class RepostController {
 		format: 'uuid',
 	})
 	@ResponseEnvelope('post reposted successfully')
-	addRepost(
+	async addRepost(
 		@Param('postId') postId: string,
 		@CurrentUser() user: JwtAccessPayload,
 	): Promise<void> {
-		return this.repostService.addRepost(postId, user.sub);
+		await this.repostService.addRepost(postId, user.sub);
 	}
 
 	@Delete(':postId')
+	@HttpCode(HttpStatus.NO_CONTENT)
 	@ApiParam({
 		name: 'postId',
 		description: 'The id of the post to remove the repost from',
@@ -44,15 +47,15 @@ export class RepostController {
 		format: 'uuid',
 	})
 	@ResponseEnvelope('repost removed successfully')
-	deleteRepost(
+	async deleteRepost(
 		@Param('postId') postId: string,
 		@CurrentUser() user: JwtAccessPayload,
 	): Promise<void> {
-		return this.repostService.deleteRepost(postId, user.sub);
+		await this.repostService.deleteRepost(postId, user.sub);
 	}
 
 	@Get(':postId')
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiParam({
 		name: 'postId',
 		description: 'The id of the post to retrieve the repost info from',

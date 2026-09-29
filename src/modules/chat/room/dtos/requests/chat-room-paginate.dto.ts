@@ -27,11 +27,11 @@ export class ChatRoomPaginateDto {
 	@ApiPropertyOptional({
 		description: 'The order in which to sort the results',
 		enum: ChatRoomOrderByEnum,
-		example: ChatRoomOrderByEnum['updated-desc'],
+		example: ChatRoomOrderByEnum['activity-desc'],
 	})
 	@IsOptional()
 	@IsEnum(ChatRoomOrderByEnum)
-	orderBy: ChatRoomOrderByEnum = ChatRoomOrderByEnum['updated-desc'];
+	orderBy: ChatRoomOrderByEnum = ChatRoomOrderByEnum['activity-desc'];
 
 	@IsSearch({})
 	search?: string;

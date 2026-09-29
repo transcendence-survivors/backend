@@ -6,6 +6,10 @@ import { ChatMessageCreateParams } from '../types/params/chat-message-create.par
 import { ChatMessageListItem } from '../types/records/chat-message-list-item';
 import { ChatMessageSelect } from '@prisma-generated/models';
 import { ChatMessageCountParams } from '../types/params/chat-message-count.params';
+import { ChatMessageCreateSystemParams } from '../types/params/chat-message-create-system.params';
+import { ChatMemberRole, ChatMessageType } from '@prisma-generated/enums';
+import { DbContext } from '@/core/database/uow/db-context';
+import { ChatMessageEditParams } from '../types/params/chat-message-edit.params';
 
 @Injectable()
 export class ChatMessageRepository {
@@ -28,7 +32,7 @@ export class ChatMessageRepository {
 				],
 			},
 			select: {
-				...ChatMessageQueryHelper.chatMessageSelect,
+				...ChatMessageQueryHelper.chatMessageSelect(roomId),
 			} satisfies Record<
 				keyof ChatMessageListItem,
 				ChatMessageSelect[keyof ChatMessageListItem]
@@ -48,14 +52,18 @@ export class ChatMessageRepository {
 		});
 	}
 
-	create({
-		roomId,
-		senderId,
-		content,
-		replyToId,
-		attachmentUrls,
-	}: ChatMessageCreateParams): Promise<ChatMessageListItem> {
-		return this.prisma.chatMessage.create({
+	create(
+		{
+			roomId,
+			senderId,
+			content,
+			replyToId,
+			attachmentUrls,
+		}: ChatMessageCreateParams,
+		ctx?: DbContext,
+	): Promise<ChatMessageListItem> {
+		const client = ctx?.client ?? this.prisma;
+		return client.chatMessage.create({
 			data: {
 				roomId: roomId,
 				senderId: senderId,
@@ -64,11 +72,100 @@ export class ChatMessageRepository {
 				replyToId: replyToId,
 			},
 			select: {
-				...ChatMessageQueryHelper.chatMessageSelect,
+				...ChatMessageQueryHelper.chatMessageSelect(roomId),
 			} satisfies Record<
 				keyof ChatMessageListItem,
 				ChatMessageSelect[keyof ChatMessageListItem]
 			>,
+		});
+	}
+
+	async createSystemMessage(
+		params: ChatMessageCreateSystemParams,
+		ctx?: DbContext,
+	): Promise<ChatMessageListItem> {
+		const senderId = 'senderId' in params ? params.senderId : null;
+
+		let metadataData: {
+			targetUserId?: string;
+			oldRole?: ChatMemberRole;
+			newRole?: ChatMemberRole;
+			oldValue?: string;
+			newValue?: string;
+		} | null = null;
+
+		switch (params.type) {
+			case ChatMessageType.ROLE_UPDATED:
+				metadataData = {
+					targetUserId: params.targetUserId,
+					oldRole: params.oldRole,
+					newRole: params.newRole,
+				};
+				break;
+
+			case ChatMessageType.KICKED:
+				metadataData = {
+					targetUserId: params.targetUserId,
+				};
+				break;
+
+			case ChatMessageType.ROOM_RENAMED:
+			case ChatMessageType.ROOM_AVATAR_CHANGED:
+				if (params.oldValue || params.newValue) {
+					metadataData = {
+						oldValue: params.oldValue ?? undefined,
+						newValue: params.newValue ?? undefined,
+					};
+				}
+				break;
+			case ChatMessageType.OWNERSHIP_TRANSFERRED:
+				metadataData = {
+					targetUserId: params.targetUserId,
+					oldRole: params.oldRole,
+					newRole: params.newRole,
+				};
+				break;
+			case ChatMessageType.JOINED:
+			case ChatMessageType.LEFT:
+				metadataData = {
+					targetUserId: params.targetUserId,
+				};
+				break;
+			default:
+				metadataData = null;
+				break;
+		}
+
+		const client = ctx?.client ?? this.prisma;
+		return client.chatMessage.create({
+			data: {
+				roomId: params.roomId,
+				senderId: senderId ?? null,
+				type: params.type,
+				content: null,
+				...(metadataData && {
+					metadata: {
+						create: metadataData,
+					},
+				}),
+			},
+			select: {
+				...ChatMessageQueryHelper.chatMessageSelect(params.roomId),
+			} satisfies Record<
+				keyof ChatMessageListItem,
+				ChatMessageSelect[keyof ChatMessageListItem]
+			>,
+		});
+	}
+
+	updateLastActivity(roomId: string, ctx?: DbContext): Promise<unknown> {
+		const client = ctx?.client ?? this.prisma;
+		return client.chatRoom.update({
+			where: { id: roomId },
+			data: { lastActivityAt: new Date() },
+			select: {
+				id: true,
+			},
 		});
 	}
 
@@ -79,6 +176,24 @@ export class ChatMessageRepository {
 		});
 	}
 
+	edit({
+		roomId,
+		messageId,
+		userId,
+		content,
+	}: ChatMessageEditParams): Promise<ChatMessageListItem> {
+		return this.prisma.chatMessage.update({
+			where: { id: messageId, roomId, senderId: userId },
+			data: { content, isEdited: true },
+			select: {
+				...ChatMessageQueryHelper.chatMessageSelect(roomId),
+			} satisfies Record<
+				keyof ChatMessageListItem,
+				ChatMessageSelect[keyof ChatMessageListItem]
+			>,
+		});
+	}
+
 	findById(id: string) {
 		return this.prisma.chatMessage.findUnique({
 			where: { id },
@@ -86,6 +201,7 @@ export class ChatMessageRepository {
 				id: true,
 				roomId: true,
 				senderId: true,
+				attachmentUrls: true,
 			},
 		});
 	}

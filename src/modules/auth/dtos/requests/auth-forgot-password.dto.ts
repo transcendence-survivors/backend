@@ -1,4 +1,4 @@
-import { IsEmail } from '@/shared/validators/fields/user/is-email';
+import { IsEmail } from '@/shared/validators/fields/users';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class AuthForgotPasswordDto {

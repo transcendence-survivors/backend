@@ -11,6 +11,7 @@ import {
 	UseInterceptors,
 	UploadedFile,
 	BadRequestException,
+	HttpStatus,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { extname } from 'path';
@@ -23,7 +24,6 @@ import { PostPaginateDto } from '../dtos/requests/post-paginate.dto';
 import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
 import { ApiConsumes, ApiParam } from '@nestjs/swagger';
 import { StorageService } from '@/core/storage/services/storage.service';
-import { JWTOptionalAccessGuard } from '@/core/security/guards/jwt-optional-access-guard';
 import { InjectUserService } from '@/contracts/services/user/user-service.inject';
 import type { IUserService } from '@/contracts/services/user/user-service.port';
 import { ApiQueryDto } from '@/shared/decorators/api-query-dto.decorator';
@@ -46,9 +46,9 @@ export class PostController {
 		@InjectUserService() private readonly userService: IUserService,
 	) {}
 
-	@UseGuards(JWTOptionalAccessGuard)
+	@UseGuards(JWTAccessGuard)
 	@Get()
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiQueryDto(PostPaginateDto)
 	@ApiSuccessResponse(PostPaginatedListResponseDto)
 	@ApiValidationErrorResponse({
@@ -63,9 +63,9 @@ export class PostController {
 		return this.postService.findCursor(query, user?.sub);
 	}
 
-	@UseGuards(JWTOptionalAccessGuard)
+	@UseGuards(JWTAccessGuard)
 	@Get(':id')
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiParam({
 		name: 'id',
 		description: 'The id of the post to retrieve',
@@ -81,9 +81,9 @@ export class PostController {
 		return this.postService.findOne(id, user?.sub);
 	}
 
-	@UseGuards(JWTOptionalAccessGuard)
+	@UseGuards(JWTAccessGuard)
 	@Get(':id/replies')
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiParam({
 		name: 'id',
 		description: 'The id of the post whose replies are listed',
@@ -101,9 +101,9 @@ export class PostController {
 		return this.postService.findCursor(query, user?.sub, id);
 	}
 
-	@UseGuards(JWTOptionalAccessGuard)
+	@UseGuards(JWTAccessGuard)
 	@Get('user/:username/comments')
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiParam({
 		name: 'username',
 		description: 'The username whose comments are listed',
@@ -121,9 +121,9 @@ export class PostController {
 		return this.postService.findUserComments(authorId, query, user?.sub);
 	}
 
-	@UseGuards(JWTOptionalAccessGuard)
+	@UseGuards(JWTAccessGuard)
 	@Get('user/:username/reposts')
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiParam({
 		name: 'username',
 		description: 'The username whose reposts are listed',
@@ -141,9 +141,9 @@ export class PostController {
 		return this.postService.findUserReposts(authorId, query, user?.sub);
 	}
 
-	@UseGuards(JWTOptionalAccessGuard)
+	@UseGuards(JWTAccessGuard)
 	@Get('user/:username/likes')
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiParam({
 		name: 'username',
 		description: 'The username whose liked posts are listed',
@@ -161,9 +161,9 @@ export class PostController {
 		return this.postService.findUserLikes(userId, query, user?.sub);
 	}
 
-	@UseGuards(JWTOptionalAccessGuard)
+	@UseGuards(JWTAccessGuard)
 	@Get('user/:username/posts')
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiParam({
 		name: 'username',
 		description: 'The username whose posts are listed',
@@ -183,7 +183,7 @@ export class PostController {
 
 	@UseGuards(JWTAccessGuard)
 	@Post()
-	@HttpCode(201)
+	@HttpCode(HttpStatus.CREATED)
 	@UseInterceptors(
 		FileInterceptor('file', {
 			limits: { fileSize: 10 * 1024 * 1024 },
@@ -211,7 +211,7 @@ export class PostController {
 		@CurrentUser() user: JwtAccessPayload,
 		@UploadedFile() file: Express.Multer.File,
 	): Promise<PostCreatedResponseDto> {
-		if (!content && !file && !quotedPostId)
+		if (!content && !file)
 			throw new BadRequestException('Post must have content or an image');
 		let imageUrl: string | undefined;
 		if (file) {
@@ -238,7 +238,7 @@ export class PostController {
 
 	@UseGuards(JWTAccessGuard)
 	@Delete(':id')
-	@HttpCode(204)
+	@HttpCode(HttpStatus.NO_CONTENT)
 	@ApiParam({
 		name: 'id',
 		description: 'The id of the post to delete',

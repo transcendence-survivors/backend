@@ -14,7 +14,7 @@ import {
 	type UserSocket,
 } from '@/core/websocket/interface/ws-socket.inteface';
 
-import { UseFilters, UseGuards } from '@nestjs/common';
+import { UseFilters, UseGuards, UsePipes } from '@nestjs/common';
 import { PRESENCE_EVENTS } from '../presence.events';
 import { WsJWTAccessGuard } from '@/core/security/guards/jwt-access.guard';
 import { PresenceStatusEnum } from '../types/enums/presence-status.enum';
@@ -22,7 +22,9 @@ import { PresencePreferedStatus } from '@prisma-generated/enums';
 import { PresenceBroadcaster } from '../broadcasters/presence.broadcaster';
 import { WsExceptionsFilter } from '@/shared/filters/ws-exception.filter';
 import { handleWs } from '@/shared/utils/exceptions.utils';
+import { CustomValidationPipe } from '@/shared/pipes/custom-validation.pipe';
 
+@UsePipes(CustomValidationPipe)
 @UseFilters(WsExceptionsFilter)
 @WebSocketGateway()
 export class PresenceGateway

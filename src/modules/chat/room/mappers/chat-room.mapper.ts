@@ -5,13 +5,17 @@ import { plainToInstance } from 'class-transformer';
 import { ChatRoomCountResponseDto } from '../dtos/responses/chat-room-count-response.dto';
 import { CursorPaginationResult } from '@/shared/services/cursor.service';
 import { ChatRoomPaginatedListResponseDto } from '../dtos/responses/chat-room-paginated-list-response.dto';
-import { ChatRoomType } from '@prisma-generated/enums';
+import { ChatMemberRole, ChatRoomType } from '@prisma-generated/enums';
+import { ChatRoomDetailResponseDto } from '../dtos/responses/chat-room-detail-response.dto';
+import { ChatRoomRenamedResponseDto } from '../dtos/responses/chat-room-renamed-response.dto';
+import { ChatRoomAvatarChangedResponseDto } from '../dtos/responses/chat-room-avatar-changed-response.dto';
 
 @Injectable()
 export class ChatRoomMapper {
 	toListItemDto(
 		room: ChatRoomListItem,
 		memberIds: string[],
+		unreadCount: number = 0,
 	): ChatRoomListItemResponseDto {
 		const otherMembers = room.members.map((m) => m.user);
 		const isDirect = room.type === ChatRoomType.DIRECT;
@@ -26,14 +30,21 @@ export class ChatRoomMapper {
 			membersPreview: isDirect ? undefined : otherMembers,
 			memberIds: isDirect ? undefined : memberIds,
 			memberCount: isDirect ? undefined : memberIds.length,
+			unreadCount,
 		});
 	}
 
-	toCountDto(count: number): ChatRoomCountResponseDto {
-		return plainToInstance(
-			ChatRoomCountResponseDto,
-			{ count },
-			{ excludeExtraneousValues: true },
+	toListItemDtoList(
+		chatRooms: ChatRoomListItem[],
+		memberIdsByRoom: Record<string, string[]>,
+		unreadCountsMap: Record<string, number> = {},
+	): ChatRoomListItemResponseDto[] {
+		return chatRooms.map((room) =>
+			this.toListItemDto(
+				room,
+				memberIdsByRoom[room.id] ?? [],
+				unreadCountsMap[room.id] ?? 0,
+			),
 		);
 	}
 
@@ -49,12 +60,65 @@ export class ChatRoomMapper {
 		);
 	}
 
-	toListItemDtoList(
-		chatRooms: ChatRoomListItem[],
-		memberIdsByRoom: Record<string, string[]>,
-	): ChatRoomListItemResponseDto[] {
-		return chatRooms.map((room) =>
-			this.toListItemDto(room, memberIdsByRoom[room.id] ?? []),
+	toDetailDto(
+		room: ChatRoomListItem,
+		memberIds: string[],
+		currentUserRole: ChatMemberRole,
+	): ChatRoomDetailResponseDto {
+		const otherMembers = room.members.map((m) => m.user);
+		const isDirect = room.type === ChatRoomType.DIRECT;
+
+		return plainToInstance(
+			ChatRoomDetailResponseDto,
+			{
+				id: room.id,
+				type: room.type,
+				name: room.name,
+				avatarUrl: room.avatarUrl,
+				lastMessage: room.messages[0] ?? null,
+				otherMember: isDirect ? otherMembers[0] : undefined,
+				membersPreview: isDirect ? undefined : otherMembers,
+				memberIds: isDirect ? undefined : memberIds,
+				memberCount: isDirect ? undefined : memberIds.length,
+				currentUserRole,
+			},
+			{ excludeExtraneousValues: true },
+		);
+	}
+
+	toCountDto(count: number): ChatRoomCountResponseDto {
+		return plainToInstance(
+			ChatRoomCountResponseDto,
+			{ count },
+			{ excludeExtraneousValues: true },
+		);
+	}
+
+	toRoomRenamedResponseDto(
+		roomId: string,
+		newName: string,
+	): ChatRoomRenamedResponseDto {
+		return plainToInstance(
+			ChatRoomRenamedResponseDto,
+			{
+				roomId,
+				newName,
+			},
+			{ excludeExtraneousValues: true },
+		);
+	}
+
+	toRoomAvatarChangedResponseDto(
+		roomId: string,
+		newAvatarUrl: string | null,
+	): ChatRoomAvatarChangedResponseDto {
+		return plainToInstance(
+			ChatRoomAvatarChangedResponseDto,
+			{
+				roomId,
+				newAvatarUrl,
+			},
+			{ excludeExtraneousValues: true },
 		);
 	}
 }

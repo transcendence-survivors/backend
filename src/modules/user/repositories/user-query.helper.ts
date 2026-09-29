@@ -42,15 +42,27 @@ export class UserQueryHelper {
 		}
 
 		if (query.startsWith('@')) {
+			const username = query.slice(1);
+			if (!username) {
+				return {};
+			}
+
 			return {
 				username: {
-					contains: query.slice(1),
+					contains: username,
 					mode: 'insensitive',
 				},
 			};
 		}
+
 		return {
 			OR: [
+				{
+					username: {
+						contains: query,
+						mode: 'insensitive',
+					},
+				},
 				{
 					displayName: {
 						contains: query,

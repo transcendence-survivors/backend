@@ -52,6 +52,7 @@ export class AuthService {
 		const { accessToken, refreshToken } = await this.tokenService.buildJWT({
 			sub: user.id,
 			username: user.username,
+			displayName: user.displayName,
 			email: user.email,
 			role: user.role,
 		});
@@ -100,6 +101,7 @@ export class AuthService {
 
 		const { accessToken, refreshToken } = await this.tokenService.buildJWT({
 			sub: user.id,
+			displayName: user.displayName,
 			username: userData.username,
 			email: userData.email,
 			role: user.role,
@@ -115,14 +117,13 @@ export class AuthService {
 
 	async refresh(user: JwtRefreshPayload): Promise<AuthRefresh> {
 		await this.tokenService.validateRefresh(user);
-
 		const userData = await this.userService.getAuthData(user.sub);
 		if (!userData) throw new AuthRefreshException();
-
 		const accessToken = await this.tokenService.generateAccess({
 			sub: userData.id,
 			email: userData.email,
 			username: userData.username,
+			displayName: userData.displayName,
 			role: userData.role,
 		});
 

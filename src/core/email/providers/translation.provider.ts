@@ -20,8 +20,8 @@ export const loaders = {
 	EN: () => loadJson<TranslationSchema>('en.json'),
 	FR: () => loadJson<TranslationSchema>('fr.json'),
 	DE: () => loadJson<TranslationSchema>('de.json'),
-	ES: () => loadJson<TranslationSchema>('en.json'),
-	IT: () => loadJson<TranslationSchema>('en.json'),
+	ES: () => loadJson<TranslationSchema>('es.json'),
+	IT: () => loadJson<TranslationSchema>('it.json'),
 } as const satisfies TranslationLoaderRecord;
 
 export const TranslationProvider: Provider = {

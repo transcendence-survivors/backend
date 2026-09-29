@@ -9,12 +9,17 @@ import { ChatMessageMapper } from '../mappers/chat-message.mapper';
 import { ChatMessagePaginatedListResponseDto } from '../dtos/responses/chat-message-paginated-list-response.dto';
 import { CursorService } from '@/shared/services/cursor.service';
 import { ChatMessageCountDto } from '../dtos/requests/chat-message-count.dto';
-import { ChatMessageCountResponseDto } from '../dtos/responses/chat-room-count-response.dto';
-import { CreateMessageDto } from '../dtos/requests/chat-message-create.dto';
-import { ChatMemberService } from '../../members/services/chat-member.service';
+import { ChatMessageCountResponseDto } from '../dtos/responses/chat-message-count-response.dto';
+import { ChatMessageCreateDto } from '../dtos/requests/chat-message-create.dto';
+import { ChatMemberService } from '../../member/services/chat-member.service';
 import { APP_EVENTS } from '@/contracts/events/internal';
 import { ChatMessageCreatedEvent } from '@/contracts/events/internal/chat/chat-message-created.event';
 import { ChatMessageSoftDeleteEvent } from '@/contracts/events/internal/chat/chat-message-soft-delete.event';
+import { ChatMessageEditDto } from '../dtos/requests/chat-message-edit.dto';
+import { ChatMessageEditedEvent } from '@/contracts/events/internal/chat/chat-message-edited.event';
+import { AttachmentMustBeDeletedEvent } from '@/contracts/events/internal/attachment-must-be-deleted.event';
+import { ChatMessageCreateSystemParams } from '../types/params/chat-message-create-system.params';
+import { UnitOfWork } from '@/core/database/uow/unit-of-work';
 
 @Injectable()
 export class ChatMessageService {
@@ -30,6 +35,7 @@ export class ChatMessageService {
 		private readonly eventEmitter: EventEmitter2,
 		private readonly mapper: ChatMessageMapper,
 		private readonly cursor: CursorService,
+		private readonly uow: UnitOfWork,
 	) {}
 
 	async listMessages(
@@ -65,7 +71,11 @@ export class ChatMessageService {
 		return this.mapper.toCountDto(messages);
 	}
 
-	async create(roomId: string, userId: string, dto: CreateMessageDto) {
+	async create(
+		roomId: string,
+		userId: string,
+		dto: ChatMessageCreateDto,
+	): Promise<void> {
 		await this.checkPerm(userId, userId, roomId);
 
 		if (!dto.content?.trim() && !dto.attachmentUrls?.length) {
@@ -74,38 +84,88 @@ export class ChatMessageService {
 			);
 		}
 
-		const message = await this.repo.create({
-			roomId,
-			senderId: userId,
-			content: dto.content,
-			attachmentUrls: dto.attachmentUrls ?? [],
-			replyToId: dto.replyToId,
+		const message = await this.uow.run(async (ctx) => {
+			const message = await this.repo.create(
+				{
+					roomId,
+					senderId: userId,
+					content: dto.content,
+					attachmentUrls: dto.attachmentUrls ?? [],
+					replyToId: dto.replyToId,
+				},
+				ctx,
+			);
+			await this.repo.updateLastActivity(roomId, ctx);
+			return message;
+		});
+		this.eventEmitter.emit(
+			APP_EVENTS.CHAT_MESSAGE_CREATED,
+			new ChatMessageCreatedEvent(message),
+		);
+	}
+	async createSystemMessage(
+		params: ChatMessageCreateSystemParams,
+	): Promise<void> {
+		const message = await this.uow.run(async (ctx) => {
+			const message = await this.repo.createSystemMessage(params, ctx);
+			await this.repo.updateLastActivity(params.roomId, ctx);
+			return message;
 		});
 
 		this.eventEmitter.emit(
 			APP_EVENTS.CHAT_MESSAGE_CREATED,
 			new ChatMessageCreatedEvent(message),
 		);
-		return message;
 	}
 
-	async softDelete(messageId: string, userId: string) {
+	async softDelete(messageId: string, userId: string): Promise<void> {
 		const message = await this.repo.findById(messageId);
-		if (!message) throw new ChatMessageNotFoundException();
-		await this.checkPerm(userId, message.senderId, message.roomId);
+		if (!message || !message.senderId)
+			throw new ChatMessageNotFoundException();
 
-		const deleted = await this.repo.softDelete(messageId);
+		await this.checkPerm(userId, message.senderId, message.roomId);
+		await this.repo.softDelete(messageId);
+
+		if (message.attachmentUrls?.length > 0) {
+			this.eventEmitter.emit(
+				APP_EVENTS.ATTACHMENTS_MUST_BE_DELETED,
+				new AttachmentMustBeDeletedEvent(message.attachmentUrls),
+			);
+		}
 		this.eventEmitter.emit(
 			APP_EVENTS.CHAT_MESSAGE_SOFT_DELETED,
 			new ChatMessageSoftDeleteEvent(messageId, message.roomId),
 		);
-		return deleted;
+	}
+
+	async edit(
+		{ roomId, messageId, content }: ChatMessageEditDto,
+		userId: string,
+	): Promise<void> {
+		const message = await this.repo.findById(messageId);
+		if (!message || !message.senderId)
+			throw new ChatMessageNotFoundException();
+
+		await this.checkPerm(userId, message.senderId, message.roomId, false);
+		const updated = await this.repo.edit({
+			messageId,
+			roomId,
+			content,
+			userId,
+		});
+		if (!updated) throw new ChatMessageNotFoundException();
+
+		this.eventEmitter.emit(
+			APP_EVENTS.CHAT_MESSAGE_EDITED,
+			new ChatMessageEditedEvent(updated),
+		);
 	}
 
 	async checkPerm(
 		userId: string,
 		senderId: string,
 		roomId: string,
+		roleCheck: boolean = true,
 	): Promise<void> {
 		if (userId === senderId) {
 			const member = await this.memberService.findByRoomAndUser({
@@ -115,6 +175,7 @@ export class ChatMessageService {
 			if (!member) throw new ChatMessageActionForbiddenException();
 			return;
 		}
+		if (!roleCheck) return;
 		const [user, sender] = await Promise.all([
 			this.memberService.findByRoomAndUser({ roomId, userId }),
 			this.memberService.findByRoomAndUser({ roomId, userId: senderId }),

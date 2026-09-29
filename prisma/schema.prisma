@@ -84,13 +84,14 @@ model User {
     blocksGiven    Block[]      @relation("blocker")
     blocksReceived Block[]      @relation("blocked")
 
-    createdChatRooms ChatRoom[]    @relation("RoomCreator")
+    createdChatRooms ChatRoom[]   @relation("RoomCreator")
     chatMemberships  ChatMember[]
-    chatMessages     ChatMessage[]
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
-    reposts   Repost[]
+
+    sentMessages     ChatMessage[]         @relation("MessageSender")
+    targetedMessages ChatMessageMetadata[] @relation("MessageTarget")
 }
 
 model Friendship {
@@ -196,13 +197,21 @@ model UserStats {
     user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
+enum PostType {
+    POST
+    REPLY
+    QUOTE
+    REPOST
+}
+
 model Post {
     id String @id @default(uuid())
 
     content  String?
     imageUrl String?
     authorId String
-    author   User    @relation(fields: [authorId], references: [id], onDelete: Cascade)
+    author   User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+    type     PostType @default(POST)
 
     likes Like[]
 
@@ -213,9 +222,8 @@ model Post {
     replies      Post[]  @relation("PostReplies")
 
     quotedPostId String?
-    quotedPost   Post?    @relation("PostQuotes", fields: [quotedPostId], references: [id], onDelete: SetNull)
-    quotes       Post[]   @relation("PostQuotes")
-    reposts      Repost[]
+    quotedPost   Post?   @relation("PostQuotes", fields: [quotedPostId], references: [id], onDelete: SetNull)
+    quotes       Post[]  @relation("PostQuotes")
 }
 
 model Like {
@@ -226,19 +234,6 @@ model Like {
 
     user User @relation(fields: [userId], references: [id], onDelete: Cascade)
     post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
-
-    createdAt DateTime @default(now())
-
-    @@unique([userId, postId])
-}
-
-model Repost {
-    id String @id @default(uuid())
-
-    userId String
-    postId String
-    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-    post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
 
     createdAt DateTime @default(now())
 
@@ -268,8 +263,9 @@ model ChatRoom {
     members  ChatMember[]
     messages ChatMessage[]
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+    lastActivityAt DateTime @default(now())
+    createdAt      DateTime @default(now())
+    updatedAt      DateTime @updatedAt
 }
 
 model ChatMember {
@@ -289,10 +285,23 @@ model ChatMember {
     @@index([userId])
 }
 
+enum ChatMessageType {
+    TEXT
+    JOINED
+    LEFT
+    KICKED
+    ROLE_UPDATED
+    OWNERSHIP_TRANSFERRED
+    ROOM_CREATED
+    ROOM_RENAMED
+    ROOM_AVATAR_CHANGED
+}
+
 model ChatMessage {
-    id       String @id @default(uuid())
+    id       String          @id @default(uuid())
     roomId   String
-    senderId String
+    senderId String?
+    type     ChatMessageType @default(TEXT)
 
     content String?
 
@@ -303,8 +312,9 @@ model ChatMessage {
     isEdited  Boolean @default(false)
     isDeleted Boolean @default(false)
 
-    room   ChatRoom @relation(fields: [roomId], references: [id], onDelete: Cascade)
-    sender User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+    room     ChatRoom             @relation(fields: [roomId], references: [id], onDelete: Cascade)
+    sender   User?                @relation("MessageSender", fields: [senderId], references: [id], onDelete: SetNull)
+    metadata ChatMessageMetadata?
 
     attachmentUrls String[] @default([])
 
@@ -313,4 +323,22 @@ model ChatMessage {
 
     @@index([roomId, createdAt])
     @@index([senderId])
+}
+
+model ChatMessageMetadata {
+    id        String @id @default(uuid())
+    messageId String @unique
+
+    targetUserId String?
+    targetUser   User?   @relation("MessageTarget", fields: [targetUserId], references: [id], onDelete: SetNull)
+
+    oldRole ChatMemberRole?
+    newRole ChatMemberRole?
+
+    oldValue String?
+    newValue String?
+
+    message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+    @@index([targetUserId])
 }

@@ -1,10 +1,10 @@
 import { Global, Module } from '@nestjs/common';
-import { HttpExceptionsFilter } from './filters/http-exception.filter';
 import { APP_FILTER, APP_INTERCEPTOR, APP_PIPE } from '@nestjs/core';
 import { ResponseInterceptor } from './interceptors/response.interceptor';
 import { CustomValidationPipe } from './pipes/custom-validation.pipe';
 import { CursorService } from './services/cursor.service';
 import { HealthController } from './health.controller';
+import { WsExceptionsFilter } from './filters/ws-exception.filter';
 
 @Global()
 @Module({
@@ -20,7 +20,7 @@ import { HealthController } from './health.controller';
 		},
 		{
 			provide: APP_FILTER,
-			useClass: HttpExceptionsFilter,
+			useClass: WsExceptionsFilter,
 		},
 		CursorService,
 	],

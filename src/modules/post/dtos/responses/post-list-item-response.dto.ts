@@ -39,6 +39,93 @@ export class PostAuthorResponseDto {
 }
 
 @Exclude()
+export class QuotedPostResponseDto {
+	@ApiProperty({
+		type: String,
+		format: 'uuid',
+		description: 'Unique identifier of the quoted post',
+		example: 'c3d4e5f6-a1b2-4c5d-8e9f-2a3b4c5d6e7f',
+	})
+	@Expose()
+	id!: string;
+
+	@ApiProperty({
+		type: String,
+		nullable: true,
+		description: 'Text content of the quoted post',
+		example: 'The original post everyone is talking about',
+	})
+	@Expose()
+	content!: string | null;
+
+	@ApiProperty({
+		type: String,
+		nullable: true,
+		description: 'URL of the image attached to the quoted post, if any',
+		example: 'https://cdn.example.com/post-image/abc.png',
+	})
+	@Expose()
+	imageUrl!: string | null;
+
+	@ApiProperty({
+		type: String,
+		format: 'date-time',
+		description: 'Timestamp when the quoted post was created',
+		example: '2026-07-15T09:32:11.000Z',
+	})
+	@Expose()
+	createdAt!: Date;
+
+	@ApiProperty({
+		type: PostAuthorResponseDto,
+		description: 'Author of the quoted post',
+	})
+	@Expose()
+	@Type(() => PostAuthorResponseDto)
+	author!: PostAuthorResponseDto;
+
+	@ApiProperty({
+		type: Number,
+		description: 'Total number of likes on the quoted post',
+		example: 42,
+	})
+	@Expose()
+	likeCount!: number;
+
+	@ApiProperty({
+		type: Number,
+		description: 'Total number of replies to the quoted post',
+		example: 7,
+	})
+	@Expose()
+	commentCount!: number;
+
+	@ApiProperty({
+		type: Number,
+		description: 'Total number of reposts of the quoted post',
+		example: 3,
+	})
+	@Expose()
+	repostCount!: number;
+
+	@ApiProperty({
+		type: Boolean,
+		description: 'Whether the current user liked the quoted post',
+		example: false,
+	})
+	@Expose()
+	isLiked!: boolean;
+
+	@ApiProperty({
+		type: Boolean,
+		description: 'Whether the current user reposted the quoted post',
+		example: false,
+	})
+	@Expose()
+	isReposted!: boolean;
+}
+
+@Exclude()
 export class PostPreviewResponseDto {
 	@ApiProperty({
 		type: String,
@@ -135,13 +222,14 @@ export class PostListItemResponseDto {
 	quotedPostId!: string | null;
 
 	@ApiPropertyOptional({
-		type: PostPreviewResponseDto,
+		type: QuotedPostResponseDto,
 		nullable: true,
-		description: 'Preview of the quoted post, if any',
+		description:
+			'Full preview of the quoted post, including its own engagement stats',
 	})
 	@Expose()
-	@Type(() => PostPreviewResponseDto)
-	quotedPost!: PostPreviewResponseDto | null;
+	@Type(() => QuotedPostResponseDto)
+	quotedPost!: QuotedPostResponseDto | null;
 
 	@ApiProperty({
 		type: Number,

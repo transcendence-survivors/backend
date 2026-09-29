@@ -3,6 +3,7 @@ import {
 	Delete,
 	Get,
 	HttpCode,
+	HttpStatus,
 	Param,
 	Post,
 	UseGuards,
@@ -22,6 +23,7 @@ export class LikeController {
 	constructor(private readonly likeService: LikeService) {}
 
 	@Post(':postId')
+	@HttpCode(HttpStatus.CREATED)
 	@ApiParam({
 		name: 'postId',
 		description: 'The id of the post to like',
@@ -37,6 +39,7 @@ export class LikeController {
 	}
 
 	@Delete(':postId')
+	@HttpCode(HttpStatus.NO_CONTENT)
 	@ApiParam({
 		name: 'postId',
 		description: 'The id of the post to unlike',
@@ -52,7 +55,7 @@ export class LikeController {
 	}
 
 	@Get(':postId')
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiParam({
 		name: 'postId',
 		description: 'The id of the post to retrieve the like info from',

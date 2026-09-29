@@ -1,3 +1,4 @@
+import { PostFeedEnum } from '../enums/post-feed.enum';
 import { PostOrderByEnum } from '../enums/post-order-by.enum';
 
 export interface PostsCursorParams {
@@ -10,6 +11,8 @@ export interface PostsCursorParams {
 export interface PostsFeedCursorParams extends PostsCursorParams {
 	parentPostId: string | null;
 	excludeUserId?: string;
+	viewerId?: string;
+	feed?: PostFeedEnum;
 }
 
 export interface PostsByAuthorCursorParams extends PostsCursorParams {

@@ -1,23 +1,40 @@
 import { Injectable } from '@nestjs/common';
 import { ChatBroadcaster } from '../broadcasters/chat.broadcaster';
 import { OnEvent } from '@nestjs/event-emitter';
-import { type ChatMessageListItem } from '../message/types/records/chat-message-list-item';
-import { APP_EVENTS } from '@/contracts/events/internal';
-import { ChatMessageCreatedEvent } from '@/contracts/events/internal/chat/chat-message-created.event';
-import { ChatMessageSoftDeleteEvent } from '@/contracts/events/internal/chat/chat-message-soft-delete.event';
-
+import {
+	APP_EVENTS,
+	ChatMemberJoinedEvent,
+	ChatMemberKickedEvent,
+	ChatMemberLeftEvent,
+	ChatMemberRoleUpdatedEvent,
+	ChatMessageEditedEvent,
+	ChatMessageSoftDeleteEvent,
+	ChatOwnershipTransferredEvent,
+	ChatRoomAvatarChangedEvent,
+	ChatRoomCreatedEvent,
+	ChatRoomRenamedEvent,
+} from '@/contracts/events/internal';
+import { ChatMessageCreatedEvent } from '@/contracts/events/internal';
+import { ChatMessageService } from '../message/services/chat-message.service';
+import { ChatMemberRole, ChatMessageType } from '@prisma-generated/enums';
+import { ChatMemberService } from '../member/services/chat-member.service';
 @Injectable()
 export class ChatEventListener {
-	constructor(private broadcaster: ChatBroadcaster) {}
+	constructor(
+		private readonly broadcaster: ChatBroadcaster,
+		private readonly messageService: ChatMessageService,
+		private readonly memberService: ChatMemberService,
+	) {}
 
 	@OnEvent(APP_EVENTS.CHAT_MESSAGE_CREATED)
-	handleMessageCreated(event: ChatMessageCreatedEvent) {
-		this.broadcaster.messageNew(event.message);
+	async handleMessageCreated(event: ChatMessageCreatedEvent) {
+		const memberIds = await this.getRoomMemberIds(event.message.roomId);
+		await this.broadcaster.messageNew(event.message, memberIds);
 	}
 
-	@OnEvent(APP_EVENTS.CHAT_MESSAGE_UPDATED)
-	handleMessageUpdated(event: ChatMessageListItem) {
-		this.broadcaster.messageUpdated(event);
+	@OnEvent(APP_EVENTS.CHAT_MESSAGE_EDITED)
+	handleMessageEdited(event: ChatMessageEditedEvent) {
+		this.broadcaster.messageEdited(event.message);
 	}
 
 	@OnEvent(APP_EVENTS.CHAT_MESSAGE_SOFT_DELETED)
@@ -25,8 +42,143 @@ export class ChatEventListener {
 		this.broadcaster.messageSoftDeleted(event.messageId, event.roomId);
 	}
 
-	@OnEvent(APP_EVENTS.CHAT_MEMBER_REMOVED)
-	handleMemberRemoved(payload: { roomId: string; userId: string }) {
-		this.broadcaster.memberRemoved(payload.roomId, payload.userId);
+	@OnEvent(APP_EVENTS.CHAT_MEMBER_ROLE_UPDATED)
+	async handleMemberRoleUpdated(event: ChatMemberRoleUpdatedEvent) {
+		const memberIds = await this.getRoomMemberIds(event.roomId);
+
+		await Promise.all([
+			this.broadcaster.memberRoleUpdated(
+				event.roomId,
+				event.targetUserId,
+				event.newRole,
+				memberIds,
+			),
+			this.messageService.createSystemMessage({
+				type: ChatMessageType.ROLE_UPDATED,
+				roomId: event.roomId,
+				senderId: event.actorId,
+				targetUserId: event.targetUserId,
+				oldRole: event.oldRole,
+				newRole: event.newRole,
+			}),
+		]);
+	}
+
+	@OnEvent(APP_EVENTS.CHAT_MEMBER_KICKED)
+	async handleMemberKicked(event: ChatMemberKickedEvent) {
+		const memberIds = await this.getRoomMemberIds(event.roomId);
+
+		await Promise.all([
+			this.broadcaster.memberRemoved(
+				event.roomId,
+				event.targetUserId,
+				memberIds,
+				true,
+			),
+			this.messageService.createSystemMessage({
+				type: ChatMessageType.KICKED,
+				roomId: event.roomId,
+				senderId: event.senderId,
+				targetUserId: event.targetUserId,
+			}),
+		]);
+	}
+
+	@OnEvent(APP_EVENTS.CHAT_MEMBER_JOINED)
+	async handleMemberJoined(event: ChatMemberJoinedEvent) {
+		const memberIds = await this.getRoomMemberIds(event.roomId);
+
+		await Promise.all([
+			this.broadcaster.memberAdded(event.roomId, event.userId, memberIds),
+			this.messageService.createSystemMessage({
+				type: ChatMessageType.JOINED,
+				senderId: event.senderId,
+				roomId: event.roomId,
+				targetUserId: event.userId,
+			}),
+		]);
+	}
+
+	@OnEvent(APP_EVENTS.CHAT_MEMBER_LEFT)
+	async handleMemberLeft(event: ChatMemberLeftEvent) {
+		const memberIds = await this.getRoomMemberIds(event.roomId);
+
+		await Promise.all([
+			this.broadcaster.memberRemoved(
+				event.roomId,
+				event.userId,
+				memberIds,
+				false,
+			),
+			this.messageService.createSystemMessage({
+				type: ChatMessageType.LEFT,
+				roomId: event.roomId,
+				targetUserId: event.userId,
+			}),
+		]);
+	}
+
+	@OnEvent(APP_EVENTS.CHAT_OWNERSHIP_TRANSFERRED)
+	async handleOwnershipTransferred(event: ChatOwnershipTransferredEvent) {
+		const memberIds = await this.getRoomMemberIds(event.roomId);
+
+		await Promise.all([
+			this.broadcaster.memberRoleUpdated(
+				event.roomId,
+				event.targetUserId,
+				ChatMemberRole.OWNER,
+				memberIds,
+			),
+			this.broadcaster.memberRoleUpdated(
+				event.roomId,
+				event.senderId,
+				ChatMemberRole.ADMIN,
+				memberIds,
+			),
+			this.messageService.createSystemMessage({
+				type: ChatMessageType.OWNERSHIP_TRANSFERRED,
+				roomId: event.roomId,
+				senderId: event.senderId,
+				targetUserId: event.targetUserId,
+				oldRole: event.oldRole,
+				newRole: event.newRole,
+			}),
+		]);
+	}
+
+	@OnEvent(APP_EVENTS.CHAT_ROOM_CREATED)
+	async handleRoomCreated(event: ChatRoomCreatedEvent) {
+		await this.messageService.createSystemMessage({
+			type: ChatMessageType.ROOM_CREATED,
+			roomId: event.roomId,
+			senderId: event.senderId,
+		});
+	}
+
+	@OnEvent(APP_EVENTS.CHAT_ROOM_RENAMED)
+	async handleRoomRenamed(event: ChatRoomRenamedEvent) {
+		this.broadcaster.roomRenamed(event.roomId, event.newValue);
+		await this.messageService.createSystemMessage({
+			type: ChatMessageType.ROOM_RENAMED,
+			roomId: event.roomId,
+			senderId: event.senderId,
+			oldValue: event.oldValue,
+			newValue: event.newValue,
+		});
+	}
+	@OnEvent(APP_EVENTS.CHAT_ROOM_AVATAR_CHANGED)
+	async handleRoomAvatarChanged(event: ChatRoomAvatarChangedEvent) {
+		this.broadcaster.roomAvatarChanged(event.roomId, event.newValue);
+		await this.messageService.createSystemMessage({
+			type: ChatMessageType.ROOM_AVATAR_CHANGED,
+			roomId: event.roomId,
+			senderId: event.senderId,
+			oldValue: event.oldValue,
+			newValue: event.newValue,
+		});
+	}
+
+	private getRoomMemberIds(roomId: string): Promise<string[]> {
+		return this.memberService.findUserIdsByRoomId(roomId);
 	}
 }

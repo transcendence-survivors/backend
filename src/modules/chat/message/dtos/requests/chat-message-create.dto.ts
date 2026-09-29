@@ -7,8 +7,7 @@ import {
 	MaxLength,
 } from 'class-validator';
 
-// dto/create-message.dto.ts
-export class CreateMessageDto {
+export class ChatMessageCreateDto {
 	@IsUUID()
 	roomId!: string;
 
@@ -19,7 +18,7 @@ export class CreateMessageDto {
 
 	@IsOptional()
 	@IsArray()
-	@IsUrl({}, { each: true })
+	@IsUrl({ require_tld: false }, { each: true })
 	attachmentUrls?: string[];
 
 	@IsOptional()

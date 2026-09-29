@@ -5,7 +5,9 @@ import {
 	Delete,
 	Get,
 	HttpCode,
+	HttpStatus,
 	Param,
+	Patch,
 	Post,
 	Query,
 	UseGuards,
@@ -26,12 +28,19 @@ import { CurrentUser } from '@/core/security/decorators/current-user.decorator';
 import { type JwtAccessPayload } from '@/core/security/interfaces/jwt-payload.interface';
 import { ChatRoomListItemResponseDto } from '../dtos/responses/chat-room-list-item-response.dto';
 import { ChatRoomCreateDto } from '../dtos/requests/chat-room-create.dto';
+
+import { ChatRoomUpdateDto } from '../dtos/requests/chat-room-update.dto';
+import { ApiGroupedErrorResponse } from '@/shared/decorators/api-error-response.decorator';
 import {
-	ApiChatRoomDmConflictResponse,
-	ApiChatRoomNotFoundResponse,
-	ApiChatRoomSelfDmResponse,
-	ApiChatUserNotFoundResponse,
-} from '../decorators/chat-room-api-errors.decorator';
+	ChatRoomDirectImmutableException,
+	ChatRoomUpdateEmptyException,
+	SelfChatDmException,
+} from '../exceptions/chat-room-bad.exception';
+import { ChatRoomNotFoundException } from '../exceptions/chat-room-not-found.exceptions';
+import { ChatRoomDmConflictException } from '../exceptions/chat-room-conflict.exception';
+import { ChatRoomDetailResponseDto } from '../dtos/responses/chat-room-detail-response.dto';
+import { ChatMemberNotFoundException } from '../../member/exceptions/chat-member-not-found.exception';
+import { ChatRoomDirectCreateDto } from '../dtos/requests/chat-room-direct.dto';
 
 @UseGuards(JWTAccessGuard)
 @Controller('chat/rooms')
@@ -40,7 +49,7 @@ export class ChatRoomController {
 
 	@SearchThrottle()
 	@Get()
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiQueryDto(ChatRoomPaginateDto)
 	@ApiSuccessResponse(ChatRoomPaginatedListResponseDto)
 	@ApiValidationErrorResponse({
@@ -56,16 +65,16 @@ export class ChatRoomController {
 	}
 
 	@Post()
-	@HttpCode(201)
+	@HttpCode(HttpStatus.CREATED)
 	@ApiCreatedSuccessResponse(ChatRoomListItemResponseDto)
 	@ApiValidationErrorResponse({
 		name: ['name must be a string'],
 		type: ['type must be a valid enum value'],
 		userIds: ['userIds must be an array of strings'],
 	})
-	@ApiChatRoomDmConflictResponse()
-	@ApiChatRoomSelfDmResponse()
-	@ApiChatUserNotFoundResponse()
+	@ApiGroupedErrorResponse([SelfChatDmException])
+	@ApiGroupedErrorResponse([ChatMemberNotFoundException])
+	@ApiGroupedErrorResponse([ChatRoomDmConflictException])
 	@ResponseEnvelope('Chat room created successfully')
 	create(
 		@CurrentUser() { sub }: JwtAccessPayload,
@@ -74,27 +83,64 @@ export class ChatRoomController {
 		return this.service.createRoom(body, sub);
 	}
 
-	@Delete(':roomId')
-	@HttpCode(204)
+	@Post('direct')
+	@HttpCode(HttpStatus.OK)
+	@ApiSuccessResponse(ChatRoomListItemResponseDto)
+	@ApiValidationErrorResponse({
+		targetUserId: ['targetUserId must be a UUID'],
+	})
+	@ApiGroupedErrorResponse([SelfChatDmException])
+	@ApiGroupedErrorResponse([ChatMemberNotFoundException])
+	@ResponseEnvelope('Direct chat room retrieved or created successfully')
+	getOrCreateDirectRoom(
+		@CurrentUser() { sub }: JwtAccessPayload,
+		@Body() body: ChatRoomDirectCreateDto,
+	): Promise<ChatRoomListItemResponseDto> {
+		return this.service.getOrCreateDirectRoom(sub, body.targetUserId);
+	}
+
+	@Patch(':roomId')
+	@HttpCode(HttpStatus.NO_CONTENT)
 	@ApiNoContentSuccessResponse()
-	@ApiChatRoomNotFoundResponse()
+	@ApiValidationErrorResponse({
+		name: ['name must be a string'],
+		avatarUrl: ['avatarUrl must be a valid URL'],
+	})
+	@ApiGroupedErrorResponse([
+		ChatRoomDirectImmutableException,
+		ChatRoomUpdateEmptyException,
+	])
+	@ApiGroupedErrorResponse([ChatRoomNotFoundException])
+	@ResponseEnvelope('Chat room updated successfully')
+	async update(
+		@CurrentUser() { sub }: JwtAccessPayload,
+		@Param('roomId') roomId: string,
+		@Body() body: ChatRoomUpdateDto,
+	): Promise<void> {
+		await this.service.updateRoom(roomId, sub, body);
+	}
+
+	@Delete(':roomId')
+	@HttpCode(HttpStatus.NO_CONTENT)
+	@ApiNoContentSuccessResponse()
+	@ApiGroupedErrorResponse([ChatRoomNotFoundException])
 	@ResponseEnvelope('Chat room deleted successfully')
-	delete(
+	async delete(
 		@CurrentUser() { sub }: JwtAccessPayload,
 		@Param('roomId') roomId: string,
 	): Promise<void> {
-		return this.service.deleteRoom(roomId, sub);
+		await this.service.deleteRoom(roomId, sub);
 	}
 
 	@Get(':roomId')
-	@HttpCode(200)
-	@ApiSuccessResponse(ChatRoomListItemResponseDto)
-	@ApiChatRoomNotFoundResponse()
+	@HttpCode(HttpStatus.OK)
+	@ApiSuccessResponse(ChatRoomDetailResponseDto)
+	@ApiGroupedErrorResponse([ChatRoomNotFoundException])
 	@ResponseEnvelope('Chat room retrieved successfully')
 	get(
 		@CurrentUser() { sub }: JwtAccessPayload,
 		@Param('roomId') roomId: string,
-	): Promise<ChatRoomListItemResponseDto> {
+	): Promise<ChatRoomDetailResponseDto> {
 		return this.service.getRoom(roomId, sub);
 	}
 }

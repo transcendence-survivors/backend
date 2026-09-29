@@ -2,6 +2,7 @@ import {
 	Controller,
 	Get,
 	HttpCode,
+	HttpStatus,
 	Param,
 	Query,
 	UseGuards,
@@ -17,16 +18,17 @@ import { ChatMessagePaginatedListResponseDto } from '../dtos/responses/chat-mess
 import { ApiValidationErrorResponse } from '@/shared/decorators/api-validation-error-response.decorator';
 import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
 import { CurrentUser } from '@/core/security/decorators/current-user.decorator';
-import { ChatMessageCountResponseDto } from '../dtos/responses/chat-room-count-response.dto';
+import { ChatMessageCountResponseDto } from '../dtos/responses/chat-message-count-response.dto';
+import { ChatRoomMembershipGuard } from '../../member/guards/chat-room-membership.guard';
 
-@UseGuards(JWTAccessGuard)
+@UseGuards(JWTAccessGuard, ChatRoomMembershipGuard)
 @Controller('chat/:roomId/messages')
 export class ChatMessageController {
 	constructor(private readonly service: ChatMessageService) {}
 
 	@SearchThrottle()
 	@Get()
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiQueryDto(ChatMessagePaginateDto)
 	@ApiSuccessResponse(ChatMessagePaginatedListResponseDto)
 	@ApiValidationErrorResponse({
@@ -43,7 +45,7 @@ export class ChatMessageController {
 	}
 
 	@Get('count')
-	@HttpCode(200)
+	@HttpCode(HttpStatus.OK)
 	@ApiQueryDto(ChatMessagePaginateDto)
 	@ApiSuccessResponse(ChatMessageCountResponseDto)
 	@ApiValidationErrorResponse({

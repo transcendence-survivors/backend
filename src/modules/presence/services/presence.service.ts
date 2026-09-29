@@ -147,8 +147,8 @@ export class PresenceService implements OnModuleDestroy {
 		if (this.store.getSocketsByUserId(userId).length > 0) return;
 		try {
 			await this.repo.disconnectUser(userId);
-		} catch (error) {
-			console.error(`Error disconnecting user ${userId}:`, error);
+		} catch {
+			void 0;
 		}
 		if (this.store.getSocketsByUserId(userId).length > 0) return;
 
