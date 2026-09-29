@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { InjectEnv } from '@/core/config/env/injects/env.inject';
@@ -9,6 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import { WsException } from '@nestjs/websockets';
 import { Socket } from 'socket.io';
 import { parseCookie } from 'cookie';
+import { PrismaService } from '@/core/database/services/prisma.service';
 
 export const JWT_ACCESS_TOKEN_KEY = 'jwt-access-token';
 
@@ -17,7 +18,10 @@ export class JWTAccessStrategy extends PassportStrategy(
 	Strategy,
 	JWT_ACCESS_TOKEN_KEY,
 ) {
-	constructor(@InjectEnv() readonly env: Env) {
+	constructor(
+		@InjectEnv() readonly env: Env,
+		private readonly prisma: PrismaService,
+	) {
 		super({
 			jwtFromRequest: ExtractJwt.fromExtractors([
 				(req: Request) => {
@@ -31,7 +35,14 @@ export class JWTAccessStrategy extends PassportStrategy(
 		});
 	}
 
-	validate(payload: JwtAccessPayload): JwtAccessPayload {
+	async validate(payload: JwtAccessPayload): Promise<JwtAccessPayload> {
+		const user = await this.prisma.user.findUnique({
+			where: { id: payload.sub },
+			select: { id: true },
+		});
+
+		if (!user)
+			throw new UnauthorizedException('User account no longer exists');
 		return payload;
 	}
 }
@@ -40,10 +51,11 @@ export class JWTAccessStrategy extends PassportStrategy(
 export class WsJWTAccessStrategy {
 	constructor(
 		private readonly jwtService: JwtService,
+		private readonly prisma: PrismaService,
 		@InjectEnv() readonly env: Env,
 	) {}
 
-	validateSocket(client: Socket): JwtAccessPayload {
+	async validateSocket(client: Socket): Promise<JwtAccessPayload> {
 		const rawCookieHeader = client.handshake.headers.cookie;
 
 		if (!rawCookieHeader) {
@@ -57,8 +69,9 @@ export class WsJWTAccessStrategy {
 			throw new WsException('Access token not found in cookies');
 		}
 
+		let payload: JwtAccessPayload;
 		try {
-			return this.jwtService.verify<JwtAccessPayload>(token, {
+			payload = this.jwtService.verify<JwtAccessPayload>(token, {
 				secret: this.env.accessToken.secret,
 			});
 		} catch (err: unknown) {
@@ -67,5 +80,11 @@ export class WsJWTAccessStrategy {
 				`Invalid or expired access token: ${message}`,
 			);
 		}
+		const user = await this.prisma.user.findUnique({
+			where: { id: payload.sub },
+			select: { id: true },
+		});
+		if (!user) throw new WsException('User account no longer exists');
+		return payload;
 	}
 }

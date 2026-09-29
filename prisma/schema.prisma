@@ -259,8 +259,8 @@ model ChatRoom {
     name      String?
     avatarUrl String?
 
-    createdBy String
-    creator   User   @relation("RoomCreator", fields: [createdBy], references: [id])
+    createdBy String?
+    creator   User?   @relation("RoomCreator", fields: [createdBy], references: [id], onDelete: SetNull)
 
     members  ChatMember[]
     messages ChatMessage[]
@@ -309,7 +309,7 @@ model ChatMessage {
     content String?
 
     replyToId String?
-    replyTo   ChatMessage?  @relation("MessageReplies", fields: [replyToId], references: [id])
+    replyTo   ChatMessage?  @relation("MessageReplies", fields: [replyToId], references: [id], onDelete: SetNull)
     replies   ChatMessage[] @relation("MessageReplies")
 
     isEdited  Boolean @default(false)

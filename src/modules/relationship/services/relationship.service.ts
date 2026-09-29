@@ -9,7 +9,7 @@ import { FriendshipRelationship } from '../types/records/friendship-relationship
 import { BlockRelationship } from '../types/records/block-relationship.type copy';
 import { InjectUserService } from '@/contracts/services/user/user-service.inject';
 import { type IUserService } from '@/contracts/services/user/user-service.port';
-import { UserNotFoundException } from '@/modules/user/exceptions/user.not-found.exception';
+import { UserNotFoundException } from '@/modules/user/exceptions/user-not-found.exception';
 
 @Injectable()
 export class RelationshipService {

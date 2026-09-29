@@ -8,8 +8,7 @@ export class AuthProviderCredentialsException extends AppHttpException {
 	static describe(): ApiErrorDescription {
 		return {
 			status: HttpStatus.UNAUTHORIZED,
-			message:
-				'Invalid credentials provided. Please check your username/email and password.',
+			message: 'Invalid credentials provided.',
 			messageKey: 'auth_credentials',
 		};
 	}
