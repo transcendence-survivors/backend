@@ -20,6 +20,8 @@ import { ChatMessageEditedEvent } from '@/contracts/events/internal/chat/chat-me
 import { AttachmentMustBeDeletedEvent } from '@/contracts/events/internal/attachment-must-be-deleted.event';
 import { ChatMessageCreateSystemParams } from '../types/params/chat-message-create-system.params';
 import { UnitOfWork } from '@/core/database/uow/unit-of-work';
+import { ChatMessageSharePostDto } from '../dtos/requests/chat-message-share-post.dto';
+import { ChatMessageSharePostResponseDto } from '../dtos/responses/chat-message-share-post-response.dto';
 
 @Injectable()
 export class ChatMessageService {
@@ -116,6 +118,66 @@ export class ChatMessageService {
 			APP_EVENTS.CHAT_MESSAGE_CREATED,
 			new ChatMessageCreatedEvent(message),
 		);
+	}
+
+	async sharePost(
+		userId: string,
+		{ postId, roomIds, comment }: ChatMessageSharePostDto,
+	): Promise<ChatMessageSharePostResponseDto> {
+		const userMemberships =
+			await this.memberService.findUserMembershipsInRooms({
+				userId,
+				roomIds,
+			});
+
+		const authorizedRoomIds = new Set(userMemberships.map((m) => m.roomId));
+		const validRoomIds = roomIds.filter((id) => authorizedRoomIds.has(id));
+		const forbiddenRoomIds = roomIds.filter(
+			(id) => !authorizedRoomIds.has(id),
+		);
+
+		const sharePromises = validRoomIds.map(async (roomId) => {
+			const message = await this.uow.run(async (ctx) => {
+				const msg = await this.repo.sharePost(
+					{
+						roomId,
+						senderId: userId,
+						sharedPostId: postId,
+						content: comment,
+					},
+					ctx,
+				);
+				await this.repo.updateLastActivity(roomId, ctx);
+				return msg;
+			});
+
+			this.eventEmitter.emit(
+				APP_EVENTS.CHAT_MESSAGE_CREATED,
+				new ChatMessageCreatedEvent(message),
+			);
+
+			return roomId;
+		});
+
+		const results = await Promise.allSettled(sharePromises);
+		const successfulRoomIds: string[] = [];
+		for (const result of results) {
+			if (result.status === 'fulfilled') {
+				successfulRoomIds.push(result.value);
+			}
+		}
+
+		const successfulSet = new Set(successfulRoomIds);
+		const failedValidRoomIds = validRoomIds.filter(
+			(id) => !successfulSet.has(id),
+		);
+		const failedRoomIds = [...forbiddenRoomIds, ...failedValidRoomIds];
+
+		return this.mapper.toSharePostResponseDto({
+			postId,
+			successfulRoomIds,
+			failedRoomIds,
+		});
 	}
 
 	async softDelete(messageId: string, userId: string): Promise<void> {

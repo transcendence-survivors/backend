@@ -3,7 +3,7 @@ import {
 	ChatMemberSelect,
 	ChatMemberWhereInput,
 } from '@prisma-generated/internal/prismaNamespaceBrowser';
-import { ChatMemberListItem } from '../types/records/chat-member-list-item';
+import { ChatMemberListItem } from '../types/records/chat-member-list-item.type';
 import { ChatMemberOrderByEnum } from '../types/enums/chat-member-order-by.enum';
 import { UserQueryHelper } from '@/modules/user/user.public-api';
 

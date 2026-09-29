@@ -24,6 +24,12 @@ export class ChatRoomMembershipGuard implements CanActivate {
 		if (!userId || !roomId) {
 			throw new ForbiddenException('Missing user or room context');
 		}
+		console.log(
+			'Checking membership for user:',
+			userId,
+			'in room:',
+			roomId,
+		);
 		await this.memberService.checkMembership({ roomId, userId });
 		return true;
 	}

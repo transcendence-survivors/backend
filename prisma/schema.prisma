@@ -224,6 +224,8 @@ model Post {
     quotedPostId String?
     quotedPost   Post?   @relation("PostQuotes", fields: [quotedPostId], references: [id], onDelete: SetNull)
     quotes       Post[]  @relation("PostQuotes")
+
+    sharedInMessages ChatMessage[]
 }
 
 model Like {
@@ -295,6 +297,7 @@ enum ChatMessageType {
     ROOM_CREATED
     ROOM_RENAMED
     ROOM_AVATAR_CHANGED
+    POST_SHARE
 }
 
 model ChatMessage {
@@ -317,6 +320,8 @@ model ChatMessage {
     metadata ChatMessageMetadata?
 
     attachmentUrls String[] @default([])
+    sharedPostId   String?
+    sharedPost     Post?    @relation(fields: [sharedPostId], references: [id], onDelete: SetNull)
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt

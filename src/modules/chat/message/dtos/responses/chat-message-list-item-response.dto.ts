@@ -49,6 +49,98 @@ class ChatMessageSenderDto {
 }
 
 @Exclude()
+class SharedPostAuthorDto {
+	@ApiProperty({
+		type: String,
+		format: 'uuid',
+		description: 'Unique identifier of the post author',
+		example: 'c4d5e6f7-8a9b-0c1d-2e3f-4a5b6c7d8e9f',
+	})
+	@Expose()
+	id!: string;
+
+	@ApiProperty({
+		type: String,
+		description: 'Username of the post author',
+		example: 'johndoe',
+	})
+	@Expose()
+	username!: string;
+
+	@ApiProperty({
+		type: String,
+		description: 'Display name of the post author',
+		example: 'John Doe',
+	})
+	@Expose()
+	displayName!: string;
+
+	@ApiPropertyOptional({
+		type: String,
+		nullable: true,
+		description: "URL of the author's avatar image, if set",
+		example: 'https://cdn.example.com/avatars/john-doe.png',
+	})
+	@Expose()
+	avatarUrl!: string | null;
+}
+
+@Exclude()
+export class SharedPostDto {
+	@ApiProperty({
+		type: String,
+		format: 'uuid',
+		description: 'Unique identifier of the shared post',
+		example: '123e4567-e89b-12d3-a456-426614174000',
+	})
+	@Expose()
+	id!: string;
+
+	@ApiPropertyOptional({
+		type: String,
+		nullable: true,
+		description: 'Text content of the shared post',
+		example: 'Check out this interesting article!',
+	})
+	@Expose()
+	content!: string | null;
+
+	@ApiPropertyOptional({
+		type: String,
+		nullable: true,
+		description: 'Image URL associated with the shared post, if any',
+		example: 'https://cdn.example.com/posts/image.png',
+	})
+	@Expose()
+	imageUrl!: string | null;
+
+	@ApiProperty({
+		type: String,
+		description: 'Type or category of the shared post',
+		example: 'ARTICLE',
+	})
+	@Expose()
+	type!: string;
+
+	@ApiProperty({
+		type: String,
+		format: 'date-time',
+		description: 'Timestamp when the post was created',
+		example: '2026-01-01T12:00:00Z',
+	})
+	@Expose()
+	createdAt!: Date;
+
+	@ApiProperty({
+		type: SharedPostAuthorDto,
+		description: 'Author details of the shared post',
+	})
+	@Expose()
+	@Type(() => SharedPostAuthorDto)
+	author!: SharedPostAuthorDto;
+}
+
+@Exclude()
 export class ChatMessageMetadataDto {
 	@ApiPropertyOptional({
 		enum: ChatMemberRole,
@@ -120,7 +212,8 @@ export class ChatMessageListItemResponseDto {
 
 	@ApiProperty({
 		enum: ChatMessageType,
-		description: 'Type of the message (standard text or system event)',
+		description:
+			'Type of the message (standard text, post share, or system event)',
 		example: ChatMessageType.TEXT,
 	})
 	@Expose()
@@ -191,6 +284,15 @@ export class ChatMessageListItemResponseDto {
 	@Expose()
 	@Type(() => ChatMessageSenderDto)
 	sender!: ChatMessageSenderDto | null;
+
+	@ApiPropertyOptional({
+		type: SharedPostDto,
+		nullable: true,
+		description: 'Attached shared post data, if message type is POST_SHARE',
+	})
+	@Expose()
+	@Type(() => SharedPostDto)
+	sharedPost!: SharedPostDto | null;
 
 	@ApiPropertyOptional({
 		type: ChatMessageMetadataDto,

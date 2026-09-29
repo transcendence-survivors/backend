@@ -26,4 +26,5 @@ export interface IUserService {
 
 	getIdByUsername(username: string): Promise<string>;
 	getItemByUsername(username: string, ctx?: DbContext): Promise<UserListItem>;
+	getItemById(userId: string, ctx?: DbContext): Promise<UserListItem>;
 }

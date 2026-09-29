@@ -31,6 +31,23 @@ export class ChatMessageQueryHelper {
 					},
 				},
 			},
+			sharedPost: {
+				select: {
+					id: true,
+					content: true,
+					imageUrl: true,
+					type: true,
+					createdAt: true,
+					author: {
+						select: {
+							id: true,
+							username: true,
+							displayName: true,
+							avatarUrl: true,
+						},
+					},
+				},
+			},
 			metadata: {
 				select: {
 					oldRole: true,

@@ -36,13 +36,19 @@ export class ChatEventListener {
 	}
 
 	@OnEvent(APP_EVENTS.CHAT_MESSAGE_EDITED)
-	handleMessageEdited(event: ChatMessageEditedEvent) {
-		this.broadcaster.messageEdited(event.message);
+	async handleMessageEdited(event: ChatMessageEditedEvent) {
+		const memberIds = await this.getRoomMemberIds(event.message.roomId);
+		await this.broadcaster.messageEdited(event.message, memberIds);
 	}
 
 	@OnEvent(APP_EVENTS.CHAT_MESSAGE_SOFT_DELETED)
-	handleMessageSoftDeleted(event: ChatMessageSoftDeleteEvent) {
-		this.broadcaster.messageSoftDeleted(event.messageId, event.roomId);
+	async handleMessageSoftDeleted(event: ChatMessageSoftDeleteEvent) {
+		const memberIds = await this.getRoomMemberIds(event.roomId);
+		await this.broadcaster.messageSoftDeleted(
+			event.messageId,
+			event.roomId,
+			memberIds,
+		);
 	}
 
 	@OnEvent(APP_EVENTS.CHAT_MEMBER_ROLE_UPDATED)
