@@ -30,14 +30,19 @@ export class GameController {
 		return this.service.recordGame(dto);
 	}
 
-	@Get(':userId/summary')
+	@Get(':username/summary')
 	@HttpCode(HttpStatus.OK)
-	@ApiParam({ name: 'userId', type: 'string', description: 'User ID' })
+	@ApiParam({
+		name: 'username',
+		type: 'string',
+		description: 'User username',
+		example: 'johndoe',
+	})
 	@ApiSuccessResponse(UserGameSummaryResponseDto)
 	@ResponseEnvelope('User game summary retrieved successfully')
 	async getUserSummary(
-		@Param('userId') userId: string,
+		@Param('username') username: string,
 	): Promise<UserGameSummaryResponseDto> {
-		return this.service.getUserSummary(userId);
+		return this.service.getUserSummary(username);
 	}
 }

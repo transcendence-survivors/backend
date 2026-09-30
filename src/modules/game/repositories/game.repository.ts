@@ -57,12 +57,19 @@ export class GameRepository {
 	}
 
 	async findUserSummary(
-		userId: string,
+		username: string,
 		ctx?: DbContext,
 	): Promise<UserSummaryWithWeapons | null> {
 		const client = ctx?.client ?? this.prisma;
-		return client.userGameSummary.findUnique({
-			where: { userId },
+		return client.userGameSummary.findFirst({
+			where: {
+				user: {
+					username: {
+						equals: username,
+						mode: 'insensitive',
+					},
+				},
+			},
 			select: {
 				id: true,
 				userId: true,

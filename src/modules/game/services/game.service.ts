@@ -30,8 +30,10 @@ export class GameService {
 		private readonly uow: UnitOfWork,
 	) {}
 
-	async getUserSummary(userId: string): Promise<UserGameSummaryResponseDto> {
-		const summary = await this.repo.findUserSummary(userId);
+	async getUserSummary(
+		username: string,
+	): Promise<UserGameSummaryResponseDto> {
+		const summary = await this.repo.findUserSummary(username);
 		if (!summary) throw new UserGameSummaryNotFoundException();
 
 		return this.mapper.toUserSummaryResponseDto(summary);
