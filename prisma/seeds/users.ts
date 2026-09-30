@@ -57,15 +57,15 @@ export async function seedUsers(prisma: PrismaClient) {
 		select: { id: true, username: true },
 	});
 
-	console.log(`Seeding userStats for ${users.length} users`);
-	await prisma.userStats.createMany({
-		data: users.map((user) => ({
-			userId: user.id,
-			postCount: fake.stats.postCount(),
-			followerCount: fake.stats.followerCount(),
-			followingCount: fake.stats.followingCount(),
-			likesGiven: fake.stats.likesGiven(),
-			likesReceived: fake.stats.likesReceived(),
+	console.log(`Seeding userGameSummaries for ${users.length} users`);
+	await prisma.userGameSummary.createMany({
+		data: users.map((u) => ({
+			userId: u.id,
+			totalGamesPlayed: 0,
+			totalKills: 0,
+			totalSurvivalTime: 0,
+			highestSurvivalTime: 0,
+			highestKills: 0,
 		})),
 		skipDuplicates: true,
 	});

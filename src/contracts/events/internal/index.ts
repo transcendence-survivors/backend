@@ -48,6 +48,7 @@ export const APP_EVENTS = {
 	PASSWORD_RESET_REQUESTED: 'password.reset.requested',
 	BLOCK_CREATED: 'block.created',
 	ATTACHMENTS_MUST_BE_DELETED: 'attachments.must-be-deleted',
+	GAME_CREATED: 'game.created',
 	...FriendRequestsEvents,
 	...PresenceEvents,
 	...ChatEvents,

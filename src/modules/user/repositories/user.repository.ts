@@ -121,8 +121,14 @@ export class UserRepository {
 				username: data.username,
 				gender: data.gender,
 				localePreference: data.localePreference,
-				stats: {
-					create: {},
+				userGameSummary: {
+					create: {
+						totalGamesPlayed: 0,
+						totalKills: 0,
+						totalSurvivalTime: 0,
+						highestSurvivalTime: 0,
+						highestKills: 0,
+					},
 				},
 			},
 			select: {

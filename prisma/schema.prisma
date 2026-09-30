@@ -70,8 +70,6 @@ model User {
     preferedPresenceStatus PresencePreferedStatus @default(ONLINE)
     lastActiveAt           DateTime               @default(now())
 
-    stats UserStats? @relation
-
     posts Post[]
     likes Like[]
 
@@ -92,7 +90,9 @@ model User {
 
     sentMessages     ChatMessage[]         @relation("MessageSender")
     targetedMessages ChatMessageMetadata[] @relation("MessageTarget")
-    gamePlayerStats  GamePlayerStats[]
+
+    gamePlayerStats GamePlayerStats[]
+    userGameSummary UserGameSummary?
 }
 
 model Friendship {
@@ -183,19 +183,6 @@ model ResetPasswordToken {
 
     @@index([userId])
     @@index([expiresAt])
-}
-
-model UserStats {
-    userId String @id
-
-    postCount      Int @default(0)
-    followerCount  Int @default(0)
-    followingCount Int @default(0)
-
-    likesGiven    Int @default(0)
-    likesReceived Int @default(0)
-
-    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 enum PostType {
@@ -353,8 +340,10 @@ model GameStats {
     id String @id @default(uuid())
 
     survivalTime Int
-    players      GamePlayerStats[]
     totalKills   Int
+    players      GamePlayerStats[]
+
+    createdAt DateTime @default(now())
 }
 
 model GamePlayerStats {
@@ -373,11 +362,14 @@ model GamePlayerStats {
     duration     Float
     quantity     Int
     penetration  Float
-    weapons      GamePlayerWeaponStats[]
-    gameStats    GameStats?              @relation(fields: [gameStatsId], references: [id])
-    gameStatsId  String?
-    userId       String
-    user         User                    @relation(fields: [userId], references: [id])
+
+    weapons GamePlayerWeaponStats[]
+
+    gameStats   GameStats? @relation(fields: [gameStatsId], references: [id], onDelete: Cascade)
+    gameStatsId String?
+
+    userId String?
+    user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
 enum GameWeaponKind {
@@ -389,10 +381,42 @@ enum GameWeaponKind {
 }
 
 model GamePlayerWeaponStats {
+    id    String         @id @default(uuid())
+    kind  GameWeaponKind
+    level Int
+
+    gamePlayerStats   GamePlayerStats? @relation(fields: [gamePlayerStatsId], references: [id], onDelete: Cascade)
+    gamePlayerStatsId String?
+}
+
+model UserGameSummary {
     id String @id @default(uuid())
 
-    kind              GameWeaponKind
-    level             Int
-    gamePlayerStats   GamePlayerStats? @relation(fields: [gamePlayerStatsId], references: [id])
-    gamePlayerStatsId String?
+    userId String @unique
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    totalGamesPlayed Int       @default(0)
+    lastPlayedAt     DateTime?
+
+    totalKills        Int @default(0)
+    totalSurvivalTime Int @default(0)
+
+    highestSurvivalTime Int @default(0)
+    highestKills        Int @default(0)
+
+    weaponSummaries UserGameWeaponSummary[]
+    updatedAt       DateTime                @updatedAt
+}
+
+model UserGameWeaponSummary {
+    id String @id @default(uuid())
+
+    userGameSummary   UserGameSummary @relation(fields: [userGameSummaryId], references: [id], onDelete: Cascade)
+    userGameSummaryId String
+
+    kind         GameWeaponKind
+    timesUsed    Int            @default(0)
+    highestLevel Int            @default(0)
+
+    @@unique([userGameSummaryId, kind])
 }
