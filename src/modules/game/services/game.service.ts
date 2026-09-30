@@ -18,7 +18,16 @@ import { DbContext } from '@/core/database/uow/db-context';
 import { UpdateUserSummaryParams } from '../types/params/user-summary.params';
 import { UserGameSummaryResponseDto } from '../dtos/responses/user-game-summary-response.dto';
 import { GameMapper } from '../mappers/game.mapper';
-import { UserGameSummaryNotFoundException } from '../exceptions/game-not-found.exceptions';
+import {
+	GameStatsNotFoundException,
+	UserGameSummaryNotFoundException,
+} from '../exceptions/game-not-found.exceptions';
+import { GameStatsDetailsResponseDto } from '../dtos/responses/game-stats-details-response.dto';
+import { GameStatsPaginateDto } from '../dtos/requests/game-stats-paginate.dto';
+import { GameStatsPaginatedListResponseDto } from '../dtos/responses/game-stats-paginated-list-response.dto';
+import { CursorService } from '@/shared/services/cursor.service';
+import { LeaderboardPaginateDto } from '../dtos/requests/leaderboard-paginate.dto.';
+import { LeaderboardPaginatedListResponseDto } from '../dtos/responses/leaderboard-paginated-list-response.dto';
 
 @Injectable()
 export class GameService {
@@ -27,13 +36,52 @@ export class GameService {
 		private readonly repo: GameRepository,
 		private readonly mapper: GameMapper,
 		private readonly eventEmitter: EventEmitter2,
+		private readonly cursor: CursorService,
 		private readonly uow: UnitOfWork,
 	) {}
+
+	async listGames(
+		dto: GameStatsPaginateDto,
+	): Promise<GameStatsPaginatedListResponseDto> {
+		const gameStatsList = await this.repo.cursorGames({
+			limit: dto.limit,
+			cursor: dto.cursor,
+			orderBy: dto.orderBy,
+			username: dto.username,
+		});
+
+		const dtos = this.mapper.toListItemDtoList(gameStatsList);
+		const result = this.cursor.create(dtos, dto.limit, (item) => item.id);
+		return this.mapper.toPaginatedListDto(result);
+	}
+
+	async listLeaderboard(
+		dto: LeaderboardPaginateDto,
+	): Promise<LeaderboardPaginatedListResponseDto> {
+		const leaderboardList = await this.repo.cursorLeaderboard({
+			limit: dto.limit,
+			cursor: dto.cursor,
+			orderBy: dto.orderBy,
+		});
+
+		const dtos = this.mapper.toLeaderboardItemDtoList(leaderboardList);
+		const result = this.cursor.create(dtos, dto.limit, (item) => item.id);
+		return this.mapper.toLeaderboardPaginatedListDto(result);
+	}
+
+	async getGameStatsDetails(
+		id: string,
+	): Promise<GameStatsDetailsResponseDto> {
+		const gameStats = await this.repo.findGameStatsById(id);
+		if (!gameStats) throw new GameStatsNotFoundException();
+
+		return this.mapper.toGameStatsDetailsResponseDto(gameStats);
+	}
 
 	async getUserSummary(
 		username: string,
 	): Promise<UserGameSummaryResponseDto> {
-		const summary = await this.repo.findUserSummary(username);
+		const summary = await this.repo.findUserSummaryByUsername(username);
 		if (!summary) throw new UserGameSummaryNotFoundException();
 
 		return this.mapper.toUserSummaryResponseDto(summary);
@@ -98,7 +146,7 @@ export class GameService {
 		params: UpdateUserSummaryParams,
 		ctx: DbContext,
 	) {
-		const existingSummary = await this.repo.findUserSummary(
+		const existingSummary = await this.repo.findUserSummaryByUserId(
 			params.userId,
 			ctx,
 		);

@@ -19,3 +19,19 @@ export class UserGameSummaryNotFoundException extends AppHttpException {
 		super(message, messageKey, status);
 	}
 }
+
+export class GameStatsNotFoundException extends AppHttpException {
+	static describe(): ApiErrorDescription {
+		return {
+			status: HttpStatus.NOT_FOUND,
+			message: 'Game stats details were not found',
+			messageKey: 'game_stats_not_found',
+		};
+	}
+
+	constructor() {
+		const { message, messageKey, status } =
+			GameStatsNotFoundException.describe();
+		super(message, messageKey, status);
+	}
+}
