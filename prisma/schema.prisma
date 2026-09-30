@@ -92,6 +92,7 @@ model User {
 
     sentMessages     ChatMessage[]         @relation("MessageSender")
     targetedMessages ChatMessageMetadata[] @relation("MessageTarget")
+    gamePlayerStats  GamePlayerStats[]
 }
 
 model Friendship {
@@ -346,4 +347,52 @@ model ChatMessageMetadata {
     message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
     @@index([targetUserId])
+}
+
+model GameStats {
+    id String @id @default(uuid())
+
+    survivalTime Int
+    players      GamePlayerStats[]
+    totalKills   Int
+}
+
+model GamePlayerStats {
+    id String @id @default(uuid())
+
+    maxHealth    Int
+    attackSpeed  Float
+    moveSpeed    Float
+    attackDamage Int
+    armor        Int
+    luck         Float
+    killAmount   Int
+    lifesteal    Float
+    range        Float
+    size         Float
+    duration     Float
+    quantity     Int
+    penetration  Float
+    weapons      GamePlayerWeaponStats[]
+    gameStats    GameStats?              @relation(fields: [gameStatsId], references: [id])
+    gameStatsId  String?
+    userId       String
+    user         User                    @relation(fields: [userId], references: [id])
+}
+
+enum GameWeaponKind {
+    AURA
+    STAFF
+    BOW
+    SWORD
+    AXE
+}
+
+model GamePlayerWeaponStats {
+    id String @id @default(uuid())
+
+    kind              GameWeaponKind
+    level             Int
+    gamePlayerStats   GamePlayerStats? @relation(fields: [gamePlayerStatsId], references: [id])
+    gamePlayerStatsId String?
 }
