@@ -12,6 +12,7 @@ export const S3ClientProvider: Provider<S3Client> = {
 			endpoint: env.minio.publicEndpoint,
 			region: 'us-east-1',
 			forcePathStyle: true,
+			requestChecksumCalculation: 'WHEN_REQUIRED',
 			credentials: {
 				accessKeyId: env.minio.accessKey,
 				secretAccessKey: env.minio.secretKey,
