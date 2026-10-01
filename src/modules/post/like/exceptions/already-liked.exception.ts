@@ -4,20 +4,20 @@ import {
 } from '@/shared/filters/app.http.exception';
 import { HttpStatus } from '@nestjs/common';
 
-class PostDoesNotExistException extends AppHttpException {
+class AlreadyLikedException extends AppHttpException {
 	static describe(): ApiErrorDescription {
 		return {
-			status: HttpStatus.NOT_FOUND,
-			message: "Post doesn't exist",
-			messageKey: 'post_does_not_exist',
+			status: HttpStatus.CONFLICT,
+			message: 'Post already liked',
+			messageKey: 'already_liked',
 		};
 	}
 
 	constructor() {
 		const { message, messageKey, status } =
-			PostDoesNotExistException.describe();
+			AlreadyLikedException.describe();
 		super(message, messageKey, status);
 	}
 }
 
-export { PostDoesNotExistException };
+export { AlreadyLikedException };

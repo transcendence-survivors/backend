@@ -115,7 +115,7 @@ export async function seedChatRooms(
 			});
 			memberRecords.push(member);
 		}
-
+        
 		let currentTimestamp = roomCreatedAt.getTime();
 		const createdMessagesInRoom: Array<{ id: string; createdAt: Date }> =
 			[];

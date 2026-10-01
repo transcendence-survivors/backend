@@ -8,13 +8,8 @@ import {
 	Post,
 	Query,
 	UseGuards,
-	UseInterceptors,
-	UploadedFile,
-	BadRequestException,
 	HttpStatus,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
-import { extname } from 'path';
 import { PostService } from '../services/post.service';
 import { PostCreateDto } from '../dtos/requests/post-create.dto';
 import { JWTAccessGuard } from '@/core/security/guards/jwt-access.guard';
@@ -22,8 +17,7 @@ import type { JwtAccessPayload } from '@/core/security/interfaces/jwt-payload.in
 import { CurrentUser } from '@/core/security/decorators/current-user.decorator';
 import { PostPaginateDto } from '../dtos/requests/post-paginate.dto';
 import { ResponseEnvelope } from '@/shared/decorators/api-response.decorator';
-import { ApiConsumes, ApiParam } from '@nestjs/swagger';
-import { StorageService } from '@/core/storage/services/storage.service';
+import { ApiParam } from '@nestjs/swagger';
 import { InjectUserService } from '@/contracts/services/user/user-service.inject';
 import type { IUserService } from '@/contracts/services/user/user-service.port';
 import { ApiQueryDto } from '@/shared/decorators/api-query-dto.decorator';
@@ -42,7 +36,6 @@ import { PostCreatedResponseDto } from '../dtos/responses/post-created-response.
 export class PostController {
 	constructor(
 		private readonly postService: PostService,
-		private readonly storageService: StorageService,
 		@InjectUserService() private readonly userService: IUserService,
 	) {}
 
@@ -184,22 +177,6 @@ export class PostController {
 	@UseGuards(JWTAccessGuard)
 	@Post()
 	@HttpCode(HttpStatus.CREATED)
-	@UseInterceptors(
-		FileInterceptor('file', {
-			limits: { fileSize: 10 * 1024 * 1024 },
-			fileFilter: (_req, file, callback) => {
-				if (!file.mimetype.startsWith('image/')) {
-					callback(
-						new BadRequestException('File must be an image'),
-						false,
-					);
-					return;
-				}
-				callback(null, true);
-			},
-		}),
-	)
-	@ApiConsumes('multipart/form-data')
 	@ApiBodyDto(PostCreateDto)
 	@ApiCreatedSuccessResponse(PostCreatedResponseDto)
 	@ApiValidationErrorResponse({
@@ -207,33 +184,10 @@ export class PostController {
 	})
 	@ResponseEnvelope('Post created successfully')
 	async writePost(
-		@Body() { content, parentPostId, quotedPostId }: PostCreateDto,
+		@Body() dto: PostCreateDto,
 		@CurrentUser() user: JwtAccessPayload,
-		@UploadedFile() file: Express.Multer.File,
 	): Promise<PostCreatedResponseDto> {
-		if (!content && !file)
-			throw new BadRequestException('Post must have content or an image');
-		let imageUrl: string | undefined;
-		if (file) {
-			imageUrl = await this.storageService.upload({
-				fileName: `posts/${user.sub}-${Date.now()}${extname(file.originalname)}`,
-				contentType: file.mimetype,
-				body: file.buffer,
-				bucket: 'post',
-			});
-		}
-		try {
-			return await this.postService.create({
-				authorId: user.sub,
-				content,
-				imageUrl,
-				parentPostId,
-				quotedPostId,
-			});
-		} catch (err) {
-			if (imageUrl) await this.storageService.delete(imageUrl);
-			throw err;
-		}
+		return await this.postService.create(dto, user.sub);
 	}
 
 	@UseGuards(JWTAccessGuard)

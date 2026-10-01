@@ -1,13 +1,22 @@
-import { AppHttpException } from '@/shared/filters/app.http.exception';
+import {
+	ApiErrorDescription,
+	AppHttpException,
+} from '@/shared/filters/app.http.exception';
 import { HttpStatus } from '@nestjs/common';
 
 class PostOwnershipException extends AppHttpException {
+	static describe(): ApiErrorDescription {
+		return {
+			status: HttpStatus.UNAUTHORIZED,
+			message: "Post doesn't belong to you",
+			messageKey: 'post_ownership',
+		};
+	}
+
 	constructor() {
-		super(
-			"Post doesn't belong to you",
-			'post_ownership',
-			HttpStatus.UNAUTHORIZED,
-		);
+		const { message, messageKey, status } =
+			PostOwnershipException.describe();
+		super(message, messageKey, status);
 	}
 }
 

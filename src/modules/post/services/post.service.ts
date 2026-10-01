@@ -1,19 +1,19 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PostRepository } from '../repositories/post.repository';
 import { PostOwnershipException } from '../exceptions/post-unauthorized.exception.';
 import { PostDoesNotExistException } from '../exceptions/post-unexisting.exception';
 import { PostPaginateDto } from '../dtos/requests/post-paginate.dto';
 import { StorageService } from '@/core/storage/services/storage.service';
 import { CursorService } from '@/shared/services/cursor.service';
-import { LikeRepository } from '@/modules/like/repositories/like.repository';
-import { RepostRepository } from '@/modules/repost/repositories/repost.repositories';
+import { LikeRepository } from '@/modules/post/like/repositories/like.repository';
+import { RepostRepository } from '@/modules/post/repost/repositories/repost.repositories';
 import { PostMapper } from '../mappers/post.mapper';
 import { PostListItem } from '../types/records/post-list-item.type';
-import { PostCreateParams } from '../types/params/post-create.params';
 import { PostListItemResponseDto } from '../dtos/responses/post-list-item-response.dto';
 import { PostPaginatedListResponseDto } from '../dtos/responses/post-paginated-list-response.dto';
 import { PostCreatedResponseDto } from '../dtos/responses/post-created-response.dto';
 import { PostFeedEnum } from '../types/enums/post-feed.enum';
+import { PostCreateDto } from '../dtos/requests/post-create.dto';
 
 @Injectable()
 export class PostService {
@@ -148,8 +148,20 @@ export class PostService {
 		return this.mapper.toListItemDto(post, liked, reposted);
 	}
 
-	async create(params: PostCreateParams): Promise<PostCreatedResponseDto> {
-		const post = await this.postRepository.create(params);
+	async create(
+		dto: PostCreateDto,
+		userId: string,
+	): Promise<PostCreatedResponseDto> {
+		if (!dto.content && !dto.imageUrl) {
+			throw new BadRequestException('Post must have content or an image');
+		}
+		const post = await this.postRepository.create({
+			authorId: userId,
+			content: dto.content,
+			imageUrl: dto.imageUrl,
+			parentPostId: dto.parentPostId,
+			quotedPostId: dto.quotedPostId,
+		});
 		return this.mapper.toCreatedDto(post);
 	}
 
@@ -157,9 +169,7 @@ export class PostService {
 		const found = await this.postRepository.findById(postId);
 		if (!found) throw new PostDoesNotExistException();
 		if (found.authorId !== userId) throw new PostOwnershipException();
-		if (found.imageUrl) {
-			await this.storageService.delete(found.imageUrl);
-		}
+		if (found.imageUrl) await this.storageService.delete(found.imageUrl);
 		await this.postRepository.delete(postId);
 	}
 }

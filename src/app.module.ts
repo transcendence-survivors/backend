@@ -7,9 +7,9 @@ import { SharedModule } from '@/shared/shared.module';
 import { PostModule } from './modules/post/post.module';
 import { RelationshipsModule } from './modules/relationship/relationship.module';
 import { PresenceModule } from './modules/presence/presence.module';
-import { LikeModule } from './modules/like/like.module';
+import { LikeModule } from './modules/post/like/like.module';
 import { ChatModule } from './modules/chat/chat.module';
-import { RepostModule } from './modules/repost/repost.module';
+import { RepostModule } from './modules/post/repost/repost.module';
 import { UploadModule } from './modules/upload/upload.module';
 import { GameModule } from './modules/game/game.module';
 

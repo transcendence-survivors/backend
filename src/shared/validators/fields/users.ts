@@ -32,7 +32,7 @@ export const IsDisplayName = () => {
 };
 
 export const IsEmail = () => {
-	return applyDecorators(IsEmailValidator(), MaxLength(254), TrimLowercase());
+	return applyDecorators(IsEmailValidator(), MaxLength(255), TrimLowercase());
 };
 
 export const IsFirstName = () => {

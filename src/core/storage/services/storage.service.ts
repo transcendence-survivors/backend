@@ -4,15 +4,11 @@ import {
 	DeleteObjectCommand,
 	type S3Client,
 } from '@aws-sdk/client-s3';
-import {
-	InjectS3Client,
-	InjectS3PublicClient,
-} from '../injects/s3-client.inject';
+import { InjectS3Client } from '../injects/s3-client.inject';
 import { InjectEnv } from '@/core/config/env/injects/env.inject';
 import { type Env } from '@/core/config/env/providers/env.provider';
 import { randomUUID } from 'crypto';
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
-import { StorageUploadParams } from '../types/params/storage-upload.params';
 import { StorageBucket } from '../types/storage-bucket';
 import { StoragePresignParams } from '../types/params/storage-presign.params';
 import { StoragePresignedUpload } from '../types/records/storage-presigned-upload';
@@ -24,7 +20,6 @@ export class StorageService {
 
 	constructor(
 		@InjectS3Client() private readonly s3: S3Client,
-		@InjectS3PublicClient() private readonly publicS3: S3Client,
 		@InjectEnv() private readonly env: Env,
 	) {
 		this.bucketMap = {
@@ -32,28 +27,6 @@ export class StorageService {
 			post: this.env.minio.buckets.post,
 			chat: this.env.minio.buckets.chat,
 		} satisfies Record<StorageBucket, string>;
-	}
-
-	async upload({
-		body,
-		bucket,
-		contentType,
-		fileName,
-	}: StorageUploadParams): Promise<string> {
-		this.assertContentTypeAllowed(bucket, contentType);
-		const bucketName = this.bucketMap[bucket];
-		const key = this.buildKey(fileName);
-
-		await this.s3.send(
-			new PutObjectCommand({
-				Bucket: bucketName,
-				Key: key,
-				Body: body,
-				ContentType: contentType,
-			}),
-		);
-
-		return this.buildPublicUrl(bucketName, key);
 	}
 
 	async getPresignedUploadUrl({
@@ -72,7 +45,7 @@ export class StorageService {
 			ContentType: contentType,
 		});
 
-		const uploadUrl = await getSignedUrl(this.publicS3, command, {
+		const uploadUrl = await getSignedUrl(this.s3, command, {
 			expiresIn: expiresInSeconds,
 		});
 
