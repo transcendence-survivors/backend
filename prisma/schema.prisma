@@ -364,6 +364,7 @@ model GamePlayerStats {
     penetration  Float
 
     weapons GamePlayerWeaponStats[]
+    tomes   GamePlayerTomeStats[]
 
     gameStats   GameStats? @relation(fields: [gameStatsId], references: [id], onDelete: Cascade)
     gameStatsId String?
@@ -380,9 +381,32 @@ enum GameWeaponKind {
     AXE
 }
 
+enum GameTomeKind {
+    DAMAGE
+    COOLDOWN
+    AGILITY
+    VITALITY
+    ARMOR
+    BLOOD
+    RANGE
+    SIZE
+    DURATION
+    QUANTITY
+    FORTUNE
+}
+
 model GamePlayerWeaponStats {
     id    String         @id @default(uuid())
     kind  GameWeaponKind
+    level Int
+
+    gamePlayerStats   GamePlayerStats? @relation(fields: [gamePlayerStatsId], references: [id], onDelete: Cascade)
+    gamePlayerStatsId String?
+}
+
+model GamePlayerTomeStats {
+    id    String       @id @default(uuid())
+    kind  GameTomeKind
     level Int
 
     gamePlayerStats   GamePlayerStats? @relation(fields: [gamePlayerStatsId], references: [id], onDelete: Cascade)
@@ -405,7 +429,9 @@ model UserGameSummary {
     highestKills        Int @default(0)
 
     weaponSummaries UserGameWeaponSummary[]
-    updatedAt       DateTime                @updatedAt
+    tomeSummaries   UserGameTomeSummary[]
+
+    updatedAt DateTime @updatedAt
 }
 
 model UserGameWeaponSummary {
@@ -417,6 +443,19 @@ model UserGameWeaponSummary {
     kind         GameWeaponKind
     timesUsed    Int            @default(0)
     highestLevel Int            @default(0)
+
+    @@unique([userGameSummaryId, kind])
+}
+
+model UserGameTomeSummary {
+    id String @id @default(uuid())
+
+    userGameSummary   UserGameSummary @relation(fields: [userGameSummaryId], references: [id], onDelete: Cascade)
+    userGameSummaryId String
+
+    kind         GameTomeKind
+    timesUsed    Int          @default(0)
+    highestLevel Int          @default(0)
 
     @@unique([userGameSummaryId, kind])
 }

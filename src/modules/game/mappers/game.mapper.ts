@@ -1,14 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { plainToInstance } from 'class-transformer';
 import { UserGameSummaryResponseDto } from '../dtos/responses/user-game-summary-response.dto';
-import { UserSummaryWithWeapons } from '../types/records/user-summary-with-weapons.type';
+import { UserSummary } from '../types/records/user-summary.type';
 import {
 	GamePlayerStatsResponseDto,
+	GamePlayerTomeStatsResponseDto,
 	GamePlayerWeaponStatsResponseDto,
 	GameStatsDetailsResponseDto,
 } from '../dtos/responses/game-stats-details-response.dto';
 import {
 	GamePlayerStatsDetails,
+	GamePlayerTomeStatsDetails,
 	GamePlayerWeaponStatsDetails,
 	GameStatsDetails,
 } from '../types/records/game-stats-details.types';
@@ -27,9 +29,7 @@ import { CursorPaginationResultDto } from '@/shared/dto/cursor-pagination-result
 
 @Injectable()
 export class GameMapper {
-	toUserSummaryResponseDto(
-		summary: UserSummaryWithWeapons,
-	): UserGameSummaryResponseDto {
+	toUserSummaryResponseDto(summary: UserSummary): UserGameSummaryResponseDto {
 		return plainToInstance(UserGameSummaryResponseDto, summary, {
 			excludeExtraneousValues: true,
 		});
@@ -76,6 +76,9 @@ export class GameMapper {
 				weapons: player.weapons.map((weapon) =>
 					this.toGamePlayerWeaponStatsResponseDto(weapon),
 				),
+				tomes: player.tomes.map((tome) =>
+					this.toGamePlayerTomeStatsResponseDto(tome),
+				),
 				user: {
 					id: player.user?.id ?? null,
 					username: player.user?.username ?? null,
@@ -96,6 +99,20 @@ export class GameMapper {
 				id: weapon.id,
 				kind: weapon.kind,
 				level: weapon.level,
+			},
+			{ excludeExtraneousValues: true },
+		);
+	}
+
+	private toGamePlayerTomeStatsResponseDto(
+		tome: GamePlayerTomeStatsDetails,
+	): GamePlayerTomeStatsResponseDto {
+		return plainToInstance(
+			GamePlayerTomeStatsResponseDto,
+			{
+				id: tome.id,
+				kind: tome.kind,
+				level: tome.level,
 			},
 			{ excludeExtraneousValues: true },
 		);

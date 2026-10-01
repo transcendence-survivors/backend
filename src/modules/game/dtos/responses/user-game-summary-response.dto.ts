@@ -14,6 +14,18 @@ class UserGameWeaponSummaryResponseDto {
 }
 
 @Exclude()
+class UserGameTomeSummaryResponseDto {
+	@Expose()
+	kind!: GameWeaponKind;
+
+	@Expose()
+	timesUsed!: number;
+
+	@Expose()
+	highestLevel!: number;
+}
+
+@Exclude()
 export class UserGameSummaryResponseDto {
 	@Expose()
 	id!: string;
@@ -42,4 +54,8 @@ export class UserGameSummaryResponseDto {
 	@Expose()
 	@Type(() => UserGameWeaponSummaryResponseDto)
 	weaponSummaries!: UserGameWeaponSummaryResponseDto[];
+
+	@Expose()
+	@Type(() => UserGameTomeSummaryResponseDto)
+	tomeSummaries!: UserGameTomeSummaryResponseDto[];
 }

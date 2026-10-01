@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { GameWeaponKind } from '@prisma-generated/enums';
+import { GameTomeKind, GameWeaponKind } from '@prisma-generated/enums';
 import { Type } from 'class-transformer';
 import {
 	ArrayMaxSize,
@@ -24,6 +24,25 @@ export class GameWeaponDto {
 
 	@ApiProperty({
 		description: "Niveau atteint par l'arme dans la partie",
+		example: 5,
+		minimum: 1,
+	})
+	@IsInt()
+	@Min(1)
+	level!: number;
+}
+
+export class GameTomeDto {
+	@ApiProperty({
+		description: 'Catégorie du tome',
+		enum: GameTomeKind,
+		example: GameTomeKind.DAMAGE,
+	})
+	@IsEnum(GameTomeKind)
+	kind!: GameTomeKind;
+
+	@ApiProperty({
+		description: 'Niveau atteint par le tome dans la partie',
 		example: 5,
 		minimum: 1,
 	})
@@ -107,6 +126,17 @@ export class GamePlayerStatsDto {
 	@ValidateNested({ each: true })
 	@Type(() => GameWeaponDto)
 	weapons!: GameWeaponDto[];
+
+	@ApiProperty({
+		description: 'Tomes équipés durant la partie (0 à 4)',
+		type: [GameTomeDto],
+	})
+	@IsArray()
+	@ArrayMinSize(0)
+	@ArrayMaxSize(4)
+	@ValidateNested({ each: true })
+	@Type(() => GameTomeDto)
+	tomes!: GameTomeDto[];
 }
 
 export class CreateGameStatsDto {

@@ -140,6 +140,7 @@ export class GameService {
 			);
 
 			await this.updateUserWeapons(summary.id, playerData.weapons, ctx);
+			await this.updateUserTomes(summary.id, playerData.tomes, ctx);
 		});
 	}
 	private async updateUserSummary(
@@ -166,6 +167,7 @@ export class GameService {
 			ctx,
 		);
 	}
+
 	private async updateUserWeapons(
 		userGameSummaryId: string,
 		weapons: GamePlayerStatsDto['weapons'],
@@ -196,6 +198,44 @@ export class GameService {
 						newHighestLevel: Math.max(
 							currentHighestLevel,
 							weapon.level,
+						),
+					},
+					ctx,
+				);
+			}),
+		);
+	}
+
+	private async updateUserTomes(
+		userGameSummaryId: string,
+		tomes: GamePlayerStatsDto['tomes'],
+		ctx: DbContext,
+	): Promise<void> {
+		if (!tomes.length) return;
+
+		const kinds = tomes.map((t) => t.kind);
+		const existingTomes = await this.repo.findTomeSummaries(
+			{ userGameSummaryId, kinds },
+			ctx,
+		);
+
+		const existingTomesMap = new Map(
+			existingTomes.map((t) => [t.kind, t.highestLevel]),
+		);
+
+		await Promise.all(
+			tomes.map((tome) => {
+				const currentHighestLevel =
+					existingTomesMap.get(tome.kind) ?? 0;
+
+				return this.repo.upsertTomeSummary(
+					{
+						userGameSummaryId,
+						kind: tome.kind,
+						level: tome.level,
+						newHighestLevel: Math.max(
+							currentHighestLevel,
+							tome.level,
 						),
 					},
 					ctx,

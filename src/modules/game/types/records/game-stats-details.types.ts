@@ -1,12 +1,18 @@
 import { UserListItem } from '@/modules/user/user.public-api';
 import {
 	GamePlayerStats,
+	GamePlayerTomeStats,
 	GamePlayerWeaponStats,
 	GameStats,
 } from '@prisma-generated/browser';
 
 export type GamePlayerWeaponStatsDetails = Pick<
 	GamePlayerWeaponStats,
+	'id' | 'kind' | 'level'
+>;
+
+export type GamePlayerTomeStatsDetails = Pick<
+	GamePlayerTomeStats,
 	'id' | 'kind' | 'level'
 >;
 
@@ -28,6 +34,7 @@ export type GamePlayerStatsDetails = Pick<
 	| 'penetration'
 > & {
 	weapons: GamePlayerWeaponStatsDetails[];
+	tomes: GamePlayerTomeStatsDetails[];
 	user: UserListItem | null;
 };
 

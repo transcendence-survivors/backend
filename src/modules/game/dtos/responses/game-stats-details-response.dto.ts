@@ -1,6 +1,6 @@
 import { UserListItemResponseDto } from '@/modules/user/dtos/responses/user-list-item-response.dto';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { GameWeaponKind } from '@prisma-generated/enums';
+import { GameTomeKind, GameWeaponKind } from '@prisma-generated/enums';
 import { Expose, Type } from 'class-transformer';
 
 export class GamePlayerWeaponStatsResponseDto {
@@ -22,6 +22,30 @@ export class GamePlayerWeaponStatsResponseDto {
 	@ApiProperty({
 		description: 'Level reached by the weapon during the match',
 		example: 5,
+	})
+	@Expose()
+	level!: number;
+}
+
+export class GamePlayerTomeStatsResponseDto {
+	@ApiProperty({
+		description: 'Unique tome stat ID',
+		example: 'd4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9g',
+	})
+	@Expose()
+	id!: string;
+
+	@ApiProperty({
+		enum: GameTomeKind,
+		description: 'Tome type',
+		example: GameTomeKind.ARMOR,
+	})
+	@Expose()
+	kind!: GameTomeKind;
+
+	@ApiProperty({
+		description: 'Level reached by the tome during the match',
+		example: 3,
 	})
 	@Expose()
 	level!: number;
@@ -106,6 +130,14 @@ export class GamePlayerStatsResponseDto {
 	@Type(() => GamePlayerWeaponStatsResponseDto)
 	@Expose()
 	weapons!: GamePlayerWeaponStatsResponseDto[];
+
+	@ApiProperty({
+		type: [GamePlayerTomeStatsResponseDto],
+		description: 'List of tomes equipped by the player',
+	})
+	@Type(() => GamePlayerTomeStatsResponseDto)
+	@Expose()
+	tomes!: GamePlayerTomeStatsResponseDto[];
 
 	@ApiPropertyOptional({
 		type: UserListItemResponseDto,

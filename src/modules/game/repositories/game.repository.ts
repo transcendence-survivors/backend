@@ -1,21 +1,22 @@
 import { PrismaService } from '@/core/database/services/prisma.service';
 import { Injectable } from '@nestjs/common';
 import { CreateGameStatsDto } from '../dtos/requests/create-game-stats.dto.ts';
-import { DbContext } from '@/core/database/uow/db-context.js';
-import { UpsertUserSummaryParams } from '../types/params/user-summary.params.js';
-import { UpsertWeaponParams } from '../types/params/weapon.params.js';
-import { GameWeaponKind } from '@prisma-generated/enums.js';
-import { UserSummaryWithWeapons } from '../types/records/user-summary-with-weapons.type.js';
+import { DbContext } from '@/core/database/uow/db-context';
+import { UpsertUserSummaryParams } from '../types/params/user-summary.params';
+import { UpsertWeaponParams } from '../types/params/weapon.params';
+import { GameTomeKind, GameWeaponKind } from '@prisma-generated/enums';
+import { UserSummary } from '../types/records/user-summary.type.js';
 import {
 	GameStatsSelect,
 	UserGameSummarySelect,
-} from '@prisma-generated/models.js';
-import { GameStatsDetails } from '../types/records/game-stats-details.types.js';
-import { GameStatsCursorParams } from '../types/params/game-stats-cursor.params.js';
-import { GameStatsListItem } from '../types/records/game-stats-list-item.types.js';
-import { GameQueryHelper } from './game-query.helper.js';
-import { LeaderboardCursorParams } from '../types/params/leaderboard-cursor.params.js';
-import { LeaderboardPreview } from '../types/records/leaderboard-preview.types.js';
+} from '@prisma-generated/models';
+import { GameStatsDetails } from '../types/records/game-stats-details.types';
+import { GameStatsCursorParams } from '../types/params/game-stats-cursor.params';
+import { GameStatsListItem } from '../types/records/game-stats-list-item.types';
+import { GameQueryHelper } from './game-query.helper';
+import { LeaderboardCursorParams } from '../types/params/leaderboard-cursor.params';
+import { LeaderboardPreview } from '../types/records/leaderboard-preview.types';
+import { UpsertTomeParams } from '../types/params/tome.param.js';
 
 @Injectable()
 export class GameRepository {
@@ -122,6 +123,12 @@ export class GameRepository {
 								level: weapon.level,
 							})),
 						},
+						tomes: {
+							create: player.tomes.map((tome) => ({
+								kind: tome.kind,
+								level: tome.level,
+							})),
+						},
 					})),
 				},
 			},
@@ -167,6 +174,13 @@ export class GameRepository {
 								level: true,
 							},
 						},
+						tomes: {
+							select: {
+								id: true,
+								kind: true,
+								level: true,
+							},
+						},
 						user: {
 							select: {
 								id: true,
@@ -187,7 +201,7 @@ export class GameRepository {
 	async findUserSummaryByUsername(
 		username: string,
 		ctx?: DbContext,
-	): Promise<UserSummaryWithWeapons | null> {
+	): Promise<UserSummary | null> {
 		const client = ctx?.client ?? this.prisma;
 		return client.userGameSummary.findFirst({
 			where: {
@@ -217,9 +231,19 @@ export class GameRepository {
 						timesUsed: 'desc',
 					},
 				},
+				tomeSummaries: {
+					select: {
+						kind: true,
+						timesUsed: true,
+						highestLevel: true,
+					},
+					orderBy: {
+						timesUsed: 'desc',
+					},
+				},
 			} satisfies Record<
-				keyof UserSummaryWithWeapons,
-				UserGameSummarySelect[keyof UserSummaryWithWeapons]
+				keyof UserSummary,
+				UserGameSummarySelect[keyof UserSummary]
 			>,
 		});
 	}
@@ -256,19 +280,6 @@ export class GameRepository {
 		});
 	}
 
-	async findWeaponSummaries(
-		params: { userGameSummaryId: string; kinds: GameWeaponKind[] },
-		ctx?: DbContext,
-	) {
-		const client = ctx?.client ?? this.prisma;
-		return client.userGameWeaponSummary.findMany({
-			where: {
-				userGameSummaryId: params.userGameSummaryId,
-				kind: { in: params.kinds },
-			},
-		});
-	}
-
 	async findUserSummaryByUserId(userId: string, ctx?: DbContext) {
 		const client = ctx?.client ?? this.prisma;
 		return client.userGameSummary.findFirst({
@@ -286,11 +297,60 @@ export class GameRepository {
 		});
 	}
 
+	async findWeaponSummaries(
+		params: { userGameSummaryId: string; kinds: GameWeaponKind[] },
+		ctx?: DbContext,
+	) {
+		const client = ctx?.client ?? this.prisma;
+		return client.userGameWeaponSummary.findMany({
+			where: {
+				userGameSummaryId: params.userGameSummaryId,
+				kind: { in: params.kinds },
+			},
+		});
+	}
+
+	async findTomeSummaries(
+		params: { userGameSummaryId: string; kinds: GameTomeKind[] },
+		ctx?: DbContext,
+	) {
+		const client = ctx?.client ?? this.prisma;
+		return client.userGameTomeSummary.findMany({
+			where: {
+				userGameSummaryId: params.userGameSummaryId,
+			},
+		});
+	}
+
 	async upsertWeaponSummary(
 		{ userGameSummaryId, kind, level, newHighestLevel }: UpsertWeaponParams,
 		ctx: DbContext,
 	) {
 		return (ctx?.client ?? this.prisma).userGameWeaponSummary.upsert({
+			where: {
+				userGameSummaryId_kind: {
+					userGameSummaryId,
+					kind,
+				},
+			},
+			create: {
+				userGameSummaryId,
+				kind,
+				timesUsed: 1,
+				highestLevel: level,
+			},
+			update: {
+				timesUsed: { increment: 1 },
+				highestLevel: newHighestLevel,
+			},
+		});
+	}
+
+	async upsertTomeSummary(
+		{ userGameSummaryId, kind, level, newHighestLevel }: UpsertTomeParams,
+		ctx: DbContext,
+	) {
+		return (ctx?.client ?? this.prisma).userGameTomeSummary.upsert({
 			where: {
 				userGameSummaryId_kind: {
 					userGameSummaryId,

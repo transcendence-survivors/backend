@@ -1,9 +1,10 @@
 import {
 	UserGameSummary,
+	UserGameTomeSummary,
 	UserGameWeaponSummary,
 } from '@prisma-generated/client';
 
-export type UserSummaryWithWeapons = Pick<
+export type UserSummary = Pick<
 	UserGameSummary,
 	| 'id'
 	| 'userId'
@@ -16,6 +17,10 @@ export type UserSummaryWithWeapons = Pick<
 > & {
 	weaponSummaries: Pick<
 		UserGameWeaponSummary,
+		'kind' | 'timesUsed' | 'highestLevel'
+	>[];
+	tomeSummaries: Pick<
+		UserGameTomeSummary,
 		'kind' | 'timesUsed' | 'highestLevel'
 	>[];
 };

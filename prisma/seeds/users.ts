@@ -6,8 +6,8 @@ import {
 import bcrypt from 'bcrypt';
 import { fake } from './common/fake';
 
-const TOTAL_USERS = 50000;
-const BATCH_SIZE = 5000;
+const TOTAL_USERS = 5000;
+const BATCH_SIZE = 1000;
 
 function generateUsers(
 	count: number,
