@@ -18,12 +18,14 @@ import { EMailListener } from './listeners/email.listener';
 			useFactory: (env: Env) => {
 				const isProduction = env.nodeEnv === 'production';
 				const baseDir = join(process.cwd(), 'dist/core/email');
+				const port = env.smtp.port;
 
 				return {
 					transport: {
 						host: env.smtp.host,
-						port: env.smtp.port,
-						secure: isProduction,
+						port: port,
+						secure: port === 465,
+						requireTLS: isProduction && port !== 465,
 						auth: {
 							user: env.smtp.user,
 							pass: env.smtp.pass,
