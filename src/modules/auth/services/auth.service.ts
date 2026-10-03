@@ -31,6 +31,8 @@ import {
 import { AuthPasswordChangeDto } from '../dtos/requests/aut-password-change.dto';
 import { AuthTokenPair } from '../token/types/records/auth-token-pair.type';
 import { AuthDeleteAccountDto } from '../dtos/requests/auth-delete-account.dto';
+import { UserDeletedEvent } from '@/contracts/events/internal/user/user-deleted.event';
+import { PasswordChangedEvent } from '@/contracts/events/internal/password/password-change.event';
 
 @Injectable()
 export class AuthService {
@@ -162,11 +164,23 @@ export class AuthService {
 			dto.token,
 		);
 
-		await this.uow.run(async (ctx) => {
+		const user = await this.uow.run(async (ctx) => {
 			await this.localAuth.updatePassword(userId, dto.newPassword, ctx);
 			await this.tokenService.usePasswordResetToken(id, ctx);
 			await this.tokenService.revokeUserRefresh(userId, ctx);
+			return this.userService.getAuthData(userId, ctx);
 		});
+
+		if (user) {
+			this.eventEmitter.emit(
+				APP_EVENTS.PASSWORD_CHANGED,
+				new PasswordChangedEvent(
+					user.email,
+					user.username,
+					user.localePreference,
+				),
+			);
+		}
 	}
 
 	async changePassword(
@@ -183,13 +197,21 @@ export class AuthService {
 		if (!isCurrentPasswordValid)
 			throw new AuthInvalidCurrentPasswordException();
 
-		await this.uow.run(async (ctx) => {
+		const user = await this.uow.run(async (ctx) => {
 			await this.localAuth.updatePassword(userId, dto.newPassword, ctx);
 			await this.tokenService.revokeUserRefresh(userId, ctx);
+			return this.userService.getAuthData(userId, ctx);
 		});
-
-		const user = await this.userService.getAuthData(userId);
 		if (!user) throw new AuthUserNotFoundException();
+
+		this.eventEmitter.emit(
+			APP_EVENTS.PASSWORD_CHANGED,
+			new PasswordChangedEvent(
+				user.email,
+				user.username,
+				user.localePreference,
+			),
+		);
 
 		return this.tokenService.buildJWT({
 			sub: user.id,
@@ -204,7 +226,9 @@ export class AuthService {
 		userId: string,
 		dto: AuthDeleteAccountDto,
 	): Promise<void> {
-		await this.userService.validateUserId(userId);
+		const user = await this.userService.getAuthData(userId);
+		if (!user) throw new AuthUserNotFoundException();
+
 		const isPasswordValid = await this.localAuth.verifyPassword(
 			userId,
 			dto.password,
@@ -218,5 +242,14 @@ export class AuthService {
 			await this.tokenService.revokeUserRefresh(userId, ctx);
 			await this.userService.delete(userId, ctx);
 		});
+
+		this.eventEmitter.emit(
+			APP_EVENTS.USER_DELETED,
+			new UserDeletedEvent(
+				user.email,
+				user.username,
+				user.localePreference,
+			),
+		);
 	}
 }

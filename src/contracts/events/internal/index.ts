@@ -45,6 +45,8 @@ const ChatEvents = {
 
 export const APP_EVENTS = {
 	USER_CREATED: 'user.created',
+	USER_DELETED: 'user.deleted',
+	PASSWORD_CHANGED: 'password.changed',
 	PASSWORD_RESET_REQUESTED: 'password.reset.requested',
 	BLOCK_CREATED: 'block.created',
 	ATTACHMENTS_MUST_BE_DELETED: 'attachments.must-be-deleted',

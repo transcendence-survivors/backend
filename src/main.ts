@@ -6,6 +6,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { CustomValidationPipe } from './shared/pipes/custom-validation.pipe';
 import { ThrottlerFilter } from './shared/filters/throttler.filter.ts';
 import { HttpExceptionsFilter } from './shared/filters/http-exception.filter';
+import helmet from 'helmet';
 
 const getSwaggerConfig = () => {
 	return new DocumentBuilder()
@@ -17,6 +18,14 @@ const getSwaggerConfig = () => {
 
 void (async () => {
 	const appV1 = await NestFactory.create(AppModule);
+
+	appV1.use(
+		helmet({
+			contentSecurityPolicy: process.env.NODE_ENV === 'production',
+			crossOriginEmbedderPolicy: false,
+			crossOriginResourcePolicy: { policy: 'cross-origin' },
+		}),
+	);
 
 	if (process.env.NODE_ENV === 'development') {
 		appV1.enableCors({

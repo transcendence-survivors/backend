@@ -36,10 +36,13 @@ export class UserRepository {
 				AND: [
 					search ? UserQueryHelper.searchWhere(search) : {},
 					feedParams
-						? UserQueryHelper.feedWhere(
-								feedParams.userId,
-								feedParams.feed,
-							)
+						? {
+								...UserQueryHelper.feedWhere(
+									feedParams.userId,
+									feedParams.feed,
+								),
+								id: { not: feedParams.userId },
+							}
 						: {},
 				],
 			},
@@ -63,10 +66,13 @@ export class UserRepository {
 				AND: [
 					search ? UserQueryHelper.searchWhere(search) : {},
 					feedParams
-						? UserQueryHelper.feedWhere(
-								feedParams.userId,
-								feedParams.feed,
-							)
+						? {
+								...UserQueryHelper.feedWhere(
+									feedParams.userId,
+									feedParams.feed,
+								),
+								id: { not: feedParams.userId },
+							}
 						: {},
 				],
 			},
@@ -149,6 +155,7 @@ export class UserRepository {
 				...UserQueryHelper.userSelect,
 				email: true,
 				role: true,
+				localePreference: true,
 			} satisfies Record<
 				keyof AuhtUserData,
 				UserSelect[keyof AuhtUserData]
@@ -273,6 +280,19 @@ export class UserRepository {
 		return await this.prisma.user.updateMany({
 			where: { id: userId },
 			data: params,
+		});
+	}
+
+	findAvatarAndCover(userId: string): Promise<{
+		avatarUrl: string | null;
+		coverImageUrl: string | null;
+	} | null> {
+		return this.prisma.user.findUnique({
+			where: { id: userId },
+			select: {
+				avatarUrl: true,
+				coverImageUrl: true,
+			},
 		});
 	}
 }

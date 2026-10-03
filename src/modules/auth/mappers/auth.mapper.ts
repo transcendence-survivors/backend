@@ -5,7 +5,9 @@ import { plainToInstance } from 'class-transformer';
 
 @Injectable()
 export class AuthMapper {
-	toUserResponse(user: AuhtUserData): AuthUserResponseDto {
+	toUserResponse(
+		user: Omit<AuhtUserData, 'localePreference'>,
+	): AuthUserResponseDto {
 		return plainToInstance(AuthUserResponseDto, user, {
 			excludeExtraneousValues: true,
 		});

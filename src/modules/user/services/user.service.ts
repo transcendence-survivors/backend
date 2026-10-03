@@ -25,11 +25,13 @@ import { UserSettingsPatchDto } from '../dtos/requests/user-settings-patch.dto';
 import { UserSettingsPatchParams } from '../types/params/user-settings-patch.params';
 import { UserSettingsUpdateEmptyException } from '../exceptions/user-bad.exception';
 import { UserListItem } from '../user.public-api';
+import { StorageService } from '@/core/storage/services/storage.service';
 
 @Injectable()
 export class UserService implements IUserService {
 	constructor(
 		private readonly repo: UserRepository,
+		private readonly storage: StorageService,
 		private readonly cursor: CursorService,
 		private readonly mapper: UserMapper,
 	) {}
@@ -191,6 +193,28 @@ export class UserService implements IUserService {
 		};
 		if (Object.keys(updateParams).length === 0)
 			throw new UserSettingsUpdateEmptyException();
+		if (updateParams.coverImageUrl || updateParams.avatarUrl) {
+			const user = await this.repo.findAvatarAndCover(userId);
+			if (!user) throw new UserNotFoundException();
+			const urlsToDelete: string[] = [];
+			if (
+				updateParams.avatarUrl !== undefined &&
+				user.avatarUrl &&
+				updateParams.avatarUrl !== user.avatarUrl
+			) {
+				urlsToDelete.push(user.avatarUrl);
+			}
+			if (
+				updateParams.coverImageUrl !== undefined &&
+				user.coverImageUrl &&
+				updateParams.coverImageUrl !== user.coverImageUrl
+			) {
+				urlsToDelete.push(user.coverImageUrl);
+			}
+			if (urlsToDelete.length > 0) {
+				await this.storage.deleteMany(urlsToDelete);
+			}
+		}
 		const result = await this.repo.updateUserSettings(userId, updateParams);
 		if (result.count === 0) throw new UserNotFoundException();
 	}

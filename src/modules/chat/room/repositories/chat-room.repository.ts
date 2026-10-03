@@ -157,7 +157,10 @@ export class ChatRoomRepository {
 			where: {
 				id: roomId,
 				OR: [
-					{ type: ChatRoomType.DIRECT },
+					{
+						type: ChatRoomType.DIRECT,
+						members: { some: { userId } },
+					},
 					{
 						members: {
 							some: { userId, role: ChatMemberRole.OWNER },

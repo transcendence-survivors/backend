@@ -75,11 +75,15 @@ export class UserQueryHelper {
 
 	public static notBlockedWhere(userId: string): UserWhereInput {
 		return {
-			NOT: {
-				OR: [
-					{ blocksGiven: { some: { blockedId: userId } } },
-					{ blocksReceived: { some: { blockerId: userId } } },
-				],
+			blocksGiven: {
+				none: {
+					blockedId: userId,
+				},
+			},
+			blocksReceived: {
+				none: {
+					blockerId: userId,
+				},
 			},
 		};
 	}

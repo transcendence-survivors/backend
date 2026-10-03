@@ -15,14 +15,14 @@ import {
 	BUCKET_MAX_SIZE_BYTES,
 } from '@/core/storage/storage.mime';
 
-class ChatStoragePresignDto {
+class AvatarStoragePresignDto {
 	@ApiProperty({
 		description: 'The MIME type of the file to be uploaded',
 		example: 'image/jpeg',
-		enum: ALLOWED_CONTENT_TYPES.chat,
+		enum: ALLOWED_CONTENT_TYPES.avatar,
 	})
 	@IsString()
-	@IsIn(ALLOWED_CONTENT_TYPES.chat)
+	@IsIn(ALLOWED_CONTENT_TYPES.avatar)
 	mimeType!: string;
 
 	@ApiProperty({
@@ -31,21 +31,21 @@ class ChatStoragePresignDto {
 	})
 	@IsInt()
 	@Min(1)
-	@Max(BUCKET_MAX_SIZE_BYTES.chat, {
-		message: `File size cannot exceed ${BUCKET_MAX_SIZE_BYTES.chat} bytes`,
+	@Max(BUCKET_MAX_SIZE_BYTES.avatar, {
+		message: `File size cannot exceed ${BUCKET_MAX_SIZE_BYTES.avatar} bytes`,
 	})
 	contentLength!: number;
 }
 
-export class ChatStoragePresignBatchDto {
+export class AvatarStoragePresignBatchDto {
 	@ApiProperty({
 		description:
 			'List of file metadata to generate presigned URLs for (max 5)',
-		type: [ChatStoragePresignDto],
+		type: [AvatarStoragePresignDto],
 	})
 	@IsArray()
-	@ArrayMaxSize(5)
+	@ArrayMaxSize(1)
 	@ValidateNested({ each: true })
-	@Type(() => ChatStoragePresignDto)
-	files!: ChatStoragePresignDto[];
+	@Type(() => AvatarStoragePresignDto)
+	files!: AvatarStoragePresignDto[];
 }

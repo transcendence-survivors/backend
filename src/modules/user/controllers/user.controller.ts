@@ -20,7 +20,6 @@ import { ApiValidationErrorResponse } from '@/shared/decorators/api-validation-e
 import { ApiNoContentResponse, ApiParam } from '@nestjs/swagger';
 import { ApiQueryDto } from '@/shared/decorators/api-query-dto.decorator';
 import { SearchThrottle } from '@/core/rate-limit/decorators/throttle-presets.decorator';
-import { StorageService } from '@/core/storage/services/storage.service';
 import { UserCountDto } from '../dtos/requests/user-count.dto';
 import { type JwtAccessPayload } from '@/core/security/interfaces/jwt-payload.interface';
 import { CurrentUser } from '@/core/security/decorators/current-user.decorator';
@@ -38,10 +37,7 @@ import { JWTAccessGuard } from '@/core/security/guards/jwt-access.guard';
 
 @Controller('users')
 export class UserController {
-	constructor(
-		private readonly userService: UserService,
-		private readonly storageService: StorageService,
-	) {}
+	constructor(private readonly userService: UserService) {}
 
 	@SearchThrottle()
 	@Get()

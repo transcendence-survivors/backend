@@ -5,7 +5,7 @@ export const NoThrottle = () => SkipThrottle();
 export const AuthThrottle = () =>
 	Throttle({
 		burst: { limit: 2, ttl: 1_000 },
-		sustained: { limit: 5, ttl: 60_000 },
+		sustained: { limit: 10, ttl: 60_000 },
 	});
 
 export const StrictAuthThrottle = () =>

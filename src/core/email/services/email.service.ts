@@ -6,7 +6,11 @@ import { TranslationService } from './translation.service';
 import { type LocalePreference } from '@prisma-generated/client';
 import { type SentMessageInfo } from 'nodemailer';
 
-type Template = 'reset-password' | 'verify-email' | 'welcome';
+type Template =
+	| 'reset-password'
+	| 'password-changed'
+	| 'delete-account'
+	| 'welcome';
 
 interface EmailOptions {
 	to: string;
@@ -34,7 +38,7 @@ export class EmailService {
 				...context,
 				year: new Date().getFullYear(),
 				rights_reserved: t('rights_reserved'),
-				APP_NAME: 'Transcendence Survivor',
+				APP_NAME: 'Light Keepers',
 			},
 		});
 	}
@@ -72,7 +76,7 @@ export class EmailService {
 			firstName: string;
 			lastName: string;
 			email: string;
-			name: string;
+			username: string;
 		},
 		locale: LocalePreference,
 	): Promise<SentMessageInfo> {
@@ -90,14 +94,60 @@ export class EmailService {
 				}),
 				intro: t('intro'),
 				account_confirmed: t('account_confirmed', {
-					username: user.name,
+					username: `@${user.username}`,
 					email: user.email,
 				}),
 				next_title: t('next_title'),
 				step_1: t('step_1'),
 				step_2: t('step_2'),
 				step_3: t('step_3'),
+				step_4: t('step_4'),
+				step_5: t('step_5'),
 				footer_text: t('footer_text'),
+			},
+		});
+	}
+
+	sendPasswordChanged(
+		to: string,
+		username: string,
+		locale: LocalePreference,
+	): Promise<SentMessageInfo> {
+		const t = this.t.scope(locale, 'passwordChanged');
+		return this.send({
+			to,
+			subject: t('subject'),
+			template: 'password-changed',
+			locale,
+			context: {
+				headerSub: t('headerSub'),
+				title: t('title'),
+				greeting: t('greeting', { firstName: `@${username}` }),
+				message: t('message'),
+				confirmationText: t('confirmationText'),
+				automatedEmailText: t('automatedEmailText'),
+			},
+		});
+	}
+
+	sendAccountDelete(
+		to: string,
+		username: string,
+		locale: LocalePreference,
+	): Promise<SentMessageInfo> {
+		const t = this.t.scope(locale, 'deleteAccount');
+		return this.send({
+			to,
+			subject: t('subject'),
+			template: 'delete-account',
+			locale,
+			context: {
+				headerSub: t('headerSub'),
+				title: t('title'),
+				greeting: t('greeting', { firstName: `@${username}` }),
+				message: t('message'),
+				deletionConfirmed: t('deletionConfirmed'),
+				automatedEmailText: t('automatedEmailText'),
 			},
 		});
 	}

@@ -18,6 +18,7 @@ import { AuthTokenPair } from '../types/records/auth-token-pair.type';
 import { RefreshTokenId } from '../types/records/refresh-token-id.type';
 import { PasswordTokenByHash } from '../types/records/password-token-by-hash.type';
 import { PasswordTokenUsed } from '../types/records/password-token-used.type';
+import { UnitOfWork } from '@/core/database/uow/unit-of-work';
 
 @Injectable()
 export class TokenService {
@@ -28,6 +29,7 @@ export class TokenService {
 		private readonly refreshRepo: RefreshTokenRepository,
 		private readonly passwordRepo: PasswordTokenRepository,
 		private readonly jwtService: JwtService,
+		private readonly uow: UnitOfWork,
 		@InjectEnv() private readonly env: Env,
 	) {}
 
@@ -63,10 +65,17 @@ export class TokenService {
 
 	async createPasswordReset(userId: string): Promise<string> {
 		const resetToken = this.generatePasswordResetToken();
-		await this.passwordRepo.save({
-			hashedToken: this.hash(resetToken),
-			userId,
-			expireInMs: this.env.passwordResetToken.ms,
+
+		await this.uow.run(async (ctx) => {
+			await this.passwordRepo.invalidates(userId, ctx);
+			await this.passwordRepo.save(
+				{
+					hashedToken: this.hash(resetToken),
+					userId,
+					expireInMs: this.env.passwordResetToken.ms,
+				},
+				ctx,
+			);
 		});
 		return resetToken;
 	}

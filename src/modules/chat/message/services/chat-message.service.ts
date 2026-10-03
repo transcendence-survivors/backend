@@ -207,16 +207,15 @@ export class ChatMessageService {
 		const message = await this.repo.findById(messageId);
 		if (!message || !message.senderId)
 			throw new ChatMessageNotFoundException();
+		if (userId !== message.senderId)
+			throw new ChatMessageActionForbiddenException();
 
-		await this.checkPerm(userId, message.senderId, message.roomId, false);
 		const updated = await this.repo.edit({
 			messageId,
 			roomId,
 			content,
 			userId,
 		});
-		if (!updated) throw new ChatMessageNotFoundException();
-
 		this.eventEmitter.emit(
 			APP_EVENTS.CHAT_MESSAGE_EDITED,
 			new ChatMessageEditedEvent(updated),

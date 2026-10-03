@@ -59,6 +59,7 @@ export const IsPassword = () =>
 			minNumbers: 1,
 			minSymbols: 1,
 		}),
+		MaxLength(72),
 	);
 
 export const IsUsername = () =>

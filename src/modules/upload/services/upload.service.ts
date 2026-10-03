@@ -11,14 +11,14 @@ export class UploadService {
 	) {}
 
 	async presignAttachements(
-		files: { fileName: string; mimeType: string }[],
+		files: { mimeType: string; contentLength: number }[],
 		bucket: StorageBucket,
 	) {
 		const presignedUrls = await Promise.all(
 			files.map((file) =>
 				this.storageService.getPresignedUploadUrl({
-					fileName: file.fileName,
 					contentType: file.mimeType,
+					contentLength: file.contentLength,
 					bucket,
 				}),
 			),

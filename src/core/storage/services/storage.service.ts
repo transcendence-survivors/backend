@@ -1,10 +1,14 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import {
 	PutObjectCommand,
 	DeleteObjectCommand,
 	type S3Client,
+	DeleteObjectsCommand,
 } from '@aws-sdk/client-s3';
-import { InjectS3Client } from '../injects/s3-client.inject';
+import {
+	InjectS3Client,
+	InjectS3InternalClient,
+} from '../injects/s3-client.inject';
 import { InjectEnv } from '@/core/config/env/injects/env.inject';
 import { type Env } from '@/core/config/env/providers/env.provider';
 import { randomUUID } from 'crypto';
@@ -12,7 +16,7 @@ import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
 import { StorageBucket } from '../types/storage-bucket';
 import { StoragePresignParams } from '../types/params/storage-presign.params';
 import { StoragePresignedUpload } from '../types/records/storage-presigned-upload';
-import { ALLOWED_CONTENT_TYPES } from '../storage.mime';
+import { MIME_TO_EXTENSION } from '../storage.mime';
 
 @Injectable()
 export class StorageService {
@@ -20,6 +24,7 @@ export class StorageService {
 
 	constructor(
 		@InjectS3Client() private readonly s3: S3Client,
+		@InjectS3InternalClient() private readonly s3Internal: S3Client,
 		@InjectEnv() private readonly env: Env,
 	) {
 		this.bucketMap = {
@@ -30,19 +35,19 @@ export class StorageService {
 	}
 
 	async getPresignedUploadUrl({
-		fileName,
 		contentType,
+		contentLength,
 		bucket,
 		expiresInSeconds = 300,
 	}: StoragePresignParams): Promise<StoragePresignedUpload> {
-		this.assertContentTypeAllowed(bucket, contentType);
 		const bucketName = this.bucketMap[bucket];
-		const key = this.buildKey(fileName);
+		const key = this.buildKey(contentType);
 
 		const command = new PutObjectCommand({
 			Bucket: bucketName,
 			Key: key,
 			ContentType: contentType,
+			ContentLength: contentLength,
 		});
 
 		const uploadUrl = await getSignedUrl(this.s3, command, {
@@ -53,38 +58,44 @@ export class StorageService {
 	}
 
 	async delete(fileUrl: string): Promise<void> {
-		const prefix = `${this.env.minio.publicEndpoint}/`;
-		const path = fileUrl.replace(prefix, '');
-		const [bucketName, ...keyParts] = path.split('/');
-		const key = keyParts.join('/');
+		const keyData = this.extractBucketAndKeyFromUrl(fileUrl);
+		if (!keyData) return;
 
-		await this.s3.send(
+		await this.s3Internal.send(
 			new DeleteObjectCommand({
-				Bucket: bucketName,
-				Key: key,
+				Bucket: keyData.bucketName,
+				Key: keyData.key,
 			}),
 		);
 	}
 	async deleteMany(fileUrls: string[]): Promise<void> {
-		const prefix = `${this.env.minio.publicEndpoint}/`;
-		const deleteCommands = fileUrls.map((fileUrl) => {
-			const path = fileUrl.replace(prefix, '');
-			const [bucketName, ...keyParts] = path.split('/');
-			const key = keyParts.join('/');
+		const keysByBucket = new Map<string, string[]>();
 
-			return new DeleteObjectCommand({
-				Bucket: bucketName,
-				Key: key,
-			});
-		});
+		for (const url of fileUrls) {
+			const keyData = this.extractBucketAndKeyFromUrl(url);
+			if (!keyData) continue;
 
-		await Promise.all(deleteCommands.map((cmd) => this.s3.send(cmd)));
+			const existing = keysByBucket.get(keyData.bucketName) || [];
+			keysByBucket.set(keyData.bucketName, [...existing, keyData.key]);
+		}
+
+		const deletePromises = Array.from(keysByBucket.entries()).map(
+			([bucketName, keys]) =>
+				this.s3Internal.send(
+					new DeleteObjectsCommand({
+						Bucket: bucketName,
+						Delete: {
+							Objects: keys.map((Key) => ({ Key })),
+						},
+					}),
+				),
+		);
+
+		await Promise.all(deletePromises);
 	}
 
-	private buildKey(fileName: string): string {
-		const ext = fileName.includes('.')
-			? fileName.split('.').pop()
-			: undefined;
+	private buildKey(contentType: string): string {
+		const ext = MIME_TO_EXTENSION[contentType];
 		const base = randomUUID();
 		return ext ? `${base}.${ext}` : base;
 	}
@@ -93,14 +104,17 @@ export class StorageService {
 		return `${this.env.minio.publicEndpoint}/${bucketName}/${key}`;
 	}
 
-	private assertContentTypeAllowed(
-		bucket: StorageBucket,
-		contentType: string,
-	): void {
-		if (!ALLOWED_CONTENT_TYPES[bucket].includes(contentType)) {
-			throw new BadRequestException(
-				`Content type "${contentType}" not allowed for bucket "${bucket}"`,
-			);
-		}
+	private extractBucketAndKeyFromUrl(
+		fileUrl: string,
+	): { bucketName: string; key: string } | null {
+		const publicEndpoint = this.env.minio.publicEndpoint;
+		if (!fileUrl.startsWith(publicEndpoint)) return null;
+
+		const path = fileUrl.replace(`${publicEndpoint}/`, '');
+		const [bucketName, ...keyParts] = path.split('/');
+		const key = keyParts.join('/');
+
+		if (!bucketName || !key) return null;
+		return { bucketName, key };
 	}
 }

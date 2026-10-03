@@ -19,3 +19,21 @@ export const S3ClientProvider: Provider<S3Client> = {
 			},
 		}),
 };
+
+export const S3_INTERNAL_CLIENT = Symbol('S3_INTERNAL_CLIENT');
+
+export const S3InternalClientProvider: Provider<S3Client> = {
+	provide: S3_INTERNAL_CLIENT,
+	inject: [ENV],
+	useFactory: (env: Env) =>
+		new S3Client({
+			endpoint: env.minio.endpoint,
+			region: 'us-east-1',
+			forcePathStyle: true,
+			requestChecksumCalculation: 'WHEN_REQUIRED',
+			credentials: {
+				accessKeyId: env.minio.accessKey,
+				secretAccessKey: env.minio.secretKey,
+			},
+		}),
+};

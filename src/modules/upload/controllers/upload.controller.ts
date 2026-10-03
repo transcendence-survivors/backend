@@ -8,9 +8,9 @@ import {
 	UseGuards,
 } from '@nestjs/common';
 import { UploadService } from '../services/upload.service';
-import { UserStoragePresignBatchDto } from '../dtos/requests/user-storage-presign.dto';
 import { PostStoragePresignBatchDto } from '../dtos/requests/post-storage-presign.dto';
 import { ChatStoragePresignBatchDto } from '../dtos/requests/chat-storage-presign.dto';
+import { AvatarStoragePresignBatchDto } from '../dtos/requests/avatar-storage-presign.dto';
 
 @UseGuards(JWTAccessGuard)
 @Controller('uploads')
@@ -23,9 +23,9 @@ export class UploadController {
 		return this.uploadService.presignAttachements(dto.files, 'chat');
 	}
 
-	@Post('user-presign')
+	@Post('avatar-presign')
 	@HttpCode(HttpStatus.OK)
-	async presignUserMedia(@Body() dto: UserStoragePresignBatchDto) {
+	async presignUserMedia(@Body() dto: AvatarStoragePresignBatchDto) {
 		return this.uploadService.presignAttachements(dto.files, 'avatar');
 	}
 

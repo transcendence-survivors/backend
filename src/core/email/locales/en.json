@@ -1,22 +1,21 @@
 {
 	"welcome": {
-		"subject": "Welcome to Transcendence Survivor",
-
-		"title": "Welcome to Transcendence Survivor",
+		"subject": "Welcome Light Keeper",
+		"title": "Welcome Light Keeper",
 		"greeting": "Hey {{firstName}} {{lastName}}",
-		"intro": "Nice to see you in Transcendence Survivor 👾",
+		"intro": "Nice to see you in the world of the Light Keepers! Your account has been successfully created.",
 		"account_confirmed": "Account confirmed as {{username}} using {{email}}",
 
 		"next_title": "What happens next?",
-		"step_1": "Explore the world",
-		"step_2": "Complete your first mission",
-		"step_3": "Level up your survivor profile",
-
+		"step_1": "Explore the hub",
+		"step_2": "Find your friends or make new ones",
+		"step_3": "Play games and have fun",
+		"step_4": "Share your experiences through the Light Keepers community",
+		"step_5": "Enjoy your time in the Light Keepers world",
 		"footer_text": "You received this email because you recently confirmed your account setup."
 	},
 	"resetPassword": {
 		"subject": "Password Reset Request",
-
 		"headerSub": "Security Center",
 		"title": "Password Reset Requests",
 		"message": "Click below to reset your password:",
@@ -26,6 +25,26 @@
 		"troubleClicking": "Button not working? Copy and paste this link into your browser:",
 		"automatedEmailText": "This is an automated operational security message.",
 		"supportText": "Contact Support"
+	},
+	"passwordChanged": {
+		"subject": "Password Changed Successfully",
+		"headerSub": "Security Center",
+		"title": "Password Updated",
+		"greeting": "Hello {{firstName}},",
+		"message": "This is a notification to confirm that the password for your account has been successfully changed.",
+		"confirmationText": "Your password was changed successfully.",
+		"automatedEmailText": "This is an automated security notification."
+	},
+	"deleteAccount": {
+		"subject": "Account Deleted",
+		"headerSub": "Account Status",
+		"title": "Account Successfully Deleted",
+		"greeting": "Hello {{username}},",
+		"message": "Your account and all associated data have been permanently removed from our system.",
+		"deletionConfirmed": "All personal data linked to your account has been deleted.",
+		"unauthorizedNotice": "If you did not request this account deletion, please immediately",
+		"supportText": "contact support",
+		"automatedEmailText": "This is an automated operational confirmation email."
 	},
 	"footer": {
 		"rights_reserved": "All rights reserved."

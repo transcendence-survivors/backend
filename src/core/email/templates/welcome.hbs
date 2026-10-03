@@ -4,7 +4,6 @@
 		<meta name='viewport' content='width=device-width, initial-scale=1.0' />
 		<title>{{title}}</title>
 		<style>
-			/* --- GLOBAL RESETS --- */
 			body,
 			table,
 			td,
@@ -20,7 +19,7 @@
 			body {
 				margin: 0;
 				padding: 0;
-				background-color: #f6f9fc;
+				background-color: #1a1a19;
 				width: 100% !important;
 			}
 			table {
@@ -28,90 +27,87 @@
 				width: 100%;
 			}
 
-			/* --- STRUCTURAL LAYOUT --- */
 			.email-wrapper {
-				background-color: #f6f9fc;
+				background-color: #1a1a19;
 				padding: 40px 20px;
 			}
 			.email-container {
 				max-width: 600px;
-				background-color: #ffffff;
+				background-color: #212120;
 				border-radius: 12px;
-				box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+				border: 1px solid #333331;
+				box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
 				overflow: hidden;
 				margin: 0 auto;
 			}
 
-			/* --- HEADER --- */
 			.email-header {
-				background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+				background: linear-gradient(135deg, #2a2a28 0%, #212120 100%);
+				border-bottom: 1px solid #333331;
 				padding: 40px 40px 30px 40px;
 				text-align: center;
 			}
 			.brand-icon {
-				background-color: rgba(255, 255, 255, 0.2);
+				background-color: #e5a93c;
 				width: 48px;
 				height: 48px;
 				border-radius: 10px;
 				display: inline-block;
 				margin-bottom: 16px;
 				line-height: 48px;
-				color: #ffffff;
+				color: #2b220d;
 				font-weight: bold;
 				font-size: 20px;
 			}
 			.header-title {
 				margin: 0;
-				color: #e0e7ff;
+				color: #e5a93c;
 				font-size: 14px;
 				font-weight: 600;
 				letter-spacing: 1px;
 				text-transform: uppercase;
 			}
 
-			/* --- MAIN CONTENT & TYPOGRAPHY --- */
 			.email-body {
 				padding: 40px 40px 30px 40px;
 				text-align: left;
 			}
 			.main-heading {
 				margin: 0 0 16px 0;
-				color: #1f2937;
+				color: #f0ede6;
 				font-size: 26px;
 				font-weight: 700;
 				line-height: 1.3;
 			}
 			.section-heading {
 				margin: 0 0 16px 0;
-				color: #374151;
+				color: #f0ede6;
 				font-size: 18px;
 				font-weight: 600;
 				line-height: 1.4;
 			}
 			.text-paragraph {
 				margin: 0 0 20px 0;
-				color: #4b5563;
+				color: #9f9e9a;
 				font-size: 16px;
 				line-height: 1.6;
 			}
 
-			/* --- NOTIFICATIONS & ALERTS --- */
 			.alert-box {
-				background-color: #ecfdf5;
-				border-left: 4px solid #10b981;
+				background-color: rgba(94, 178, 92, 0.12);
+				border-left: 4px solid #5eb25c;
 				padding: 16px;
 				border-radius: 0 8px 8px 0;
 				margin-bottom: 32px;
 			}
 			.alert-text {
 				margin: 0;
-				color: #065f46;
+				color: #8be089;
 				font-size: 15px;
 				font-weight: 500;
 				line-height: 1.5;
 			}
 
-			/* --- LISTS --- */
 			.step-list {
 				margin: 0 0 10px 0;
 				padding: 0;
@@ -120,16 +116,15 @@
 			.step-item {
 				margin-bottom: 12px;
 				padding-left: 28px;
-				color: #4b5563;
+				color: #9f9e9a;
 				font-size: 15px;
 				line-height: 1.5;
-				background: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%234F46E5%22 stroke-width=%223%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%2220 6 9 17 4 12%22></polyline></svg>')
+				background: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%23e5a93c%22 stroke-width=%223%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><polyline points=%2220 6 9 17 4 12%22></polyline></svg>')
 					no-repeat 0px 4px;
 			}
 
-			/* --- INTERACTIVE LINKS & BUTTONS --- */
 			.link-primary {
-				color: #4f46e5;
+				color: #e5a93c;
 				text-decoration: none;
 				font-weight: 500;
 			}
@@ -137,13 +132,13 @@
 				text-decoration: underline;
 			}
 			.link-muted {
-				color: #9ca3af;
+				color: #9f9e9a;
 				text-decoration: underline;
 			}
 			.btn-primary {
 				display: inline-block;
-				background-color: #4f46e5;
-				color: #ffffff;
+				background-color: #e5a93c;
+				color: #2b220d;
 				padding: 12px 24px;
 				border-radius: 8px;
 				font-weight: 600;
@@ -152,29 +147,28 @@
 				margin: 10px 0;
 			}
 			.btn-primary:hover {
-				background-color: #4338ca;
+				background-color: #d19428;
 			}
 
-			/* --- FOOTER --- */
 			.email-footer {
 				padding: 0 40px 40px 40px;
-				background-color: #ffffff;
+				background-color: #212120;
 				text-align: center;
 			}
 			.footer-divider {
 				border: 0;
-				border-top: 1px solid #e5e7eb;
+				border-top: 1px solid #333331;
 				margin: 0 0 24px 0;
 			}
 			.footer-text {
 				margin: 0 0 8px 0;
-				color: #9ca3af;
+				color: #9f9e9a;
 				font-size: 13px;
 				line-height: 1.5;
 			}
 			.copyright-text {
 				margin: 0;
-				color: #9ca3af;
+				color: #9f9e9a;
 				font-size: 13px;
 				font-weight: 500;
 			}
@@ -223,6 +217,8 @@
 										<li class='step-item'>{{step_1}}</li>
 										<li class='step-item'>{{step_2}}</li>
 										<li class='step-item'>{{step_3}}</li>
+										<li class='step-item'>{{step_4}}</li>
+										<li class='step-item'>{{step_5}}</li>
 									</ul>
 								</main>
 							</td>
@@ -244,7 +240,6 @@
 								</footer>
 							</td>
 						</tr>
-
 					</table>
 				</td>
 			</tr>

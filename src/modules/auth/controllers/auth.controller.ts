@@ -159,7 +159,7 @@ export class AuthController {
 		res.clearCookie(this.ACCESS_TOKEN);
 	}
 
-	@StrictAuthThrottle()
+	@AuthThrottle()
 	@Post('forgot-password')
 	@HttpCode(HttpStatus.NO_CONTENT)
 	@ApiBodyDto(AuthForgotPasswordDto)
@@ -219,7 +219,7 @@ export class AuthController {
 
 	@AuthThrottle()
 	@UseGuards(JWTAccessGuard)
-	@Post('account')
+	@Post('delete-account')
 	@HttpCode(HttpStatus.NO_CONTENT)
 	@ApiNoContentSuccessResponse({
 		description: 'Account deleted successfully',
@@ -246,7 +246,7 @@ export class AuthController {
 	private setAccessTokenCookie(res: Response, accessToken: string): void {
 		res.cookie(this.ACCESS_TOKEN, accessToken, {
 			httpOnly: true,
-			maxAge: this.env.accessToken.s,
+			maxAge: this.env.accessToken.ms,
 			secure: this.env.nodeEnv !== 'development',
 			sameSite: this.env.nodeEnv === 'development' ? 'lax' : 'strict',
 			path: '/',
@@ -256,7 +256,7 @@ export class AuthController {
 	private setRefreshTokenCookie(res: Response, refreshToken: string): void {
 		res.cookie(this.REFRESH_TOKEN, refreshToken, {
 			httpOnly: true,
-			maxAge: this.env.refreshToken.s,
+			maxAge: this.env.refreshToken.ms,
 			secure: this.env.nodeEnv !== 'development',
 			sameSite: this.env.nodeEnv === 'development' ? 'lax' : 'strict',
 			path: '/',
