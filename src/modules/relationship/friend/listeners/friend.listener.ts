@@ -20,14 +20,10 @@ export class FriendListener {
 
 	@OnEvent(APP_EVENTS.BLOCK_CREATED)
 	async handleBlockCreated(event: BlockCreatedEvent) {
-		const count = await this.service.removeIfExists(
+		await this.service.removeIfExists(
 			event.blockerUserId,
 			event.blockedUserId,
 		);
-
-		if (count > 0) {
-			// TODO: Emit an event to notify the users that they are no longer friends
-		}
 	}
 
 	@OnEvent(APP_EVENTS.FRIEND_REQUEST_ACCEPTED)

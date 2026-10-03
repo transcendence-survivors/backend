@@ -40,7 +40,3 @@ Thumbs.db
 *.ntvs*
 *.njsproj
 *.sln
-
-pnpm-lock.yaml
-npm-lock.json
-yarn.lock
