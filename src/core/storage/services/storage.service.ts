@@ -60,13 +60,16 @@ export class StorageService {
 	async delete(fileUrl: string): Promise<void> {
 		const keyData = this.extractBucketAndKeyFromUrl(fileUrl);
 		if (!keyData) return;
-
-		await this.s3Internal.send(
-			new DeleteObjectCommand({
-				Bucket: keyData.bucketName,
-				Key: keyData.key,
-			}),
-		);
+		try {
+			await this.s3Internal.send(
+				new DeleteObjectCommand({
+					Bucket: keyData.bucketName,
+					Key: keyData.key,
+				}),
+			);
+		} catch {
+			void 0;
+		}
 	}
 	async deleteMany(fileUrls: string[]): Promise<void> {
 		const keysByBucket = new Map<string, string[]>();
@@ -80,15 +83,20 @@ export class StorageService {
 		}
 
 		const deletePromises = Array.from(keysByBucket.entries()).map(
-			([bucketName, keys]) =>
-				this.s3Internal.send(
-					new DeleteObjectsCommand({
-						Bucket: bucketName,
-						Delete: {
-							Objects: keys.map((Key) => ({ Key })),
-						},
-					}),
-				),
+			async ([bucketName, keys]) => {
+				try {
+					await this.s3Internal.send(
+						new DeleteObjectsCommand({
+							Bucket: bucketName,
+							Delete: {
+								Objects: keys.map((Key) => ({ Key })),
+							},
+						}),
+					);
+				} catch {
+					void 0;
+				}
+			},
 		);
 
 		await Promise.all(deletePromises);

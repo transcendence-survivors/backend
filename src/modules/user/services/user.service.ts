@@ -25,15 +25,17 @@ import { UserSettingsPatchDto } from '../dtos/requests/user-settings-patch.dto';
 import { UserSettingsPatchParams } from '../types/params/user-settings-patch.params';
 import { UserSettingsUpdateEmptyException } from '../exceptions/user-bad.exception';
 import { UserListItem } from '../user.public-api';
-import { StorageService } from '@/core/storage/services/storage.service';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { APP_EVENTS } from '@/contracts/events/internal';
+import { AttachmentMustBeDeletedEvent } from '@/contracts/events/internal/attachment-must-be-deleted.event';
 
 @Injectable()
 export class UserService implements IUserService {
 	constructor(
 		private readonly repo: UserRepository,
-		private readonly storage: StorageService,
 		private readonly cursor: CursorService,
 		private readonly mapper: UserMapper,
+		private readonly eventEmitter: EventEmitter2,
 	) {}
 
 	public getCountIn(ids: string[], ctx?: DbContext): Promise<number> {
@@ -212,7 +214,10 @@ export class UserService implements IUserService {
 				urlsToDelete.push(user.coverImageUrl);
 			}
 			if (urlsToDelete.length > 0) {
-				await this.storage.deleteMany(urlsToDelete);
+				this.eventEmitter.emit(
+					APP_EVENTS.ATTACHMENTS_MUST_BE_DELETED,
+					new AttachmentMustBeDeletedEvent(urlsToDelete),
+				);
 			}
 		}
 		const result = await this.repo.updateUserSettings(userId, updateParams);

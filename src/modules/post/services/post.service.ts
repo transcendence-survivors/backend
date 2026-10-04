@@ -3,7 +3,6 @@ import { PostRepository } from '../repositories/post.repository';
 import { PostOwnershipException } from '../exceptions/post-unauthorized.exception.';
 import { PostDoesNotExistException } from '../exceptions/post-unexisting.exception';
 import { PostPaginateDto } from '../dtos/requests/post-paginate.dto';
-import { StorageService } from '@/core/storage/services/storage.service';
 import { CursorService } from '@/shared/services/cursor.service';
 import { LikeRepository } from '@/modules/post/like/repositories/like.repository';
 import { RepostRepository } from '@/modules/post/repost/repositories/repost.repositories';
@@ -14,6 +13,9 @@ import { PostPaginatedListResponseDto } from '../dtos/responses/post-paginated-l
 import { PostCreatedResponseDto } from '../dtos/responses/post-created-response.dto';
 import { PostFeedEnum } from '../types/enums/post-feed.enum';
 import { PostCreateDto } from '../dtos/requests/post-create.dto';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { APP_EVENTS } from '@/contracts/events/internal';
+import { AttachmentMustBeDeletedEvent } from '@/contracts/events/internal/attachment-must-be-deleted.event';
 
 @Injectable()
 export class PostService {
@@ -22,8 +24,8 @@ export class PostService {
 		private readonly likeRepository: LikeRepository,
 		private readonly repostRepository: RepostRepository,
 		private readonly cursor: CursorService,
-		private readonly storageService: StorageService,
 		private readonly mapper: PostMapper,
+		private readonly eventEmitter: EventEmitter2,
 	) {}
 
 	private idsRequiringInteractionCheck(posts: PostListItem[]): string[] {
@@ -169,7 +171,12 @@ export class PostService {
 		const found = await this.postRepository.findById(postId);
 		if (!found) throw new PostDoesNotExistException();
 		if (found.authorId !== userId) throw new PostOwnershipException();
-		if (found.imageUrl) await this.storageService.delete(found.imageUrl);
+		if (found.imageUrl) {
+			this.eventEmitter.emit(
+				APP_EVENTS.ATTACHMENTS_MUST_BE_DELETED,
+				new AttachmentMustBeDeletedEvent([found.imageUrl]),
+			);
+		}
 		await this.postRepository.delete(postId);
 	}
 }
