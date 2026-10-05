@@ -18,7 +18,7 @@ const getSwaggerConfig = () => {
 
 void (async () => {
 	const appV1 = await NestFactory.create(AppModule);
-
+	appV1.set('trust proxy', 1);
 	appV1.use(
 		helmet({
 			contentSecurityPolicy: process.env.NODE_ENV === 'production',
