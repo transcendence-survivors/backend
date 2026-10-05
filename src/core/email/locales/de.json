@@ -1,20 +1,52 @@
 {
 	"welcome": {
-		"title": "Welcome to Transcendence Survivor",
-		"greeting": "Salut {{firstName}} {{lastName}}",
-		"intro": "Ravi de te voir dans Transcendence Survivor 👾",
-		"account_confirmed": "Compte créé sous le pseudo {{username}} avec {{email}}",
+		"subject": "Willkommen, Light Keeper",
+		"title": "Willkommen, Light Keeper",
+		"greeting": "Hallo {{firstName}} {{lastName}}",
+		"intro": "Schön, dich in der Welt der Light Keepers zu sehen! Dein Konto wurde erfolgreich erstellt.",
+		"account_confirmed": "Konto bestätigt als {{username}} mit {{email}}",
 
-		"next_title": "Et maintenant ?",
-		"step_1": "Explore le monde",
-		"step_2": "Termine ta première mission",
-		"step_3": "Fais évoluer ton profil de survivant"
+		"next_title": "Wie geht es weiter?",
+		"step_1": "Erkunde den Hub",
+		"step_2": "Finde deine Freunde oder lerne neue kennen",
+		"step_3": "Spiele Partien und hab Spaß",
+		"step_4": "Teile deine Erlebnisse mit der Light-Keepers-Community",
+		"step_5": "Genieße deine Zeit in der Welt der Light Keepers",
+		"footer_text": "Du erhältst diese E-Mail, weil du kürzlich die Einrichtung deines Kontos bestätigt hast."
 	},
 	"resetPassword": {
-		"subject": "Password Reset Request",
-		"title": "Password Reset",
-		"message": "Click below to reset your password:",
-		"button": "Reset Password",
-		"expires": "This link expires in 15 minutes."
+		"subject": "Anfrage zum Zurücksetzen des Passworts",
+		"headerSub": "Sicherheitszentrum",
+		"title": "Passwort zurücksetzen",
+		"message": "Klicke unten, um dein Passwort zurückzusetzen:",
+		"button": "Passwort zurücksetzen",
+		"expires": "Dieser Link läuft in 15 Minuten ab.",
+		"ignoreWarning": "Wenn du dies nicht angefordert hast, kannst du diese E-Mail einfach ignorieren.",
+		"troubleClicking": "Der Button funktioniert nicht? Kopiere diesen Link und füge ihn in deinen Browser ein:",
+		"automatedEmailText": "Dies ist eine automatische Sicherheitsnachricht.",
+		"supportText": "Support kontaktieren"
+	},
+	"passwordChanged": {
+		"subject": "Passwort erfolgreich geändert",
+		"headerSub": "Sicherheitszentrum",
+		"title": "Passwort aktualisiert",
+		"greeting": "Hallo {{firstName}},",
+		"message": "Hiermit bestätigen wir, dass das Passwort deines Kontos erfolgreich geändert wurde.",
+		"confirmationText": "Dein Passwort wurde erfolgreich geändert.",
+		"automatedEmailText": "Dies ist eine automatische Sicherheitsbenachrichtigung."
+	},
+	"deleteAccount": {
+		"subject": "Konto gelöscht",
+		"headerSub": "Kontostatus",
+		"title": "Konto erfolgreich gelöscht",
+		"greeting": "Hallo {{username}},",
+		"message": "Dein Konto und alle zugehörigen Daten wurden dauerhaft aus unserem System entfernt.",
+		"deletionConfirmed": "Alle mit deinem Konto verknüpften personenbezogenen Daten wurden gelöscht.",
+		"unauthorizedNotice": "Wenn du diese Kontolöschung nicht angefordert hast, wende dich bitte umgehend an den",
+		"supportText": "Support",
+		"automatedEmailText": "Dies ist eine automatische Bestätigungs-E-Mail."
+	},
+	"footer": {
+		"rights_reserved": "Alle Rechte vorbehalten."
 	}
 }

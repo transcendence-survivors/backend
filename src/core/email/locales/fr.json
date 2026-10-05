@@ -1,31 +1,50 @@
 {
 	"welcome": {
-		"subject": "Inscription Transcendence Survivor",
-
-		"title": "Bienvenue dans Transcendence Survivor",
+		"subject": "Bienvenue, Light Keeper",
+		"title": "Bienvenue, Light Keeper",
 		"greeting": "Salut {{firstName}} {{lastName}}",
-		"intro": "Ravi de te voir dans Transcendence Survivor 👾",
-		"account_confirmed": "Compte créé sous le pseudo {{username}} avec {{email}}",
+		"intro": "Ravi de te voir dans le monde des Light Keepers ! Ton compte a bien été créé.",
+		"account_confirmed": "Compte confirmé sous le pseudo {{username}} avec {{email}}",
 
 		"next_title": "Et maintenant ?",
-		"step_1": "Explore le monde",
-		"step_2": "Termine ta première mission",
-		"step_3": "Fais évoluer ton profil de survivant",
-
-		"footer_text": "Vous avez reçu cet e-mail car vous avez récemment confirmé la configuration de votre compte."
+		"step_1": "Explore le hub",
+		"step_2": "Retrouve tes amis ou fais-toi de nouveaux amis",
+		"step_3": "Joue des parties et amuse-toi",
+		"step_4": "Partage tes expériences avec la communauté des Light Keepers",
+		"step_5": "Profite de ton temps dans le monde des Light Keepers",
+		"footer_text": "Tu as reçu cet e-mail car tu as récemment confirmé la configuration de ton compte."
 	},
 	"resetPassword": {
-		"subject": "Réinitialisation de mot de passe",
-
-		"headerSub": "Centre de Sécurité",
-		"title": "Demande de réinitialisation de mot de passe",
-		"message": "Cliquez ci-dessous pour réinitialiser votre mot de passe :",
+		"subject": "Demande de réinitialisation du mot de passe",
+		"headerSub": "Centre de sécurité",
+		"title": "Demande de réinitialisation du mot de passe",
+		"message": "Clique ci-dessous pour réinitialiser ton mot de passe :",
 		"button": "Réinitialiser le mot de passe",
-		"expires": "Ce lien expirera dans 15 minutes.",
-		"ignoreWarning": "Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail en toute sécurité.",
-		"troubleClicking": "Le bouton ne fonctionne pas ? Copiez et collez ce lien dans votre navigateur :",
-		"automatedEmailText": "Ceci est un message de sécurité automatisé.",
+		"expires": "Ce lien expire dans 15 minutes.",
+		"ignoreWarning": "Si tu n'es pas à l'origine de cette demande, tu peux ignorer cet e-mail en toute sécurité.",
+		"troubleClicking": "Le bouton ne fonctionne pas ? Copie et colle ce lien dans ton navigateur :",
+		"automatedEmailText": "Ceci est un message de sécurité automatique.",
 		"supportText": "Contacter le support"
+	},
+	"passwordChanged": {
+		"subject": "Mot de passe modifié avec succès",
+		"headerSub": "Centre de sécurité",
+		"title": "Mot de passe mis à jour",
+		"greeting": "Bonjour {{firstName}},",
+		"message": "Nous te confirmons que le mot de passe de ton compte a bien été modifié.",
+		"confirmationText": "Ton mot de passe a été modifié avec succès.",
+		"automatedEmailText": "Ceci est une notification de sécurité automatique."
+	},
+	"deleteAccount": {
+		"subject": "Compte supprimé",
+		"headerSub": "Statut du compte",
+		"title": "Compte supprimé avec succès",
+		"greeting": "Bonjour {{username}},",
+		"message": "Ton compte et toutes les données associées ont été définitivement supprimés de notre système.",
+		"deletionConfirmed": "Toutes les données personnelles liées à ton compte ont été supprimées.",
+		"unauthorizedNotice": "Si tu n'es pas à l'origine de cette suppression de compte, merci de",
+		"supportText": "contacter immédiatement le support",
+		"automatedEmailText": "Ceci est un e-mail de confirmation automatique."
 	},
 	"footer": {
 		"rights_reserved": "Tous droits réservés."

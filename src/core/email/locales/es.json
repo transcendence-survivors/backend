@@ -1,0 +1,52 @@
+{
+	"welcome": {
+		"subject": "Bienvenido, Light Keeper",
+		"title": "Bienvenido, Light Keeper",
+		"greeting": "Hola {{firstName}} {{lastName}}",
+		"intro": "¡Qué alegría verte en el mundo de los Light Keepers! Tu cuenta se ha creado correctamente.",
+		"account_confirmed": "Cuenta confirmada como {{username}} con {{email}}",
+
+		"next_title": "¿Qué sigue?",
+		"step_1": "Explora el hub",
+		"step_2": "Encuentra a tus amigos o haz otros nuevos",
+		"step_3": "Juega partidas y diviértete",
+		"step_4": "Comparte tus experiencias con la comunidad de Light Keepers",
+		"step_5": "Disfruta de tu tiempo en el mundo de los Light Keepers",
+		"footer_text": "Has recibido este correo porque confirmaste recientemente la configuración de tu cuenta."
+	},
+	"resetPassword": {
+		"subject": "Solicitud de restablecimiento de contraseña",
+		"headerSub": "Centro de seguridad",
+		"title": "Solicitud de restablecimiento de contraseña",
+		"message": "Haz clic abajo para restablecer tu contraseña:",
+		"button": "Restablecer contraseña",
+		"expires": "Este enlace caduca en 15 minutos.",
+		"ignoreWarning": "Si no has solicitado esto, puedes ignorar este correo sin problema.",
+		"troubleClicking": "¿El botón no funciona? Copia y pega este enlace en tu navegador:",
+		"automatedEmailText": "Este es un mensaje de seguridad automático.",
+		"supportText": "Contactar con soporte"
+	},
+	"passwordChanged": {
+		"subject": "Contraseña cambiada correctamente",
+		"headerSub": "Centro de seguridad",
+		"title": "Contraseña actualizada",
+		"greeting": "Hola {{firstName}},",
+		"message": "Te confirmamos que la contraseña de tu cuenta se ha cambiado correctamente.",
+		"confirmationText": "Tu contraseña se ha cambiado correctamente.",
+		"automatedEmailText": "Esta es una notificación de seguridad automática."
+	},
+	"deleteAccount": {
+		"subject": "Cuenta eliminada",
+		"headerSub": "Estado de la cuenta",
+		"title": "Cuenta eliminada correctamente",
+		"greeting": "Hola {{username}},",
+		"message": "Tu cuenta y todos los datos asociados se han eliminado permanentemente de nuestro sistema.",
+		"deletionConfirmed": "Se han eliminado todos los datos personales vinculados a tu cuenta.",
+		"unauthorizedNotice": "Si no has solicitado la eliminación de esta cuenta,",
+		"supportText": "contacta con soporte de inmediato",
+		"automatedEmailText": "Este es un correo de confirmación automático."
+	},
+	"footer": {
+		"rights_reserved": "Todos los derechos reservados."
+	}
+}
