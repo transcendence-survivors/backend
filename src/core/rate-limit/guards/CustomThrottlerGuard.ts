@@ -69,7 +69,7 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
 
 			return {
 				req: { client },
-				res: {},
+				res: { header: () => undefined },
 			};
 		}
 
