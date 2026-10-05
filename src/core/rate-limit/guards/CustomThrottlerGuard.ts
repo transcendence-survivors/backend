@@ -1,5 +1,5 @@
 import { ClientSocket } from '@/core/websocket/interface/ws-socket.inteface';
-import { Injectable, ExecutionContext } from '@nestjs/common';
+import { ExecutionContext, Injectable } from '@nestjs/common';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { Socket } from 'socket.io';
 
@@ -12,6 +12,7 @@ interface AuthenticatedRequest {
 		email?: string;
 		username?: string;
 	};
+	headers?: Record<string, string | string[] | undefined>;
 	ip?: string;
 	client?: unknown;
 }
@@ -21,13 +22,11 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
 	protected getTracker(req: Record<string, unknown>): Promise<string> {
 		const httpReq = req as AuthenticatedRequest;
 
-		if (httpReq.client && httpReq.client instanceof Socket) {
+		if (httpReq.client instanceof Socket) {
 			const client = httpReq.client as ClientSocket;
 
 			const userId = client.data?.user?.sub;
-			if (userId) {
-				return Promise.resolve(`ws:user:${userId}`);
-			}
+			if (userId) return Promise.resolve(`ws:user:${String(userId)}`);
 
 			const forwardedFor = client.handshake?.headers['x-forwarded-for'];
 			let realIp: string | undefined;
@@ -39,16 +38,14 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
 			}
 
 			const ip = realIp || client.handshake?.address;
-			if (ip) {
-				return Promise.resolve(`ws:ip:${ip}`);
-			}
+			if (ip) return Promise.resolve(`ws:ip:${ip}`);
 
 			return Promise.resolve(`ws:socket:${client.id}`);
 		}
 
-		const userId = httpReq.user?.sub || httpReq.user?.id;
-		if (typeof userId === 'string' || typeof userId === 'number') {
-			return Promise.resolve(`http:user:${userId}`);
+		const userId = httpReq.user?.sub ?? httpReq.user?.id;
+		if (userId) {
+			return Promise.resolve(`http:user:${String(userId)}`);
 		}
 
 		const targetedIdentifier =
@@ -59,13 +56,23 @@ export class CustomThrottlerGuard extends ThrottlerGuard {
 			);
 		}
 
+		const forwardedFor = httpReq.headers?.['x-forwarded-for'];
+		if (typeof forwardedFor === 'string' && forwardedFor.length > 0) {
+			const clientIp = forwardedFor.split(',')[0].trim();
+			if (clientIp) return Promise.resolve(`http:ip:${clientIp}`);
+		}
+
+		const realIp = httpReq.headers?.['x-real-ip'];
+		if (typeof realIp === 'string' && realIp.length > 0) {
+			return Promise.resolve(`http:ip:${realIp}`);
+		}
+
 		return Promise.resolve(`http:ip:${httpReq.ip ?? 'unknown'}`);
 	}
 
 	protected getRequestResponse(context: ExecutionContext) {
 		if (context.getType() === 'ws') {
-			const wsContext = context.switchToWs();
-			const client = wsContext.getClient<Socket>();
+			const client = context.switchToWs().getClient<Socket>();
 
 			return {
 				req: { client },
