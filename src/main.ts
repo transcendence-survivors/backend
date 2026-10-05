@@ -7,6 +7,7 @@ import { CustomValidationPipe } from './shared/pipes/custom-validation.pipe';
 import { ThrottlerFilter } from './shared/filters/throttler.filter.ts';
 import { HttpExceptionsFilter } from './shared/filters/http-exception.filter';
 import helmet from 'helmet';
+import { NestExpressApplication } from '@nestjs/platform-express';
 
 const getSwaggerConfig = () => {
 	return new DocumentBuilder()
@@ -17,7 +18,7 @@ const getSwaggerConfig = () => {
 };
 
 void (async () => {
-	const appV1 = await NestFactory.create(AppModule);
+	const appV1 = await NestFactory.create<NestExpressApplication>(AppModule);
 	appV1.set('trust proxy', 1);
 	appV1.use(
 		helmet({
